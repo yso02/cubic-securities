@@ -62,7 +62,15 @@ export default function MainDashboard({user}){
   };
 
   useEffect(()=>{document.documentElement.setAttribute("data-theme",dark?"dark":"light");localStorage.setItem("cubic_dark",dark);},[dark]);
-  useEffect(()=>{fetchDefaultStocks();loadExRate();},[]);
+  useEffect(()=>{
+    fetchDefaultStocks();loadExRate();
+    // 계좌 페이지에서 종목 클릭으로 넘어온 경우
+    const saved = sessionStorage.getItem("cubic_selected_stock");
+    if (saved) {
+      try { const s = JSON.parse(saved); setSelectedStock(s); } catch {}
+      sessionStorage.removeItem("cubic_selected_stock");
+    }
+  },[]);
 
   const loadExRate=async()=>{try{const r=await fetchRate();setExRate(r);}catch(e){console.warn("환율 실패:",e);}};
 
@@ -184,12 +192,12 @@ export default function MainDashboard({user}){
                     <button className="quick-buy" onClick={()=>handleOpenTrade(selectedStock,"buy")}>매수</button>
                     <button className="quick-sell" onClick={()=>handleOpenTrade(selectedStock,"sell")}>매도</button>
                   </div>
-                  <div className="ai-box"><div className="ai-box-title">✦ AI 큐빅 분석</div><p className="ai-box-desc">{selectedStock.name}({selectedStock.symbol}) 분석 준비 중</p></div>
+                  <div className="ai-box" style={{cursor:"pointer"}} onClick={()=>navigate("/ai")}><div className="ai-box-title">✦ AI 큐빅 분석</div><p className="ai-box-desc">{selectedStock.name}({selectedStock.symbol}) AI 분석 보기 →</p></div>
                 </div>
               </div>
             </>):(<>
               <div className="chart-box"><span className="chart-ico">📈</span><p>종목을 선택하면<br/>캔들차트가 표시됩니다</p></div>
-              <div className="ai-box"><div className="ai-box-title">✦ AI 큐빅 분석</div><p className="ai-box-desc">AI 분석 데이터 연동 예정</p></div>
+              <div className="ai-box" style={{cursor:"pointer"}} onClick={()=>navigate("/ai")}><div className="ai-box-title">✦ AI 큐빅 분석</div><p className="ai-box-desc">AI 챗봇 & 포트폴리오 분석 →</p></div>
             </>)}
           </aside>
         </div></div>

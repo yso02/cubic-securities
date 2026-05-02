@@ -115,6 +115,24 @@ export const getOverseasMinute = async (symbol, exchange = "NAS", timeUnit = 5) 
   return res.data;
 };
 
+/* ═══════════ AI ═══════════ */
+export const aiChat = async (message, history = []) => {
+  const res = await api.post("/api/ai/chat", { message, history });
+  return res.data; // { message }
+};
+export const aiAnalyzeHoldings = async () => {
+  const res = await api.post("/api/ai/analyze/holdings");
+  return res.data; // { message }
+};
+export const aiAnalyzePortfolio = async () => {
+  const res = await api.post("/api/ai/analyze/portfolio");
+  return res.data; // { message }
+};
+export const aiRecommend = async () => {
+  const res = await api.post("/api/ai/analyze/recommend");
+  return res.data; // { message }
+};
+
 /* ═══════════ 환율/환전 ═══════════ */
 export const getExchangeRate = async () => {
   const res = await api.get("/api/exchange/rate");
