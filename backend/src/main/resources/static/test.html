@@ -1,0 +1,1843 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>캡스톤 주식 테스트</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.0/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --surface: #161b22;
+            --surface2: #1c2230;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-sub: #8b949e;
+            --accent: #2f81f7;
+            --accent-dim: #1f4f9e33;
+            --up: #3fb950;
+            --down: #f85149;
+            --up-dim: #1a3a2033;
+            --down-dim: #3a1a1a33;
+            --gold: #d29922;
+            --radius: 10px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 24px;
+            min-height: 100vh;
+        }
+        h2 { font-size: 22px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.5px; }
+        h3 { font-size: 15px; font-weight: 600; margin-bottom: 14px; color: var(--text); }
+        h4 { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: var(--text-sub); }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 14px;
+        }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+        input, select {
+            padding: 9px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            width: 100%;
+            margin-bottom: 8px;
+            font-size: 13px;
+            background: var(--surface2);
+            color: var(--text);
+            font-family: 'Pretendard', sans-serif;
+            transition: border-color 0.2s;
+        }
+        input:focus { outline: none; border-color: var(--accent); }
+        input[readonly] { color: var(--text-sub); cursor: default; }
+        button {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: 'Pretendard', sans-serif;
+            font-weight: 600;
+            margin-right: 6px;
+            margin-bottom: 6px;
+            transition: all 0.15s;
+        }
+        button:hover { opacity: 0.85; transform: translateY(-1px); }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-buy { background: var(--down); color: white; }
+        .btn-sell { background: var(--up); color: white; }
+        .btn-secondary { background: var(--surface2); color: var(--text-sub); border: 1px solid var(--border); }
+        .btn-watch { background: var(--gold); color: #1a1a1a; }
+        .btn-danger { background: transparent; color: var(--down); border: 1px solid var(--down); padding: 4px 10px; font-size: 12px; }
+        .badge {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .KOSPI { background: #1565C0; color: white; }
+        .KOSDAQ { background: #2E7D32; color: white; }
+        .ETF { background: #E65100; color: white; }
+        .NASDAQ { background: #6A1B9A; color: white; }
+        .NYSE { background: #B71C1C; color: white; }
+        .AMEX, .OTHER { background: #424242; color: white; }
+        .search-results {
+            border: 1px solid var(--border);
+            max-height: 180px;
+            overflow-y: auto;
+            border-radius: 6px;
+            background: var(--surface2);
+        }
+        .search-item {
+            padding: 9px 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.1s;
+        }
+        .search-item:last-child { border-bottom: none; }
+        .search-item:hover { background: var(--accent-dim); }
+        .price-up { color: var(--down); }
+        .price-down { color: #4fa3e0; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th {
+            background: var(--surface2);
+            color: var(--text-sub);
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: var(--surface2); }
+        .status {
+            padding: 9px 12px;
+            border-radius: 6px;
+            margin: 8px 0;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .status.success { background: var(--up-dim); color: var(--up); border: 1px solid var(--up); }
+        .status.error { background: var(--down-dim); color: var(--down); border: 1px solid var(--down); }
+        .hidden { display: none; }
+        .balance-box {
+            background: linear-gradient(135deg, #0f2a5e, #1a1f35);
+            border: 1px solid #2f4a8a;
+            border-radius: var(--radius);
+            padding: 20px;
+        }
+        .balance-label { font-size: 12px; color: #8ba3d4; font-weight: 500; margin-bottom: 4px; }
+        .balance-amount {
+            font-size: 30px;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: white;
+            margin: 6px 0 4px;
+            letter-spacing: -1px;
+        }
+        .balance-sub { font-size: 12px; color: #6b84b8; }
+        .tab { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+        .tab-btn {
+            padding: 7px 16px;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-sub);
+            font-size: 13px;
+            margin: 0;
+            transition: all 0.15s;
+        }
+        .tab-btn:hover { background: var(--surface2); transform: none; }
+        .tab-btn.active { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
+        .price-card {
+            margin-top: 10px;
+            padding: 14px;
+            background: var(--surface2);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            min-height: 60px;
+            font-size: 13px;
+            color: var(--text-sub);
+        }
+        .trade-total-box {
+            padding: 14px;
+            background: var(--surface2);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+        }
+        .trade-total-label { font-size: 12px; color: var(--text-sub); margin-bottom: 4px; }
+        .trade-total-amount { font-size: 22px; font-weight: 700; color: var(--accent); font-family: 'JetBrains Mono', monospace; }
+
+        /* 관심종목 전용 스타일 */
+        .watchlist-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+        .watch-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            transition: border-color 0.2s;
+            position: relative;
+        }
+        .watch-card:hover { border-color: var(--gold); }
+        .watch-card-name { font-size: 14px; font-weight: 600; }
+        .watch-card-symbol { font-size: 12px; color: var(--text-sub); font-family: 'JetBrains Mono', monospace; }
+        .watch-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+        .watch-delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin: 0;
+            transition: color 0.15s, background 0.15s;
+        }
+        .watch-delete-btn:hover { color: var(--down); background: var(--down-dim); transform: none; }
+        .watch-empty { color: var(--text-sub); font-size: 13px; text-align: center; padding: 24px; }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+
+        /* 스크롤바 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+        /* 호가창 */
+        .ask-row td { text-align:right; padding:5px 8px; font-family:'JetBrains Mono',monospace; font-size:12px; border-bottom:1px solid var(--border); }
+        .ask-row .qty { color: var(--down); }
+        .ask-row .price { color: var(--down); font-weight:600; }
+        .ask-row .bar-cell { width:80px; }
+        .bid-row td { text-align:left; padding:5px 8px; font-family:'JetBrains Mono',monospace; font-size:12px; border-bottom:1px solid var(--border); }
+        .bid-row .qty { color: #4fa3e0; }
+        .bid-row .price { color: #4fa3e0; font-weight:600; }
+        .tick-row { display:flex; justify-content:space-between; padding:5px 8px; border-bottom:1px solid var(--border); animation: fadeIn 0.3s; }
+        .tick-buy { color: var(--down); }
+        .tick-sell { color: #4fa3e0; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+
+        /* 로그인 화면 */
+        .auth-wrap {
+            max-width: 480px;
+            margin: 60px auto;
+        }
+        .auth-title {
+            text-align: center;
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+        .auth-sub {
+            text-align: center;
+            color: var(--text-sub);
+            font-size: 13px;
+            margin-bottom: 28px;
+        }
+
+        /* ===== AI 챗봇 ===== */
+        #aiFloatBtn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2f81f7, #1a5bbf);
+            color: white;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(47,129,247,0.4);
+            border: none;
+            margin: 0;
+            padding: 0;
+            z-index: 999;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #aiFloatBtn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 8px 28px rgba(47,129,247,0.5);
+            opacity: 1;
+        }
+
+        #aiChatPanel {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 380px;
+            height: 580px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            z-index: 998;
+            overflow: hidden;
+            transform: translateY(20px);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.25s ease, opacity 0.25s ease;
+        }
+        #aiChatPanel.open {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        #aiChatHeader {
+            padding: 14px 16px;
+            background: linear-gradient(135deg, #1a3a6e, #1f4f9e);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+        #aiChatHeader .ai-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            color: white;
+        }
+        #aiChatHeader .ai-title span {
+            font-size: 18px;
+        }
+        #aiChatClose {
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.7);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 2px 6px;
+            margin: 0;
+            border-radius: 4px;
+            line-height: 1;
+            transition: color 0.15s, background 0.15s;
+        }
+        #aiChatClose:hover { color: white; background: rgba(255,255,255,0.1); transform: none; opacity: 1; }
+
+        #aiChatMessages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .ai-msg {
+            display: flex;
+            flex-direction: column;
+            max-width: 85%;
+            animation: fadeIn 0.2s ease;
+        }
+        .ai-msg.user { align-self: flex-end; align-items: flex-end; }
+        .ai-msg.assistant { align-self: flex-start; align-items: flex-start; }
+
+        .ai-msg-bubble {
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.6;
+            word-break: break-word;
+        }
+        .ai-msg.user .ai-msg-bubble {
+            background: var(--accent);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+        .ai-msg.assistant .ai-msg-bubble {
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 4px;
+        }
+
+        .ai-msg-time {
+            font-size: 10px;
+            color: var(--text-sub);
+            margin-top: 4px;
+            padding: 0 4px;
+        }
+
+        .ai-loading-bubble {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            border-bottom-left-radius: 4px;
+            padding: 12px 16px;
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        .ai-loading-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--text-sub);
+            animation: dotBounce 1.2s infinite ease-in-out;
+        }
+        .ai-loading-dot:nth-child(1) { animation-delay: 0s; }
+        .ai-loading-dot:nth-child(2) { animation-delay: 0.2s; }
+        .ai-loading-dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes dotBounce {
+            0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        #aiChatInputArea {
+            padding: 12px 14px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+            flex-shrink: 0;
+            background: var(--surface);
+        }
+        #aiChatInput {
+            flex: 1;
+            padding: 9px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface2);
+            color: var(--text);
+            font-size: 13px;
+            font-family: 'Pretendard', sans-serif;
+            resize: none;
+            outline: none;
+            margin: 0;
+            line-height: 1.5;
+            max-height: 100px;
+            overflow-y: auto;
+            transition: border-color 0.2s;
+        }
+        #aiChatInput:focus { border-color: var(--accent); }
+        #aiChatSendBtn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--accent);
+            color: white;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            margin: 0;
+            padding: 0;
+            flex-shrink: 0;
+            transition: background 0.15s, transform 0.15s;
+        }
+        #aiChatSendBtn:hover { background: #1a5bbf; transform: translateY(-1px); opacity: 1; }
+        #aiChatSendBtn:disabled { background: var(--border); cursor: not-allowed; transform: none; }
+
+        .ai-msg.assistant .ai-msg-bubble h1,
+        .ai-msg.assistant .ai-msg-bubble h2,
+        .ai-msg.assistant .ai-msg-bubble h3 {
+            font-size: 13px;
+            font-weight: 700;
+            margin: 10px 0 4px;
+            color: var(--text);
+        }
+        .ai-msg.assistant .ai-msg-bubble h2 { font-size: 13px; }
+        .ai-msg.assistant .ai-msg-bubble h3 { font-size: 12px; color: var(--text-sub); }
+        .ai-msg.assistant .ai-msg-bubble p { margin: 4px 0; }
+        .ai-msg.assistant .ai-msg-bubble ul,
+        .ai-msg.assistant .ai-msg-bubble ol {
+            padding-left: 16px;
+            margin: 4px 0;
+        }
+        .ai-msg.assistant .ai-msg-bubble li { margin: 2px 0; }
+        .ai-msg.assistant .ai-msg-bubble strong { color: var(--text); font-weight: 700; }
+        .ai-msg.assistant .ai-msg-bubble em { color: var(--text-sub); }
+        .ai-msg.assistant .ai-msg-bubble hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 8px 0;
+        }
+        .ai-msg.assistant .ai-msg-bubble table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 6px 0;
+            font-size: 12px;
+        }
+        .ai-msg.assistant .ai-msg-bubble th {
+            background: var(--surface);
+            padding: 5px 8px;
+            text-align: left;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            color: var(--text-sub);
+        }
+        .ai-msg.assistant .ai-msg-bubble td {
+            padding: 5px 8px;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+        .ai-msg.assistant .ai-msg-bubble code {
+            background: var(--surface);
+            padding: 1px 5px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--accent);
+        }
+        .ai-msg.assistant .ai-msg-bubble blockquote {
+            border-left: 3px solid var(--accent);
+            padding-left: 10px;
+            margin: 6px 0;
+            color: var(--text-sub);
+            font-size: 12px;
+        }
+
+        /* AI 분석 결과 마크다운 스타일 */
+        #aiAnalysisContent h1,
+        #aiAnalysisContent h2,
+        #aiAnalysisContent h3 {
+            font-weight: 700;
+            margin: 14px 0 6px;
+            color: var(--text);
+        }
+        #aiAnalysisContent h2 { font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+        #aiAnalysisContent h3 { font-size: 13px; color: var(--accent); }
+        #aiAnalysisContent p { margin: 6px 0; }
+        #aiAnalysisContent ul, #aiAnalysisContent ol { padding-left: 18px; margin: 6px 0; }
+        #aiAnalysisContent li { margin: 3px 0; }
+        #aiAnalysisContent strong { color: var(--text); font-weight: 700; }
+        #aiAnalysisContent hr { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+        #aiAnalysisContent table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+        #aiAnalysisContent th { background: var(--surface2); padding: 6px 10px; text-align: left; font-weight: 600; border: 1px solid var(--border); color: var(--text-sub); }
+        #aiAnalysisContent td { padding: 6px 10px; border: 1px solid var(--border); }
+        #aiAnalysisContent blockquote { border-left: 3px solid var(--accent); padding-left: 10px; margin: 8px 0; color: var(--text-sub); font-size: 12px; }
+        text-align: center;
+        padding: 20px 10px;
+        color: var(--text-sub);
+        font-size: 13px;
+        line-height: 1.6;
+        }
+        .ai-welcome .ai-welcome-icon { font-size: 32px; margin-bottom: 8px; }
+        .ai-welcome .ai-welcome-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>📈 캡스톤 주식 테스트</h2>
+
+    <!-- 로그인/회원가입 -->
+    <div id="authCard" class="hidden">
+        <div class="auth-wrap">
+            <div class="auth-title">주식 테스트 플랫폼</div>
+            <div class="auth-sub">계정으로 로그인하거나 새로 가입하세요</div>
+            <div class="card">
+                <div class="tab" style="border:none;padding:0;margin-bottom:16px">
+                    <button class="tab-btn active" id="authTab1" onclick="switchAuthTab('login')">로그인</button>
+                    <button class="tab-btn" id="authTab2" onclick="switchAuthTab('signup')">회원가입</button>
+                </div>
+                <div id="loginForm">
+                    <input id="loginEmail" placeholder="이메일" />
+                    <input id="loginPassword" type="password" placeholder="비밀번호" />
+                    <button class="btn-primary" onclick="login()" style="width:100%;padding:10px">로그인</button>
+                </div>
+                <div id="signupForm" class="hidden">
+                    <input id="signupName" placeholder="이름" />
+                    <input id="signupEmail" placeholder="이메일" />
+                    <input id="signupPassword" type="password" placeholder="비밀번호" />
+                    <button class="btn-primary" onclick="signup()" style="width:100%;padding:10px">회원가입</button>
+                </div>
+                <div id="authStatus"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 로그인 후 화면 -->
+    <div id="mainContent" class="hidden">
+
+        <!-- 메인 탭 네비게이션 -->
+        <div style="display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:12px">
+            <button class="tab-btn active" id="mainTab1" onclick="switchMainTab('trading')">📈 트레이딩</button>
+            <button class="tab-btn" id="mainTab2" onclick="switchMainTab('ai')">✨ AI 분석</button>
+        </div>
+
+        <!-- 트레이딩 탭 -->
+        <div id="tradingTabContent">
+
+            <!-- 사용자 정보 & 잔고 -->
+            <div class="grid" style="margin-bottom:14px">
+                <div class="balance-box">
+                    <div class="balance-label">안녕하세요 👋</div>
+                    <div style="font-size:18px;font-weight:700;color:white;margin-bottom:8px"><span id="userName"></span>님</div>
+                    <div class="balance-label">가상 잔고 (KRW)</div>
+                    <div class="balance-amount">₩<span id="userBalance">0</span></div>
+                    <div class="balance-label" style="margin-top:10px">달러 잔고 (USD)</div>
+                    <div style="font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace;color:#4fa3e0;margin:4px 0">$<span id="userDollarBalance">0.00</span></div>
+                    <div class="balance-sub" style="margin-top:4px">환율: <span id="currentRate">-</span> KRW/USD</div>
+                    <div style="margin-top:14px">
+                        <button class="btn-secondary" onclick="logout()">로그아웃</button>
+                    </div>
+                </div>
+                <div class="card" style="margin:0">
+                    <h3>📊 포트폴리오 요약</h3>
+                    <div id="portfolioSummary" style="color:var(--text-sub);font-size:13px">보유 종목을 불러오는 중...</div>
+                </div>
+            </div>
+
+            <!-- 전체 계좌 현황 -->
+            <div class="card" style="margin-bottom:14px">
+                <h3>💼 전체 계좌 현황</h3>
+                <div class="grid-3" style="font-size:13px">
+                    <div>
+                        <div class="balance-label">원화 잔고</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;margin-top:4px">₩<span id="accountKrw">0</span></div>
+                    </div>
+                    <div>
+                        <div class="balance-label">달러 잔고 (원화 환산)</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;margin-top:4px">₩<span id="accountDollarInKrw">0</span></div>
+                    </div>
+                    <div>
+                        <div class="balance-label">보유주식 평가금액</div>
+                        <div style="font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;margin-top:4px">₩<span id="accountHoldings">0</span></div>
+                    </div>
+                </div>
+                <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+                    <div class="balance-label">총 자산</div>
+                    <div style="font-size:24px;font-weight:700;font-family:'JetBrains Mono',monospace;color:white;margin-top:4px">₩<span id="accountTotal">0</span></div>
+                </div>
+            </div>
+
+            <!-- 환전 -->
+            <div class="card" style="margin-bottom:14px">
+                <h3>💱 환전</h3>
+                <div class="grid">
+                    <div>
+                        <h4>🇰🇷 원화 → 달러</h4>
+                        <input id="krwToUsdAmount" type="number" placeholder="환전할 원화 금액 (₩)" />
+                        <button class="btn-primary" onclick="exchangeKrwToUsd()">환전</button>
+                        <div id="krwToUsdStatus"></div>
+                    </div>
+                    <div>
+                        <h4>🇺🇸 달러 → 원화</h4>
+                        <input id="usdToKrwAmount" type="number" placeholder="환전할 달러 금액 ($)" />
+                        <button class="btn-primary" onclick="exchangeUsdToKrw()">환전</button>
+                        <div id="usdToKrwStatus"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 종목 검색 & 실시간 주가 -->
+            <div class="card">
+                <h3>🔍 종목 검색 & 실시간 주가</h3>
+                <div class="grid">
+                    <div>
+                        <h4>🇰🇷 국내 주식</h4>
+                        <input id="domesticKeyword" placeholder="종목명 검색 (예: 삼성, KODEX)" oninput="searchDomestic()" />
+                        <div class="search-results" id="domesticSearchResults"></div>
+                        <div class="price-card" id="domesticPriceCard">종목을 선택해주세요</div>
+                    </div>
+                    <div>
+                        <h4>🇺🇸 미국 주식</h4>
+                        <input id="overseasKeyword" placeholder="종목명/코드 검색 (예: Apple, AAPL)" oninput="searchOverseas()" />
+                        <div class="search-results" id="overseasSearchResults"></div>
+                        <div class="price-card" id="overseasPriceCard">종목을 선택해주세요</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 호가창 & 체결 내역 -->
+            <div class="card" id="orderBookCard" style="display:none">
+                <h3>📊 호가창 & 체결 내역</h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                    <div>
+                        <h4 id="orderBookTitle">호가</h4>
+                        <div id="totalAskQty" style="text-align:right;font-size:12px;color:var(--down);margin-bottom:6px;font-family:'JetBrains Mono',monospace"></div>
+                        <table id="askTable" style="margin-bottom:4px">
+                            <tbody id="askBody"></tbody>
+                        </table>
+                        <div id="currentPriceDivider" style="text-align:center;padding:6px;background:var(--surface2);border-radius:4px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;margin:4px 0"></div>
+                        <table id="bidTable" style="margin-top:4px">
+                            <tbody id="bidBody"></tbody>
+                        </table>
+                        <div id="totalBidQty" style="text-align:left;font-size:12px;color:#4fa3e0;margin-top:6px;font-family:'JetBrains Mono',monospace"></div>
+                    </div>
+                    <div>
+                        <h4>실시간 체결</h4>
+                        <div id="tradeTickList" style="height:320px;overflow-y:auto;font-size:12px;font-family:'JetBrains Mono',monospace">
+                            <div style="color:var(--text-sub);text-align:center;padding:20px">체결 내역 없음</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 매매 -->
+            <div class="card">
+                <h3>💰 모의 매매</h3>
+                <div class="grid">
+                    <div>
+                        <input id="tradeSymbol" placeholder="종목코드 (예: 005930)" readonly />
+                        <input id="tradeName" placeholder="종목명" readonly />
+                        <input id="tradeMarket" placeholder="시장" readonly />
+                        <input id="tradePrice" placeholder="가격" type="number" />
+                        <input id="tradeQuantity" placeholder="수량" type="number" />
+                    </div>
+                    <div>
+                        <div class="trade-total-box">
+                            <div class="trade-total-label" id="tradeTotalLabel">예상 금액</div>
+                            <div class="trade-total-amount" id="tradeTotal">₩0</div>
+                        </div>
+                        <button class="btn-buy" onclick="trade('BUY')" style="width:100%;margin-bottom:8px;padding:12px;font-size:14px">🔴 매수</button>
+                        <button class="btn-sell" onclick="trade('SELL')" style="width:100%;padding:12px;font-size:14px">🟢 매도</button>
+                    </div>
+                </div>
+                <div id="tradeStatus"></div>
+            </div>
+
+            <!-- ⭐ 관심 종목 -->
+            <div class="card">
+                <div class="section-header">
+                    <h3>⭐ 관심 종목</h3>
+                    <button class="btn-secondary" onclick="loadWatchlist()" style="font-size:12px;padding:6px 12px">새로고침</button>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:16px;align-items:flex-start;flex-wrap:wrap">
+                    <div style="flex:1;min-width:140px">
+                        <input id="watchKeyword" placeholder="종목명 검색 (예: 삼성)" oninput="searchWatch()" style="margin-bottom:0" />
+                        <div class="search-results" id="watchSearchResults" style="position:absolute;z-index:10;width:300px"></div>
+                    </div>
+                    <input id="watchSymbol" placeholder="종목코드" style="flex:1;min-width:100px;margin-bottom:0" readonly />
+                    <input id="watchName" placeholder="종목명" style="flex:1;min-width:120px;margin-bottom:0" readonly />
+                    <input id="watchMarket" placeholder="시장" style="flex:1;min-width:80px;margin-bottom:0" readonly />
+                    <button class="btn-watch" onclick="addWatchlist()" style="white-space:nowrap;margin:0;height:38px">+ 추가</button>
+                </div>
+                <div id="watchStatus"></div>
+                <div class="watchlist-grid" id="watchlistItems">
+                    <div class="watch-empty">관심 종목을 추가해보세요 ⭐</div>
+                </div>
+            </div>
+
+            <!-- 판매수익 -->
+            <div class="card">
+                <h3>💹 판매수익</h3>
+                <div id="profitTabs" class="tab" style="border:none;padding:0;margin-bottom:16px">
+                    <button class="tab-btn active" data-period="DAY"   onclick="loadProfit('DAY')">오늘</button>
+                    <button class="tab-btn"        data-period="WEEK"  onclick="loadProfit('WEEK')">1주일</button>
+                    <button class="tab-btn"        data-period="MONTH" onclick="loadProfit('MONTH')">1개월</button>
+                    <button class="tab-btn"        data-period="YEAR"  onclick="loadProfit('YEAR')">1년</button>
+                    <button class="tab-btn"        data-period="ALL"   onclick="loadProfit('ALL')">전체</button>
+                </div>
+                <div id="profitTotal" style="font-size:28px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-bottom:16px;color:var(--text-sub)">₩0</div>
+                <table>
+                    <thead>
+                    <tr>
+                        <th>종목</th>
+                        <th>매도가</th>
+                        <th>평균매수가</th>
+                        <th>수량</th>
+                        <th>수익</th>
+                    </tr>
+                    </thead>
+                    <tbody id="profitTable"><tr><td colspan="5" style="text-align:center;color:var(--text-sub)">데이터 없음</td></tr></tbody>
+                </table>
+            </div>
+
+            <!-- 탭: 보유종목 / 주문내역 -->
+            <div class="card">
+                <div class="tab">
+                    <button class="tab-btn active" onclick="showTab('holdings')">📦 보유 종목</button>
+                    <button class="tab-btn" onclick="showTab('orders')">📋 주문 내역</button>
+                </div>
+                <div id="holdingsTab">
+                    <button class="btn-secondary" onclick="loadHoldings()" style="margin-bottom:12px">새로고침</button>
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>종목</th><th>시장</th><th>보유수량</th><th>평균단가</th><th>현재가</th><th>평가금액</th><th>수익률</th>
+                        </tr>
+                        </thead>
+                        <tbody id="holdingsTable"><tr><td colspan="7" style="text-align:center;color:var(--text-sub)">데이터 없음</td></tr></tbody>
+                    </table>
+                </div>
+                <div id="ordersTab" class="hidden">
+                    <button class="btn-secondary" onclick="loadOrders()" style="margin-bottom:12px">새로고침</button>
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>시간</th><th>종목</th><th>구분</th><th>수량</th><th>가격</th><th>금액</th>
+                        </tr>
+                        </thead>
+                        <tbody id="ordersTable"><tr><td colspan="6" style="text-align:center;color:var(--text-sub)">데이터 없음</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div> <!-- end tradingTabContent -->
+
+        <!-- AI 분석 탭 -->
+        <div id="aiTabContent" class="hidden">
+
+            <!-- 보유 종목 현황 -->
+            <div class="card">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                    <h3 style="margin:0">💼 내 포트폴리오 현황</h3>
+                    <button class="btn-secondary" onclick="loadAiPortfolio()" style="font-size:12px;padding:6px 12px;margin:0">새로고침</button>
+                </div>
+                <!-- 요약 -->
+                <div id="aiPortfolioSummary" style="color:var(--text-sub);font-size:13px;margin-bottom:14px">로딩 중...</div>
+                <!-- 요약 카드 -->
+                <div id="aiPortfolioStats" class="hidden" style="display:none;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+                    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+                        <div style="font-size:11px;color:var(--text-sub);margin-bottom:4px">총 평가금액</div>
+                        <div id="aiTotalEval" style="font-size:16px;font-weight:700;font-family:'JetBrains Mono',monospace">-</div>
+                    </div>
+                    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+                        <div style="font-size:11px;color:var(--text-sub);margin-bottom:4px">총 손익</div>
+                        <div id="aiTotalProfit" style="font-size:16px;font-weight:700;font-family:'JetBrains Mono',monospace">-</div>
+                    </div>
+                    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px">
+                        <div style="font-size:11px;color:var(--text-sub);margin-bottom:4px">총 수익률</div>
+                        <div id="aiTotalRate" style="font-size:16px;font-weight:700;font-family:'JetBrains Mono',monospace">-</div>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                    <tr>
+                        <th>종목</th><th>보유수량</th><th>평균매수가</th><th>현재가</th><th>평가금액</th><th>수익률</th>
+                    </tr>
+                    </thead>
+                    <tbody id="aiHoldingsTable"><tr><td colspan="6" style="text-align:center;color:var(--text-sub)">데이터 없음</td></tr></tbody>
+                </table>
+            </div>
+
+            <!-- AI 분석 버튼 -->
+            <div class="card">
+                <h3>✨ AI 분석</h3>
+                <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+                    <button class="btn-primary" onclick="runAiAnalysis('holdings')" id="btnHoldings">
+                        📊 종목 분석
+                    </button>
+                    <button class="btn-primary" onclick="runAiAnalysis('portfolio')" id="btnPortfolio">
+                        💼 포트폴리오 분석
+                    </button>
+                    <button class="btn-primary" onclick="runAiAnalysis('recommend')" id="btnRecommend">
+                        🔮 섹터/종목 추천
+                    </button>
+                </div>
+                <div style="font-size:12px;color:var(--text-sub);margin-bottom:14px">
+                    ⚠️ 모든 분석은 참고용이며 최종 투자 결정은 본인의 판단으로 하세요.
+                </div>
+
+                <!-- 분석 결과 영역 -->
+                <div id="aiAnalysisResult" class="hidden">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                        <div id="aiAnalysisTitle" style="font-size:14px;font-weight:600;color:var(--accent)"></div>
+                        <div style="display:flex;gap:6px">
+                            <button class="btn-secondary" onclick="rerunAiAnalysis()" style="font-size:12px;padding:4px 10px;margin:0">🔄 재분석</button>
+                            <button class="btn-secondary" onclick="document.getElementById('aiAnalysisResult').classList.add('hidden')" style="font-size:12px;padding:4px 10px;margin:0">닫기</button>
+                        </div>
+                    </div>
+                    <div id="aiAnalysisLoading" class="hidden" style="display:flex;gap:6px;align-items:center;padding:16px 0">
+                        <div class="ai-loading-dot"></div>
+                        <div class="ai-loading-dot"></div>
+                        <div class="ai-loading-dot"></div>
+                        <span style="font-size:13px;color:var(--text-sub);margin-left:6px">AI가 분석 중입니다...</span>
+                    </div>
+                    <div id="aiAnalysisContent" style="font-size:13px;line-height:1.7;color:var(--text)"></div>
+                </div>
+            </div>
+
+        </div> <!-- end aiTabContent -->
+
+    </div>
+
+    <!-- AI 챗봇 플로팅 버튼 -->
+    <button id="aiFloatBtn" onclick="toggleAiChat()" title="AI 주식 어시스턴트">✨</button>
+
+    <!-- AI 챗봇 패널 -->
+    <div id="aiChatPanel">
+        <div id="aiChatHeader">
+            <div class="ai-title">
+                <span>✨</span>
+                AI 주식 어시스턴트
+            </div>
+            <button id="aiChatClose" onclick="toggleAiChat()">✕</button>
+        </div>
+        <div id="aiChatMessages">
+            <div class="ai-welcome">
+                <div class="ai-welcome-icon">📈</div>
+                <div class="ai-welcome-title">AI 주식 어시스턴트</div>
+                <div>주식 전망, 포트폴리오 분석 등 투자 관련 궁금한 점을 자유롭게 물어보세요.<br><br>모든 분석은 <b>참고용</b>이며 최종 투자 결정은 본인의 판단으로 하세요.</div>
+            </div>
+        </div>
+        <div id="aiChatInputArea">
+            <textarea id="aiChatInput" placeholder="메시지를 입력하세요..." rows="1"></textarea>
+            <button id="aiChatSendBtn" onclick="sendAiMessage()">➤</button>
+        </div>
+    </div>
+
+    <script>
+        const BASE = 'http://localhost:8080';
+        const socket = new SockJS(`${BASE}/ws`);
+        const stompClient = Stomp.over(socket);
+        const subscriptions = {};
+        let currentPrices = {};
+        let holdingsData = [];
+        let domSymbol = null, domMarket = null;
+        let ovsSymbol = null, ovsMarket = null, ovsExchange = null;
+        let currentExchangeRate = 0;
+        let currentKrwBalance = 0;
+        let currentDollarBalance = 0;
+
+        const OVERSEAS_MARKETS = new Set(['NASDAQ','NYSE','AMEX','OTHER']);
+        function isOverseas(market) { return OVERSEAS_MARKETS.has(market); }
+        function isOverseasSymbol(symbol) { return /^[A-Za-z]+$/.test(symbol); }
+        function fmtMoney(amount, overseas) {
+            return overseas ? `$${formatNumber(amount)}` : `₩${formatNumber(amount)}`;
+        }
+
+        stompClient.connect({}, () => console.log('WebSocket 연결 성공'));
+
+        (async function restoreSession() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                const res = await fetch(`${BASE}/api/users/me`, { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('userName').textContent = data.name;
+                    document.getElementById('userBalance').textContent = formatNumber(data.balance);
+                    document.getElementById('mainContent').classList.remove('hidden');
+                    loadHoldings();
+                    loadWatchlist();
+                    loadProfit('DAY');
+                    loadExchangeRate();
+                    return;
+                }
+                localStorage.removeItem('token');
+            }
+            document.getElementById('authCard').classList.remove('hidden');
+        })();
+
+        function getExchangeCode(market) {
+            if (market === 'NASDAQ') return 'NAS';
+            if (market === 'NYSE') return 'NYS';
+            return 'AMS';
+        }
+
+        function formatNumber(n) { return Number(n).toLocaleString(); }
+
+        function showStatus(id, msg, isError = false) {
+            const el = document.getElementById(id);
+            el.className = `status ${isError ? 'error' : 'success'}`;
+            el.textContent = msg;
+            setTimeout(() => { el.textContent = ''; el.className = ''; }, 3000);
+        }
+
+        function switchAuthTab(tab) {
+            document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
+            document.getElementById('signupForm').classList.toggle('hidden', tab !== 'signup');
+            document.getElementById('authTab1').classList.toggle('active', tab === 'login');
+            document.getElementById('authTab2').classList.toggle('active', tab === 'signup');
+        }
+
+        async function signup() {
+            const res = await fetch(`${BASE}/api/users/signup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: document.getElementById('signupName').value,
+                    email: document.getElementById('signupEmail').value,
+                    password: document.getElementById('signupPassword').value
+                })
+            });
+            const text = await res.text();
+            showStatus('authStatus', text, !res.ok);
+        }
+
+        function authHeaders() {
+            const token = localStorage.getItem('token');
+            return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+        }
+
+        async function login() {
+            const res = await fetch(`${BASE}/api/users/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email: document.getElementById('loginEmail').value,
+                    password: document.getElementById('loginPassword').value
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                localStorage.setItem('token', data.token);
+                document.getElementById('userName').textContent = data.name;
+                await loadMyInfo();
+                document.getElementById('authCard').classList.add('hidden');
+                document.getElementById('mainContent').classList.remove('hidden');
+                loadHoldings();
+                loadWatchlist();
+                loadProfit('DAY');
+                loadExchangeRate();
+            } else {
+                const text = await res.text();
+                showStatus('authStatus', text, true);
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            document.getElementById('authCard').classList.remove('hidden');
+            document.getElementById('mainContent').classList.add('hidden');
+        }
+
+        async function loadMyInfo() {
+            const res = await fetch(`${BASE}/api/users/me`, { headers: authHeaders() });
+            const data = await res.json();
+            currentKrwBalance = data.balance ?? 0;
+            currentDollarBalance = data.dollarBalance ?? 0;
+            document.getElementById('userName').textContent = data.name;
+            document.getElementById('userBalance').textContent = formatNumber(currentKrwBalance);
+            document.getElementById('userDollarBalance').textContent = currentDollarBalance.toFixed(2);
+            updateTotalAssets();
+        }
+
+        async function updateBalance() {
+            const res = await fetch(`${BASE}/api/users/me`, { headers: authHeaders() });
+            const data = await res.json();
+            currentKrwBalance = data.balance ?? 0;
+            currentDollarBalance = data.dollarBalance ?? 0;
+            document.getElementById('userBalance').textContent = formatNumber(currentKrwBalance);
+            document.getElementById('userDollarBalance').textContent = currentDollarBalance.toFixed(2);
+            updateTotalAssets();
+        }
+
+        async function loadExchangeRate() {
+            const res = await fetch(`${BASE}/api/exchange/rate`, { headers: authHeaders() });
+            if (!res.ok) return;
+            const data = await res.json();
+            currentExchangeRate = data.rate;
+            document.getElementById('currentRate').textContent = formatNumber(data.rate);
+            updateTotalAssets();
+        }
+
+        async function updateTotalAssets() {
+            try {
+                const meRes = await fetch(`${BASE}/api/users/me`, { headers: authHeaders() });
+                if (meRes.ok) {
+                    const me = await meRes.json();
+                    currentKrwBalance = me.balance ?? currentKrwBalance;
+                    currentDollarBalance = me.dollarBalance ?? currentDollarBalance;
+                    document.getElementById('userBalance').textContent = formatNumber(currentKrwBalance);
+                    document.getElementById('userDollarBalance').textContent = currentDollarBalance.toFixed(2);
+                }
+            } catch (e) {}
+
+            if (!currentExchangeRate) {
+                try {
+                    const rateRes = await fetch(`${BASE}/api/exchange/rate`, { headers: authHeaders() });
+                    if (rateRes.ok) {
+                        const rateData = await rateRes.json();
+                        currentExchangeRate = rateData.rate;
+                        document.getElementById('currentRate').textContent = formatNumber(currentExchangeRate);
+                    }
+                } catch (e) {}
+            }
+
+            const dollarInKrw = currentDollarBalance * currentExchangeRate;
+            let holdingsKrw = 0, holdingsUsdInKrw = 0;
+            holdingsData.forEach(h => {
+                const price = currentPrices[h.symbol] || h.avgPrice;
+                if (isOverseas(h.market)) {
+                    holdingsUsdInKrw += price * h.quantity * currentExchangeRate;
+                } else {
+                    holdingsKrw += price * h.quantity;
+                }
+            });
+            const totalHoldings = holdingsKrw + holdingsUsdInKrw;
+            const total = currentKrwBalance + dollarInKrw + totalHoldings;
+            document.getElementById('accountKrw').textContent = formatNumber(Math.round(currentKrwBalance));
+            document.getElementById('accountDollarInKrw').textContent = formatNumber(Math.round(dollarInKrw));
+            document.getElementById('accountHoldings').textContent = formatNumber(Math.round(totalHoldings));
+            document.getElementById('accountTotal').textContent = formatNumber(Math.round(total));
+        }
+
+        async function exchangeKrwToUsd() {
+            const amount = parseFloat(document.getElementById('krwToUsdAmount').value);
+            if (!amount || amount <= 0) { showStatus('krwToUsdStatus', '금액을 입력해주세요.', true); return; }
+            const res = await fetch(`${BASE}/api/exchange/krw-to-usd`, {
+                method: 'POST', headers: authHeaders(), body: JSON.stringify({ amount })
+            });
+            const text = await res.text();
+            if (res.ok) {
+                const data = JSON.parse(text);
+                document.getElementById('userBalance').textContent = formatNumber(data.balance);
+                document.getElementById('userDollarBalance').textContent = data.dollarBalance.toFixed(2);
+                showStatus('krwToUsdStatus', `환전 완료: $${data.exchanged.toFixed(2)}`);
+                document.getElementById('krwToUsdAmount').value = '';
+            } else {
+                showStatus('krwToUsdStatus', text, true);
+            }
+        }
+
+        async function exchangeUsdToKrw() {
+            const amount = parseFloat(document.getElementById('usdToKrwAmount').value);
+            if (!amount || amount <= 0) { showStatus('usdToKrwStatus', '금액을 입력해주세요.', true); return; }
+            const res = await fetch(`${BASE}/api/exchange/usd-to-krw`, {
+                method: 'POST', headers: authHeaders(), body: JSON.stringify({ amount })
+            });
+            const text = await res.text();
+            if (res.ok) {
+                const data = JSON.parse(text);
+                document.getElementById('userBalance').textContent = formatNumber(data.balance);
+                document.getElementById('userDollarBalance').textContent = data.dollarBalance.toFixed(2);
+                showStatus('usdToKrwStatus', `환전 완료: ₩${formatNumber(Math.round(data.exchanged))}`);
+                document.getElementById('usdToKrwAmount').value = '';
+            } else {
+                showStatus('usdToKrwStatus', text, true);
+            }
+        }
+
+        function searchDomestic() {
+            const keyword = document.getElementById('domesticKeyword').value;
+            if (keyword.length < 1) { document.getElementById('domesticSearchResults').innerHTML = ''; return; }
+            fetch(`${BASE}/api/stocks/search?keyword=${keyword}`)
+                .then(r => r.json())
+                .then(data => {
+                    const filtered = data.filter(s => ['KOSPI','KOSDAQ','ETF'].includes(s.market));
+                    document.getElementById('domesticSearchResults').innerHTML = filtered.map(s => `
+                    <div class="search-item" onclick="selectDomestic('${s.symbol}','${s.name}','${s.market}')">
+                        <span>${s.name} <span style="color:var(--text-sub);font-size:12px">${s.symbol}</span></span>
+                        <span class="badge ${s.market}">${s.market}</span>
+                    </div>`).join('');
+                });
+        }
+
+        function searchOverseas() {
+            const keyword = document.getElementById('overseasKeyword').value;
+            if (keyword.length < 1) { document.getElementById('overseasSearchResults').innerHTML = ''; return; }
+            fetch(`${BASE}/api/stocks/search?keyword=${keyword}`)
+                .then(r => r.json())
+                .then(data => {
+                    const filtered = data.filter(s => ['NASDAQ','NYSE','AMEX','OTHER'].includes(s.market));
+                    document.getElementById('overseasSearchResults').innerHTML = filtered.map(s => `
+                    <div class="search-item" onclick="selectOverseas('${s.symbol}','${s.name}','${s.market}')">
+                        <span>${s.name} (${s.symbol})</span>
+                        <span class="badge ${s.market}">${s.market}</span>
+                    </div>`).join('');
+                });
+        }
+
+        function searchWatch() {
+            const keyword = document.getElementById('watchKeyword').value;
+            if (keyword.length < 1) { document.getElementById('watchSearchResults').innerHTML = ''; return; }
+            fetch(`${BASE}/api/stocks/search?keyword=${keyword}`)
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('watchSearchResults').innerHTML = data.map(s => `
+                    <div class="search-item" onclick="selectWatch('${s.symbol}','${s.name}','${s.market}')">
+                        <span>${s.name} <span style="color:var(--text-sub);font-size:12px">${s.symbol}</span></span>
+                        <span class="badge ${s.market}">${s.market}</span>
+                    </div>`).join('');
+                });
+        }
+
+        function selectWatch(symbol, name, market) {
+            document.getElementById('watchKeyword').value = name;
+            document.getElementById('watchSymbol').value = symbol;
+            document.getElementById('watchName').value = name;
+            document.getElementById('watchMarket').value = market;
+            document.getElementById('watchSearchResults').innerHTML = '';
+        }
+
+        function selectDomestic(symbol, name, market) {
+            domSymbol = symbol; domMarket = market;
+            document.getElementById('domesticKeyword').value = name;
+            document.getElementById('domesticSearchResults').innerHTML = '';
+            setTradeForm(symbol, name, market);
+
+            if (subscriptions['domestic']) subscriptions['domestic'].unsubscribe();
+            stompClient.send("/app/subscribe/domestic", {}, symbol);
+            subscriptions['domestic'] = stompClient.subscribe(`/topic/domestic/${symbol}`, msg => {
+                const data = JSON.parse(msg.body);
+                currentPrices[symbol] = parseFloat(data.price);
+                const change = parseFloat(data.changePercent);
+                const cls = change >= 0 ? 'price-up' : 'price-down';
+                document.getElementById('domesticPriceCard').innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <b style="font-size:14px">${name}</b>
+                    <span class="badge ${market}">${market}</span>
+                    <button onclick="clearDomestic()" style="background:transparent;border:none;color:var(--text-sub);cursor:pointer;font-size:16px;padding:2px 6px;margin:0;line-height:1" title="선택 취소">✕</button>
+                </div>
+                <div style="font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace" class="${cls}">₩${formatNumber(data.price)}</div>
+                <div class="${cls}" style="font-size:12px;margin-top:4px">${change >= 0 ? '▲' : '▼'} ${data.change} (${data.changePercent}%)</div>
+            `;
+                document.getElementById('tradePrice').value = data.price;
+                updateTradeTotal();
+            });
+
+            document.getElementById('orderBookCard').style.display = '';
+            document.getElementById('orderBookTitle').textContent = `${name} 호가`;
+            document.getElementById('tradeTickList').innerHTML = '<div style="color:var(--text-sub);text-align:center;padding:20px">체결 내역 없음</div>';
+
+            fetch(`${BASE}/api/stocks/orderbook/domestic/${symbol}`)
+                .then(r => r.json())
+                .then(data => renderOrderBook(data, symbol));
+
+            if (subscriptions['orderbook']) subscriptions['orderbook'].unsubscribe();
+            subscriptions['orderbook'] = stompClient.subscribe(`/topic/orderbook/${symbol}`, msg => {
+                renderOrderBook(JSON.parse(msg.body), symbol);
+            });
+
+            if (subscriptions['tradetick']) subscriptions['tradetick'].unsubscribe();
+            subscriptions['tradetick'] = stompClient.subscribe(`/topic/tradetick/${symbol}`, msg => {
+                addTradeTick(JSON.parse(msg.body));
+            });
+        }
+
+        function selectOverseas(symbol, name, market) {
+            ovsSymbol = symbol; ovsMarket = market; ovsExchange = getExchangeCode(market);
+            document.getElementById('overseasKeyword').value = name;
+            document.getElementById('overseasSearchResults').innerHTML = '';
+            setTradeForm(symbol, name, market);
+            document.getElementById('orderBookCard').style.display = 'none';
+
+            if (subscriptions['overseas']) subscriptions['overseas'].unsubscribe();
+            stompClient.send("/app/subscribe/overseas", {}, `${symbol},${ovsExchange}`);
+            subscriptions['overseas'] = stompClient.subscribe(`/topic/overseas/${symbol}`, msg => {
+                const data = JSON.parse(msg.body);
+                currentPrices[symbol] = parseFloat(data.price);
+                const change = parseFloat(data.changePercent);
+                const cls = change >= 0 ? 'price-up' : 'price-down';
+                document.getElementById('overseasPriceCard').innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                    <b style="font-size:14px">${name}</b>
+                    <span class="badge ${market}">${market}</span>
+                    <button onclick="clearOverseas()" style="background:transparent;border:none;color:var(--text-sub);cursor:pointer;font-size:16px;padding:2px 6px;margin:0;line-height:1" title="선택 취소">✕</button>
+                </div>
+                <div style="font-size:22px;font-weight:700;font-family:'JetBrains Mono',monospace" class="${cls}">$${data.price}</div>
+                <div class="${cls}" style="font-size:12px;margin-top:4px">${change >= 0 ? '▲' : '▼'} ${data.change} (${data.changePercent}%)</div>
+            `;
+                document.getElementById('tradePrice').value = data.price;
+                updateTradeTotal();
+            });
+        }
+
+        function clearDomestic() {
+            if (domSymbol) {
+                if (subscriptions['domestic']) { subscriptions['domestic'].unsubscribe(); delete subscriptions['domestic']; }
+                if (subscriptions['orderbook']) { subscriptions['orderbook'].unsubscribe(); delete subscriptions['orderbook']; }
+                if (subscriptions['tradetick']) { subscriptions['tradetick'].unsubscribe(); delete subscriptions['tradetick']; }
+                stompClient.send("/app/unsubscribe/domestic", {}, domSymbol);
+                domSymbol = null; domMarket = null;
+            }
+            document.getElementById('domesticKeyword').value = '';
+            document.getElementById('domesticSearchResults').innerHTML = '';
+            document.getElementById('domesticPriceCard').textContent = '종목을 선택해주세요';
+            document.getElementById('orderBookCard').style.display = 'none';
+        }
+
+        function clearOverseas() {
+            if (ovsSymbol) {
+                if (subscriptions['overseas']) { subscriptions['overseas'].unsubscribe(); delete subscriptions['overseas']; }
+                stompClient.send("/app/unsubscribe/overseas", {}, `${ovsSymbol},${ovsExchange}`);
+                ovsSymbol = null; ovsMarket = null; ovsExchange = null;
+            }
+            document.getElementById('overseasKeyword').value = '';
+            document.getElementById('overseasSearchResults').innerHTML = '';
+            document.getElementById('overseasPriceCard').textContent = '종목을 선택해주세요';
+        }
+
+        function renderOrderBook(data, symbol) {
+            const maxQty = Math.max(
+                ...data.asks.map(e => parseInt(e.quantity) || 0),
+                ...data.bids.map(e => parseInt(e.quantity) || 0),
+                1
+            );
+            document.getElementById('askBody').innerHTML = data.asks.map(e => {
+                const w = Math.round((parseInt(e.quantity) || 0) / maxQty * 100);
+                return `<tr class="ask-row">
+                <td class="qty">${formatNumber(e.quantity)}</td>
+                <td class="bar-cell"><div style="background:var(--down-dim);height:6px;border-radius:2px;width:${w}%;margin-left:auto"></div></td>
+                <td class="price">₩${formatNumber(e.price)}</td>
+            </tr>`;
+            }).join('');
+            document.getElementById('bidBody').innerHTML = data.bids.map(e => {
+                const w = Math.round((parseInt(e.quantity) || 0) / maxQty * 100);
+                return `<tr class="bid-row">
+                <td class="price">₩${formatNumber(e.price)}</td>
+                <td class="bar-cell"><div style="background:var(--accent-dim);height:6px;border-radius:2px;width:${w}%"></div></td>
+                <td class="qty">${formatNumber(e.quantity)}</td>
+            </tr>`;
+            }).join('');
+            const cur = currentPrices[symbol];
+            document.getElementById('currentPriceDivider').textContent = cur ? `₩${formatNumber(cur)}` : '';
+            const totalAskQty = data.asks.reduce((sum, e) => { const q = parseInt(e.quantity); return sum + (isNaN(q) ? 0 : q); }, 0);
+            const totalBidQty = data.bids.reduce((sum, e) => { const q = parseInt(e.quantity); return sum + (isNaN(q) ? 0 : q); }, 0);
+            document.getElementById('totalAskQty').textContent = `매도잔량 합계: ${formatNumber(totalAskQty)}`;
+            document.getElementById('totalBidQty').textContent = `매수잔량 합계: ${formatNumber(totalBidQty)}`;
+        }
+
+        function addTradeTick(data) {
+            const list = document.getElementById('tradeTickList');
+            const empty = list.querySelector('div[style*="text-align:center"]');
+            if (empty) empty.remove();
+            const cls = data.side === 'BUY' ? 'tick-buy' : 'tick-sell';
+            const label = data.side === 'BUY' ? '매수' : '매도';
+            const time = data.time ? data.time.replace(/(\d{2})(\d{2})(\d{2})/, '$1:$2:$3') : '';
+            const row = document.createElement('div');
+            row.className = `tick-row ${cls}`;
+            row.innerHTML = `<span>${time}</span><span>₩${formatNumber(data.price)}</span><span>${formatNumber(data.quantity)}주</span><span>${label}</span>`;
+            list.insertBefore(row, list.firstChild);
+            while (list.children.length > 50) list.removeChild(list.lastChild);
+        }
+
+        function setTradeForm(symbol, name, market) {
+            document.getElementById('tradeSymbol').value = symbol;
+            document.getElementById('tradeName').value = name;
+            document.getElementById('tradeMarket').value = market;
+        }
+
+        function updateTradeTotal() {
+            const price = parseFloat(document.getElementById('tradePrice').value) || 0;
+            const qty = parseInt(document.getElementById('tradeQuantity').value) || 0;
+            const market = document.getElementById('tradeMarket').value;
+            const ovs = isOverseas(market);
+            document.getElementById('tradeTotalLabel').textContent = ovs ? '예상 금액 (USD)' : '예상 금액 (KRW)';
+            document.getElementById('tradeTotal').textContent = ovs ? `$${(price * qty).toFixed(2)}` : `₩${formatNumber(price * qty)}`;
+        }
+        document.getElementById('tradePrice')?.addEventListener('input', updateTradeTotal);
+        document.getElementById('tradeQuantity')?.addEventListener('input', updateTradeTotal);
+
+        async function trade(type) {
+            const dto = {
+                symbol: document.getElementById('tradeSymbol').value,
+                name: document.getElementById('tradeName').value,
+                market: document.getElementById('tradeMarket').value,
+                type: type,
+                quantity: parseInt(document.getElementById('tradeQuantity').value),
+                price: parseFloat(document.getElementById('tradePrice').value)
+            };
+            if (!dto.symbol || !dto.quantity || !dto.price) {
+                showStatus('tradeStatus', '종목과 수량, 가격을 입력해주세요.', true);
+                return;
+            }
+            if (dto.quantity < 1) {
+                showStatus('tradeStatus', '수량은 1주 이상이어야 합니다.', true);
+                return;
+            }
+            const res = await fetch(`${BASE}/api/trade/${type === 'BUY' ? 'buy' : 'sell'}`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify(dto)
+            });
+            const text = await res.text();
+            showStatus('tradeStatus', text, !res.ok);
+            if (res.ok) { updateBalance(); loadHoldings(); }
+        }
+
+        async function addWatchlist() {
+            const symbol = document.getElementById('watchSymbol').value;
+            const name = document.getElementById('watchName').value;
+            const market = document.getElementById('watchMarket').value;
+            if (!symbol || !name) { showStatus('watchStatus', '종목을 검색해서 선택해주세요.', true); return; }
+            const res = await fetch(`${BASE}/api/watchlist`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ symbol, name, market })
+            });
+            const text = await res.text();
+            showStatus('watchStatus', text, !res.ok);
+            if (res.ok) {
+                document.getElementById('watchKeyword').value = '';
+                document.getElementById('watchSymbol').value = '';
+                document.getElementById('watchName').value = '';
+                document.getElementById('watchMarket').value = '';
+                loadWatchlist();
+            }
+        }
+
+        async function removeWatchlist(symbol) {
+            const res = await fetch(`${BASE}/api/watchlist/${symbol}`, { method: 'DELETE', headers: authHeaders() });
+            const text = await res.text();
+            showStatus('watchStatus', text, !res.ok);
+            if (res.ok) loadWatchlist();
+        }
+
+        async function loadWatchlist() {
+            const res = await fetch(`${BASE}/api/watchlist`, { headers: authHeaders() });
+            if (!res.ok) return;
+            const data = await res.json();
+            const container = document.getElementById('watchlistItems');
+            if (!data.length) {
+                container.innerHTML = '<div class="watch-empty">관심 종목을 추가해보세요 ⭐</div>';
+                return;
+            }
+            container.innerHTML = data.map(w => `
+            <div class="watch-card">
+                <button class="watch-delete-btn" onclick="removeWatchlist('${w.symbol}')" title="삭제">✕</button>
+                <div class="watch-card-name">${w.name}</div>
+                <div class="watch-card-symbol">${w.symbol}</div>
+                <div class="watch-card-footer">
+                    <span class="badge ${w.market}">${w.market}</span>
+                    <span style="font-size:11px;color:var(--text-sub)">${new Date(w.createdAt).toLocaleDateString('ko-KR')}</span>
+                </div>
+            </div>
+        `).join('');
+        }
+
+        async function loadHoldings() {
+            const res = await fetch(`${BASE}/api/trade/holdings`, { headers: authHeaders() });
+            const data = await res.json();
+            holdingsData = data;
+            const tbody = document.getElementById('holdingsTable');
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-sub)">보유 종목 없음</td></tr>';
+                document.getElementById('portfolioSummary').innerHTML = '<span style="color:var(--text-sub)">보유 종목 없음</span>';
+                return;
+            }
+            tbody.innerHTML = data.map(h => {
+                const ovs = isOverseas(h.market);
+                const currentPrice = currentPrices[h.symbol] || h.avgPrice;
+                const evalAmount = currentPrice * h.quantity;
+                const buyAmount = h.avgPrice * h.quantity;
+                const profit = evalAmount - buyAmount;
+                const profitRate = ((profit / buyAmount) * 100).toFixed(2);
+                const cls = profit >= 0 ? 'price-up' : 'price-down';
+                return `<tr data-symbol="${h.symbol}">
+                <td><b>${h.name}</b> <span style="color:var(--text-sub);font-size:12px">${h.symbol}</span></td>
+                <td><span class="badge ${h.market}">${h.market}</span></td>
+                <td style="font-family:'JetBrains Mono',monospace">${h.quantity}주</td>
+                <td style="font-family:'JetBrains Mono',monospace">${fmtMoney(ovs ? h.avgPrice.toFixed(2) : Math.round(h.avgPrice), ovs)}</td>
+                <td style="font-family:'JetBrains Mono',monospace">${fmtMoney(ovs ? currentPrice.toFixed(2) : formatNumber(currentPrice), ovs)}</td>
+                <td style="font-family:'JetBrains Mono',monospace">${fmtMoney(ovs ? evalAmount.toFixed(2) : formatNumber(Math.round(evalAmount)), ovs)}</td>
+                <td class="${cls}" style="font-family:'JetBrains Mono',monospace;font-weight:600">${profit >= 0 ? '+' : ''}${profitRate}%</td>
+            </tr>`;
+            }).join('');
+            updatePortfolioSummary();
+            data.forEach(h => {
+                if (!subscriptions[h.symbol]) {
+                    if (['KOSPI','KOSDAQ','ETF'].includes(h.market)) {
+                        stompClient.send("/app/subscribe/domestic", {}, h.symbol);
+                        subscriptions[h.symbol] = stompClient.subscribe(`/topic/domestic/${h.symbol}`, msg => {
+                            currentPrices[h.symbol] = parseFloat(JSON.parse(msg.body).price);
+                            updateHoldingRow(h.symbol);
+                        });
+                    } else {
+                        const exchange = getExchangeCode(h.market);
+                        stompClient.send("/app/subscribe/overseas", {}, `${h.symbol},${exchange}`);
+                        subscriptions[h.symbol] = stompClient.subscribe(`/topic/overseas/${h.symbol}`, msg => {
+                            currentPrices[h.symbol] = parseFloat(JSON.parse(msg.body).price);
+                            updateHoldingRow(h.symbol);
+                        });
+                    }
+                }
+            });
+        }
+
+        function updateHoldingRow(symbol) {
+            const h = holdingsData.find(x => x.symbol === symbol);
+            if (!h) return;
+            const tr = document.querySelector(`#holdingsTable tr[data-symbol="${symbol}"]`);
+            if (!tr) return;
+            const currentPrice = currentPrices[symbol] || h.avgPrice;
+            const evalAmount = currentPrice * h.quantity;
+            const buyAmount = h.avgPrice * h.quantity;
+            const profit = evalAmount - buyAmount;
+            const profitRate = ((profit / buyAmount) * 100).toFixed(2);
+            const cls = profit >= 0 ? 'price-up' : 'price-down';
+            const ovs = isOverseas(h.market);
+            tr.cells[4].textContent = ovs ? `$${currentPrice.toFixed(2)}` : `₩${formatNumber(currentPrice)}`;
+            tr.cells[5].textContent = ovs ? `$${evalAmount.toFixed(2)}` : `₩${formatNumber(Math.round(evalAmount))}`;
+            tr.cells[6].className = cls;
+            tr.cells[6].textContent = (profit >= 0 ? '+' : '') + profitRate + '%';
+            updatePortfolioSummary();
+        }
+
+        function updatePortfolioSummary() {
+            if (!holdingsData.length) return;
+            let totalBuyKrw = 0, totalEvalKrw = 0;
+            holdingsData.forEach(h => {
+                const currentPrice = currentPrices[h.symbol] || h.avgPrice;
+                const rate = isOverseas(h.market) ? (currentExchangeRate || 1) : 1;
+                totalBuyKrw += h.avgPrice * h.quantity * rate;
+                totalEvalKrw += currentPrice * h.quantity * rate;
+            });
+            const totalProfit = totalEvalKrw - totalBuyKrw;
+            const totalRate = totalBuyKrw > 0 ? ((totalProfit / totalBuyKrw) * 100).toFixed(2) : '0.00';
+            const cls = totalProfit >= 0 ? 'price-up' : 'price-down';
+            document.getElementById('portfolioSummary').innerHTML = `
+            <div style="margin-bottom:8px;font-size:13px;color:var(--text-sub)">총 매수금액 <b style="color:var(--text);font-family:'JetBrains Mono',monospace">₩${formatNumber(Math.round(totalBuyKrw))}</b></div>
+            <div style="margin-bottom:8px;font-size:13px;color:var(--text-sub)">총 평가금액 <b style="color:var(--text);font-family:'JetBrains Mono',monospace">₩${formatNumber(Math.round(totalEvalKrw))}</b></div>
+            <div class="${cls}" style="font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace">
+                ${totalProfit >= 0 ? '+' : ''}₩${formatNumber(Math.round(totalProfit))}
+                <span style="font-size:14px">(${totalRate}%)</span>
+            </div>
+        `;
+            updateTotalAssets();
+        }
+
+        async function loadOrders() {
+            const res = await fetch(`${BASE}/api/trade/orders`, { headers: authHeaders() });
+            const data = await res.json();
+            const tbody = document.getElementById('ordersTable');
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-sub)">주문 내역 없음</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(o => {
+                const time = new Date(o.createdAt).toLocaleString('ko-KR');
+                const cls = o.type === 'BUY' ? 'price-up' : 'price-down';
+                const ovs = isOverseasSymbol(o.symbol);
+                const priceFmt = ovs ? `$${o.price.toFixed(2)}` : `₩${formatNumber(o.price)}`;
+                const totalFmt = ovs ? `$${(o.price * o.quantity).toFixed(2)}` : `₩${formatNumber(o.price * o.quantity)}`;
+                return `<tr>
+                <td style="font-size:12px;color:var(--text-sub)">${time}</td>
+                <td><b>${o.name}</b> <span style="color:var(--text-sub);font-size:12px">${o.symbol}</span></td>
+                <td class="${cls}" style="font-weight:700">${o.type === 'BUY' ? '매수' : '매도'}</td>
+                <td style="font-family:'JetBrains Mono',monospace">${o.quantity}주</td>
+                <td style="font-family:'JetBrains Mono',monospace">${priceFmt}</td>
+                <td style="font-family:'JetBrains Mono',monospace">${totalFmt}</td>
+            </tr>`;
+            }).join('');
+        }
+
+        async function loadProfit(period) {
+            document.querySelectorAll('#profitTabs .tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.period === period);
+            });
+            const res = await fetch(`${BASE}/api/trade/profit?period=${period}`, { headers: authHeaders() });
+            if (!res.ok) return;
+            const data = await res.json();
+            const totalEl = document.getElementById('profitTotal');
+            const cls = data.totalProfit >= 0 ? 'price-up' : 'price-down';
+            totalEl.className = cls;
+            totalEl.style.fontSize = '28px'; totalEl.style.fontWeight = '700'; totalEl.style.fontFamily = "'JetBrains Mono',monospace"; totalEl.style.marginBottom = '16px';
+            totalEl.textContent = (data.totalProfit >= 0 ? '+' : '') + '₩' + formatNumber(Math.round(data.totalProfit));
+            const tbody = document.getElementById('profitTable');
+            if (!data.profitList.length) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-sub)">매도 내역 없음</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.profitList.map(item => {
+                const pc = item.profit >= 0 ? 'price-up' : 'price-down';
+                const ovs = isOverseasSymbol(item.symbol);
+                const sellFmt = ovs ? `$${item.sellPrice.toFixed(2)}` : `₩${formatNumber(item.sellPrice)}`;
+                const avgFmt = item.avgPrice != null ? (ovs ? `$${item.avgPrice.toFixed(2)}` : `₩${formatNumber(item.avgPrice)}`) : '-';
+                const profitFmt = ovs
+                    ? `${item.profit >= 0 ? '+' : ''}$${Math.abs(item.profit).toFixed(2)}`
+                    : `${item.profit >= 0 ? '+' : ''}₩${formatNumber(Math.round(item.profit))}`;
+                return `<tr>
+                <td><b>${item.name}</b> <span style="color:var(--text-sub);font-size:12px">${item.symbol}</span></td>
+                <td style="font-family:'JetBrains Mono',monospace">${sellFmt}</td>
+                <td style="font-family:'JetBrains Mono',monospace">${avgFmt}</td>
+                <td style="font-family:'JetBrains Mono',monospace">${item.quantity}주</td>
+                <td class="${pc}" style="font-family:'JetBrains Mono',monospace;font-weight:600">${profitFmt}</td>
+            </tr>`;
+            }).join('');
+        }
+
+        function showTab(tab) {
+            document.getElementById('holdingsTab').classList.toggle('hidden', tab !== 'holdings');
+            document.getElementById('ordersTab').classList.toggle('hidden', tab !== 'orders');
+            document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+                btn.classList.toggle('active', (i === 0 && tab === 'holdings') || (i === 1 && tab === 'orders'));
+            });
+            if (tab === 'orders') loadOrders();
+        }
+
+        // ===== AI 챗봇 =====
+        let aiChatOpen = false;
+        let aiHistory = [];
+        let aiIsLoading = false;
+
+        function toggleAiChat() {
+            aiChatOpen = !aiChatOpen;
+            const panel = document.getElementById('aiChatPanel');
+            panel.classList.toggle('open', aiChatOpen);
+            if (aiChatOpen) {
+                setTimeout(() => document.getElementById('aiChatInput').focus(), 300);
+            }
+        }
+
+        function getTimeString() {
+            const now = new Date();
+            return now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function appendMessage(role, content) {
+            const messages = document.getElementById('aiChatMessages');
+            // 웰컴 메시지 제거
+            const welcome = messages.querySelector('.ai-welcome');
+            if (welcome) welcome.remove();
+
+            const div = document.createElement('div');
+            div.className = `ai-msg ${role}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'ai-msg-bubble';
+            bubble.innerHTML = role === 'assistant'
+                ? marked.parse(content)
+                : content.replace(/\n/g, '<br>');
+
+            const time = document.createElement('div');
+            time.className = 'ai-msg-time';
+            time.textContent = getTimeString();
+
+            div.appendChild(bubble);
+            div.appendChild(time);
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+            return div;
+        }
+
+        function showLoadingBubble() {
+            const messages = document.getElementById('aiChatMessages');
+            const div = document.createElement('div');
+            div.className = 'ai-msg assistant';
+            div.id = 'aiLoadingMsg';
+            div.innerHTML = `<div class="ai-loading-bubble">
+            <div class="ai-loading-dot"></div>
+            <div class="ai-loading-dot"></div>
+            <div class="ai-loading-dot"></div>
+        </div>`;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function removeLoadingBubble() {
+            const loading = document.getElementById('aiLoadingMsg');
+            if (loading) loading.remove();
+        }
+
+        async function sendAiMessage() {
+            if (aiIsLoading) return;
+            const input = document.getElementById('aiChatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const token = localStorage.getItem('token');
+            if (!token) {
+                appendMessage('assistant', '⚠️ 로그인 후 이용 가능합니다.');
+                return;
+            }
+
+            input.value = '';
+            input.style.height = 'auto';
+            appendMessage('user', message);
+
+            aiIsLoading = true;
+            document.getElementById('aiChatSendBtn').disabled = true;
+            showLoadingBubble();
+
+            try {
+                const res = await fetch(`${BASE}/api/ai/chat`, {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ message, history: aiHistory })
+                });
+                const data = await res.json();
+                removeLoadingBubble();
+
+                const reply = data.message || '응답을 받지 못했습니다.';
+                appendMessage('assistant', reply);
+
+                // 대화 기록 업데이트
+                aiHistory.push({ role: 'user', content: message });
+                aiHistory.push({ role: 'assistant', content: reply });
+
+                // 대화 기록 최대 20개 유지 (10턴)
+                if (aiHistory.length > 20) aiHistory = aiHistory.slice(-20);
+            } catch (e) {
+                removeLoadingBubble();
+                appendMessage('assistant', '⚠️ 오류가 발생했습니다. 다시 시도해주세요.');
+            }
+
+            aiIsLoading = false;
+            document.getElementById('aiChatSendBtn').disabled = false;
+            input.focus();
+        }
+
+        // Enter 키 전송 (Shift+Enter는 줄바꿈)
+        document.getElementById('aiChatInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendAiMessage();
+            }
+        });
+
+        // 입력창 자동 높이 조절
+        document.getElementById('aiChatInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+
+        // ===== 메인 탭 전환 =====
+        function switchMainTab(tab) {
+            document.getElementById('tradingTabContent').classList.toggle('hidden', tab !== 'trading');
+            document.getElementById('aiTabContent').classList.toggle('hidden', tab !== 'ai');
+            document.getElementById('mainTab1').classList.toggle('active', tab === 'trading');
+            document.getElementById('mainTab2').classList.toggle('active', tab === 'ai');
+            if (tab === 'ai') loadAiPortfolio();
+        }
+
+        // AI 탭 보유종목 로드
+        async function loadAiPortfolio() {
+            const res = await fetch(`${BASE}/api/trade/holdings`, { headers: authHeaders() });
+            const data = await res.json();
+            const tbody = document.getElementById('aiHoldingsTable');
+            const summary = document.getElementById('aiPortfolioSummary');
+            const statsDiv = document.getElementById('aiPortfolioStats');
+
+            if (!data.length) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-sub)">보유 종목 없음</td></tr>';
+                summary.textContent = '보유 종목이 없습니다. 먼저 주식을 매수해주세요.';
+                statsDiv.style.display = 'none';
+                return;
+            }
+
+            // 요약 카드 표시
+            statsDiv.style.display = 'grid';
+
+            let totalBuy = 0, totalEval = 0;
+
+            tbody.innerHTML = data.map(h => {
+                const ovs = isOverseas(h.market);
+                const currentPrice = currentPrices[h.symbol] || h.avgPrice;
+                const evalAmount = currentPrice * h.quantity;
+                const buyAmount = h.avgPrice * h.quantity;
+                const profit = evalAmount - buyAmount;
+                const profitRate = buyAmount > 0 ? ((profit / buyAmount) * 100).toFixed(2) : '0.00';
+                const cls = profit >= 0 ? 'price-up' : 'price-down';
+                const rate = ovs ? (currentExchangeRate || 1) : 1;
+                totalBuy += buyAmount * rate;
+                totalEval += evalAmount * rate;
+
+                const avgFmt = ovs ? `$${h.avgPrice.toFixed(2)}` : `₩${formatNumber(Math.round(h.avgPrice))}`;
+                const curFmt = ovs ? `$${currentPrice.toFixed(2)}` : `₩${formatNumber(Math.round(currentPrice))}`;
+                const evalFmt = ovs ? `$${evalAmount.toFixed(2)}` : `₩${formatNumber(Math.round(evalAmount))}`;
+
+                return `<tr>
+                <td><b>${h.name}</b> <span style="color:var(--text-sub);font-size:12px">${h.symbol}</span></td>
+                <td style="font-family:'JetBrains Mono',monospace">${h.quantity}주</td>
+                <td style="font-family:'JetBrains Mono',monospace">${avgFmt}</td>
+                <td style="font-family:'JetBrains Mono',monospace">${curFmt}</td>
+                <td style="font-family:'JetBrains Mono',monospace">${evalFmt}</td>
+                <td class="${cls}" style="font-family:'JetBrains Mono',monospace;font-weight:600">${profit >= 0 ? '+' : ''}${profitRate}%</td>
+            </tr>`;
+            }).join('');
+
+            // 요약 수치 계산
+            const totalProfit = totalEval - totalBuy;
+            const totalRate = totalBuy > 0 ? ((totalProfit / totalBuy) * 100).toFixed(2) : '0.00';
+            const profitCls = totalProfit >= 0 ? 'price-up' : 'price-down';
+
+            document.getElementById('aiTotalEval').textContent = `₩${formatNumber(Math.round(totalEval))}`;
+            document.getElementById('aiTotalProfit').className = profitCls;
+            document.getElementById('aiTotalProfit').textContent = `${totalProfit >= 0 ? '+' : ''}₩${formatNumber(Math.round(totalProfit))}`;
+            document.getElementById('aiTotalRate').className = profitCls;
+            document.getElementById('aiTotalRate').textContent = `${totalRate >= 0 ? '+' : ''}${totalRate}%`;
+
+            summary.innerHTML = `총 <b style="color:var(--text)">${data.length}개</b> 종목 보유 중`;
+        }
+
+        // AI 분석 캐시
+        const aiAnalysisCache = {};
+        let currentAnalysisType = null;
+
+        // AI 분석 실행 (캐시 우선)
+        async function runAiAnalysis(type) {
+            const titles = {
+                holdings: '📊 종목 분석',
+                portfolio: '💼 포트폴리오 분석',
+                recommend: '🔮 섹터/종목 추천'
+            };
+
+            currentAnalysisType = type;
+            const resultDiv = document.getElementById('aiAnalysisResult');
+            const titleEl = document.getElementById('aiAnalysisTitle');
+            const loadingEl = document.getElementById('aiAnalysisLoading');
+            const contentEl = document.getElementById('aiAnalysisContent');
+
+            titleEl.textContent = titles[type];
+            resultDiv.classList.remove('hidden');
+            resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // 캐시된 결과 있으면 바로 표시
+            if (aiAnalysisCache[type]) {
+                loadingEl.style.display = 'none';
+                contentEl.innerHTML = aiAnalysisCache[type];
+                return;
+            }
+
+            // 없으면 API 호출
+            await fetchAiAnalysis(type);
+        }
+
+        // 실제 API 호출
+        async function fetchAiAnalysis(type) {
+            const loadingEl = document.getElementById('aiAnalysisLoading');
+            const contentEl = document.getElementById('aiAnalysisContent');
+
+            ['btnHoldings', 'btnPortfolio', 'btnRecommend'].forEach(id => {
+                document.getElementById(id).disabled = true;
+            });
+
+            contentEl.innerHTML = '';
+            loadingEl.style.display = 'flex';
+
+            try {
+                const res = await fetch(`${BASE}/api/ai/analyze/${type}`, {
+                    method: 'POST',
+                    headers: authHeaders()
+                });
+                const data = await res.json();
+                loadingEl.style.display = 'none';
+                const html = marked.parse(data.message || '분석 결과를 받지 못했습니다.');
+                contentEl.innerHTML = html;
+                // 캐시 저장
+                aiAnalysisCache[type] = html;
+            } catch (e) {
+                loadingEl.style.display = 'none';
+                contentEl.textContent = '⚠️ 오류가 발생했습니다. 다시 시도해주세요.';
+            }
+
+            ['btnHoldings', 'btnPortfolio', 'btnRecommend'].forEach(id => {
+                document.getElementById(id).disabled = false;
+            });
+        }
+
+        // 재분석 (캐시 무시하고 다시 호출)
+        async function rerunAiAnalysis() {
+            if (!currentAnalysisType) return;
+            delete aiAnalysisCache[currentAnalysisType];
+            await fetchAiAnalysis(currentAnalysisType);
+        }
+    </script>
+</body>
+</html>
