@@ -107,8 +107,8 @@
 }
 .stock-name { font-size: 14px; font-weight: 600; color: var(--c-text); }
 .stock-code { font-size: 11px; color: var(--c-text-muted); margin-top: 1px; }
-.price { font-size: 14px; font-weight: 600; color: var(--c-text); text-align: right; }
-.change { font-size: 13px; text-align: right; font-weight: 600; }
+.price { font-size: 14px; font-weight: 600; color: var(--c-text); text-align: right; transition: color 0.3s; }
+.change { font-size: 13px; text-align: right; font-weight: 600; transition: color 0.3s; }
 .change.up { color: #ef4444; }
 .change.dn { color: #3b82f6; }
 .volume { font-size: 13px; color: var(--c-text-muted); text-align: right; }

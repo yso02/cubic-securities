@@ -1,7 +1,7 @@
 // src/pages/AccountPage.jsx
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import SockJS from "sockjs-client";
+
 import { Client } from "@stomp/stompjs";
 import {
   getMyInfo, getBalance, getHoldings, getOrders, getProfit,
@@ -75,7 +75,8 @@ export default function AccountPage({ user, setUser }) {
   useEffect(() => {
     if (!holdings.length) return;
     const client = new Client({
-      webSocketFactory: () => new SockJS(`${NGROK_URL}/ws`),
+      brokerURL: NGROK_URL.replace("https://","wss://").replace("http://","ws://") + "/ws",
+      connectHeaders: { "ngrok-skip-browser-warning": "true" },
       reconnectDelay: 5000,
       onConnect: () => {
         setWsConnected(true);

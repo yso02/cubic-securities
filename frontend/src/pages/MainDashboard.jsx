@@ -1,18 +1,18 @@
 // src/pages/MainDashboard.jsx
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { Client } from "@stomp/stompjs";
 import {
   searchStocks, getDomesticPrice, getOverseasPrice,
   getDomesticRanking, getOverseasRanking,
   getExchangeRate as fetchRate,
   getExchangeCode, isDomestic, fmt, fmtPrice, fmtChange, isUp,
   getWatchlist, addWatchlist, removeWatchlist,
-  DOMESTIC_STOCKS, OVERSEAS_STOCKS,
+  DOMESTIC_STOCKS, OVERSEAS_STOCKS, NGROK_URL,
 } from "../api/stockApi";
 import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
 import TradeModal from "../components/TradeModal";
-import useRealtimePrice from "../hooks/useRealtimePrice";
 import "./MainDashboard.css";
 
 const ICON_COLORS = {
@@ -54,12 +54,75 @@ export default function MainDashboard({ user }) {
     } catch {}
   };
 
-  // WebSocket
-  const handlePriceUpdate = useCallback((symbol, data) => {
-    setStocks(prev => prev.map(s => s.symbol === symbol ? { ...s, ...data } : s));
-    setSelectedStock(prev => prev?.symbol === symbol ? { ...prev, ...data } : prev);
-  }, []);
-  const { connected: wsConnected } = useRealtimePrice(stocks, handlePriceUpdate);
+  // ── WebSocket 실시간 가격 ──
+  const [wsConnected, setWsConnected] = useState(false);
+  const wsClientRef = useRef(null);
+  const wsSubsRef = useRef(new Map());
+
+  // 종목 변경 시 WebSocket 구독
+  useEffect(() => {
+    if (!stocks.length) return;
+
+    // 기존 연결 정리
+    if (wsClientRef.current) {
+      wsSubsRef.current.forEach(sub => { try { sub.unsubscribe(); } catch {} });
+      wsSubsRef.current.clear();
+      wsClientRef.current.deactivate();
+    }
+
+    const wsUrl = NGROK_URL.replace("https://", "wss://").replace("http://", "ws://") + "/ws";
+    const client = new Client({
+      brokerURL: wsUrl,
+      reconnectDelay: 5000,
+      connectHeaders: { "ngrok-skip-browser-warning": "true" },
+      onConnect: () => {
+        console.log("✅ 홈 WebSocket 연결 성공");
+        setWsConnected(true);
+
+        stocks.forEach(stock => {
+          const dom = isDomestic(stock.market);
+          const key = `${dom ? "d" : "o"}-${stock.symbol}`;
+          if (wsSubsRef.current.has(key)) return;
+
+          try {
+            if (dom) {
+              client.publish({ destination: "/app/subscribe/domestic", body: stock.symbol });
+              const sub = client.subscribe(`/topic/domestic/${stock.symbol}`, msg => {
+                try {
+                  const data = JSON.parse(msg.body);
+                  setStocks(prev => prev.map(s => s.symbol === data.symbol ? { ...s, ...data } : s));
+                  setSelectedStock(prev => prev?.symbol === data.symbol ? { ...prev, ...data } : prev);
+                } catch {}
+              });
+              wsSubsRef.current.set(key, sub);
+            } else {
+              const exc = stock.exchange || getExchangeCode(stock.market);
+              client.publish({ destination: "/app/subscribe/overseas", body: `${stock.symbol},${exc}` });
+              const sub = client.subscribe(`/topic/overseas/${stock.symbol}`, msg => {
+                try {
+                  const data = JSON.parse(msg.body);
+                  setStocks(prev => prev.map(s => s.symbol === data.symbol ? { ...s, ...data } : s));
+                  setSelectedStock(prev => prev?.symbol === data.symbol ? { ...prev, ...data } : prev);
+                } catch {}
+              });
+              wsSubsRef.current.set(key, sub);
+            }
+          } catch (e) { console.warn(`구독 실패 [${stock.symbol}]:`, e); }
+        });
+      },
+      onDisconnect: () => setWsConnected(false),
+      onStompError: (frame) => console.error("STOMP 에러:", frame.headers?.message),
+    });
+
+    client.activate();
+    wsClientRef.current = client;
+
+    return () => {
+      wsSubsRef.current.forEach(sub => { try { sub.unsubscribe(); } catch {} });
+      wsSubsRef.current.clear();
+      if (client) client.deactivate();
+    };
+  }, [stocks.map(s => s.symbol).join(",")]);
 
   // 데이터 로드
   useEffect(() => { fetchStocks(); }, [market, sortType]);

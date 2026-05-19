@@ -1,6 +1,6 @@
 // src/components/OrderBook.jsx
 import { useState, useEffect, useRef } from "react";
-import SockJS from "sockjs-client";
+
 import { Client } from "@stomp/stompjs";
 import { getDomesticOrderbook, isDomestic, fmt, NGROK_URL } from "../api/stockApi";
 import "./OrderBook.css";
@@ -34,7 +34,8 @@ export default function OrderBook({ stock }) {
   useEffect(() => {
     if (!stock) return;
     const client = new Client({
-      webSocketFactory: () => new SockJS(`${NGROK_URL}/ws`),
+      brokerURL: NGROK_URL.replace("https://","wss://").replace("http://","ws://") + "/ws",
+      connectHeaders: { "ngrok-skip-browser-warning": "true" },
       reconnectDelay: 5000,
       onConnect: () => {
         // 국내 구독하면 호가+체결 자동 구독됨
