@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
-import { NGROK_URL, isDomestic } from "../api/stockApi";
+import { NGROK_URL, isDomestic, getExchangeCode } from "../api/stockApi";
 
 export default function useRealtimePrice(stocks, onPriceUpdate) {
   const clientRef = useRef(null);
@@ -40,7 +40,7 @@ export default function useRealtimePrice(stocks, onPriceUpdate) {
         if (dom) {
           client.publish({ destination: "/app/subscribe/domestic", body: stock.symbol });
         } else {
-          client.publish({ destination: "/app/subscribe/overseas", body: `${stock.symbol},${stock.exchange || "NAS"}` });
+          client.publish({ destination: "/app/subscribe/overseas", body: `${stock.symbol},${stock.exchange || getExchangeCode(stock.market)}` });
         }
         const topic = dom ? `/topic/domestic/${stock.symbol}` : `/topic/overseas/${stock.symbol}`;
         const sub = client.subscribe(topic, msg => {
@@ -60,7 +60,7 @@ export default function useRealtimePrice(stocks, onPriceUpdate) {
         if (sub) try { sub.unsubscribe(); } catch {}
         try {
           if (dom) cl.publish({ destination: "/app/unsubscribe/domestic", body: stock.symbol });
-          else cl.publish({ destination: "/app/unsubscribe/overseas", body: `${stock.symbol},${stock.exchange || "NAS"}` });
+          else cl.publish({ destination: "/app/unsubscribe/overseas", body: `${stock.symbol},${stock.exchange || getExchangeCode(stock.market)}` });
         } catch {}
       });
       subsRef.current.clear();
