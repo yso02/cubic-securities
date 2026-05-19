@@ -1,227 +1,338 @@
+// src/pages/MainDashboard.jsx
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { Client } from "@stomp/stompjs";
 import {
   searchStocks, getDomesticPrice, getOverseasPrice,
-  getExchangeCode, isDomestic, fmt, fmtPrice, fmtChange, isUp,
+  getDomesticRanking, getOverseasRanking,
   getExchangeRate as fetchRate,
+  getExchangeCode, isDomestic, fmt, fmtPrice, fmtChange, isUp,
   getWatchlist, addWatchlist, removeWatchlist,
-  DOMESTIC_STOCKS, OVERSEAS_STOCKS,
+  DOMESTIC_STOCKS, OVERSEAS_STOCKS, NGROK_URL,
 } from "../api/stockApi";
 import StockChart from "../components/StockChart";
-import TradeModal from "../components/TradeModal";
 import OrderBook from "../components/OrderBook";
-import useRealtimePrice from "../hooks/useRealtimePrice";
+import TradeModal from "../components/TradeModal";
 import "./MainDashboard.css";
 
-const MARKET_FILTERS = ["전체","국내","해외"];
-const SORT_TABS = ["거래대금","급상승","급하락"];
-const MARKET_MAP = {"국내":"DOMESTIC","해외":"OVERSEAS"};
+const ICON_COLORS = {
+  "삼성전자":"#1428A0","SK하이닉스":"#EA002C","현대차":"#002C5F","LG화학":"#A50034",
+  "카카오":"#FAE100","NAVER":"#76B900","셀트리온":"#00A6A0","POSCO홀딩스":"#004B87",
+  "기아":"#05141F","삼성SDI":"#034EA2","LG에너지솔루션":"#A50034","신한지주":"#0046FF",
+  "Apple":"#555","NVIDIA":"#76B900","Tesla":"#CC0000","Microsoft":"#00A4EF",
+  "Amazon":"#FF9900","Alphabet":"#4285F4","Meta":"#1877F2",
+};
+const ICON_TEXT = {"카카오":"#3C1E1E"};
 
-const SIDE_PANELS = [
-  {id:"watchlist",label:"관심",icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>},
-  {id:"ai",label:"AI분석",icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>},
-  {id:"recent",label:"최근본",icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>},
-  {id:"realtime",label:"실시간",icon:<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>},
-];
+export default function MainDashboard({ user }) {
+  const navigate = useNavigate();
+  const [market, setMarket] = useState("domestic");
+  const [sortType, setSortType] = useState("VOLUME");
+  const [stocks, setStocks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedStock, setSelectedStock] = useState(null);
+  const [tradeModalStock, setTradeModalStock] = useState(null);
+  const [tradeMode, setTradeMode] = useState("buy");
+  const [exRate, setExRate] = useState({ rate: 1380 });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState(null);
+  const searchTimer = useRef(null);
 
-function SunIcon(){return<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;}
-function MoonIcon(){return<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;}
-
-export default function MainDashboard({user}){
-  const navigate=useNavigate();
-  const[activeCat,setActiveCat]=useState("전체");
-  const[activeSort,setActiveSort]=useState("거래대금");
-  const[activeTab,setActiveTab]=useState("실시간 차트");
-  const[openPanel,setOpenPanel]=useState(null);
-  const[stocks,setStocks]=useState([]);
-  const[loading,setLoading]=useState(true);
-  const[error,setError]=useState(null);
-  const[selectedStock,setSelectedStock]=useState(null);
-  const[tradeModalStock,setTradeModalStock]=useState(null);
-  const[tradeMode,setTradeMode]=useState("buy");
-  const[chartFullscreen,setChartFullscreen]=useState(false);
-  const[searchQuery,setSearchQuery]=useState("");
-  const[recentStocks,setRecentStocks]=useState([]);
-  const searchTimer=useRef(null);
-  const[dark,setDark]=useState(()=>localStorage.getItem("cubic_dark")==="true");
-  const[exRate,setExRate]=useState({rate:1380});
-
-  // 관심종목 (서버 저장)
-  const[watchlist,setWatchlist]=useState([]);
-  const loadWatchlist=async()=>{if(!user)return;try{const w=await getWatchlist();setWatchlist(w||[]);}catch(e){console.warn("관심종목 로드 실패:",e);}};
-  useEffect(()=>{if(user)loadWatchlist();},[user]);
-  const isWatched=(symbol)=>watchlist.some(w=>w.symbol===symbol);
-  const toggleWatch=async(stock,e)=>{
-    if(e)e.stopPropagation();
-    if(!user){alert("로그인 후 이용해 주세요.");navigate("/login");return;}
-    try{
-      if(isWatched(stock.symbol)){await removeWatchlist(stock.symbol);}
-      else{await addWatchlist(stock.symbol,stock.name,stock.market);}
+  // 관심종목
+  const [watchlist, setWatchlist] = useState([]);
+  useEffect(() => { if (user) loadWatchlist(); }, [user]);
+  const loadWatchlist = async () => { try { setWatchlist(await getWatchlist() || []); } catch {} };
+  const isWatched = (symbol) => watchlist.some(w => w.symbol === symbol);
+  const toggleWatch = async (stock, e) => {
+    if (e) e.stopPropagation();
+    if (!user) { alert("로그인 후 이용해 주세요."); navigate("/login"); return; }
+    try {
+      if (isWatched(stock.symbol)) await removeWatchlist(stock.symbol);
+      else await addWatchlist(stock.symbol, stock.name, stock.market);
       await loadWatchlist();
-    }catch(err){console.warn("관심종목 변경 실패:",err);}
+    } catch {}
   };
 
-  useEffect(()=>{document.documentElement.setAttribute("data-theme",dark?"dark":"light");localStorage.setItem("cubic_dark",dark);},[dark]);
-  useEffect(()=>{fetchDefaultStocks();loadExRate();},[]);
+  // ── WebSocket 실시간 가격 ──
+  const [wsConnected, setWsConnected] = useState(false);
+  const wsClientRef = useRef(null);
+  const wsSubsRef = useRef(new Map());
 
-  const loadExRate=async()=>{try{const r=await fetchRate();setExRate(r);}catch(e){console.warn("환율 실패:",e);}};
+  // 종목 변경 시 WebSocket 구독
+  useEffect(() => {
+    if (!stocks.length) return;
 
-  const handlePriceUpdate=useCallback((symbol,data)=>{
-    setStocks(prev=>prev.map(s=>s.symbol===symbol?{...s,...data}:s));
-    setSelectedStock(prev=>prev?.symbol===symbol?{...prev,...data}:prev);
-  },[]);
-  const{connected:wsConnected}=useRealtimePrice(stocks,handlePriceUpdate);
+    // 기존 연결 정리
+    if (wsClientRef.current) {
+      wsSubsRef.current.forEach(sub => { try { sub.unsubscribe(); } catch {} });
+      wsSubsRef.current.clear();
+      wsClientRef.current.deactivate();
+    }
 
-  const fetchDefaultStocks=async()=>{
-    setLoading(true);setError(null);const all=[];
-    try{const r=await Promise.allSettled(DOMESTIC_STOCKS.map(async s=>{const p=await getDomesticPrice(s.symbol);return{...s,...p};}));r.forEach(x=>{if(x.status==="fulfilled"&&x.value)all.push(x.value);});}catch{}
-    try{const r=await Promise.allSettled(OVERSEAS_STOCKS.map(async s=>{const p=await getOverseasPrice(s.symbol,s.exchange||"NAS");return{...s,...p};}));r.forEach(x=>{if(x.status==="fulfilled"&&x.value)all.push(x.value);});}catch{}
-    if(!all.length)setError("서버에 연결할 수 없습니다.");
-    setStocks(all);setLoading(false);
+    const wsUrl = NGROK_URL.replace("https://", "wss://").replace("http://", "ws://") + "/ws";
+    const client = new Client({
+      brokerURL: wsUrl,
+      reconnectDelay: 5000,
+      connectHeaders: { "ngrok-skip-browser-warning": "true" },
+      onConnect: () => {
+        console.log("✅ 홈 WebSocket 연결 성공");
+        setWsConnected(true);
+
+        stocks.forEach(stock => {
+          const dom = isDomestic(stock.market);
+          const key = `${dom ? "d" : "o"}-${stock.symbol}`;
+          if (wsSubsRef.current.has(key)) return;
+
+          try {
+            if (dom) {
+              client.publish({ destination: "/app/subscribe/domestic", body: stock.symbol });
+              const sub = client.subscribe(`/topic/domestic/${stock.symbol}`, msg => {
+                try {
+                  const data = JSON.parse(msg.body);
+                  setStocks(prev => prev.map(s => s.symbol === data.symbol ? { ...s, ...data } : s));
+                  setSelectedStock(prev => prev?.symbol === data.symbol ? { ...prev, ...data } : prev);
+                } catch {}
+              });
+              wsSubsRef.current.set(key, sub);
+            } else {
+              const exc = stock.exchange || getExchangeCode(stock.market);
+              client.publish({ destination: "/app/subscribe/overseas", body: `${stock.symbol},${exc}` });
+              const sub = client.subscribe(`/topic/overseas/${stock.symbol}`, msg => {
+                try {
+                  const data = JSON.parse(msg.body);
+                  setStocks(prev => prev.map(s => s.symbol === data.symbol ? { ...s, ...data } : s));
+                  setSelectedStock(prev => prev?.symbol === data.symbol ? { ...prev, ...data } : prev);
+                } catch {}
+              });
+              wsSubsRef.current.set(key, sub);
+            }
+          } catch (e) { console.warn(`구독 실패 [${stock.symbol}]:`, e); }
+        });
+      },
+      onDisconnect: () => setWsConnected(false),
+      onStompError: (frame) => console.error("STOMP 에러:", frame.headers?.message),
+    });
+
+    client.activate();
+    wsClientRef.current = client;
+
+    return () => {
+      wsSubsRef.current.forEach(sub => { try { sub.unsubscribe(); } catch {} });
+      wsSubsRef.current.clear();
+      if (client) client.deactivate();
+    };
+  }, [stocks.map(s => s.symbol).join(",")]);
+
+  // 데이터 로드
+  useEffect(() => { fetchStocks(); }, [market, sortType]);
+  useEffect(() => { (async () => { try { setExRate(await fetchRate()); } catch {} })(); }, []);
+  useEffect(() => {
+    const saved = sessionStorage.getItem("cubic_selected_stock");
+    if (saved) { try { setSelectedStock(JSON.parse(saved)); } catch {} sessionStorage.removeItem("cubic_selected_stock"); }
+  }, []);
+
+  const fetchStocks = async () => {
+    setLoading(true); setError(null); setSearchResults(null);
+    try {
+      const data = market === "domestic"
+        ? await getDomesticRanking(sortType)
+        : await getOverseasRanking(sortType);
+      setStocks(data || []);
+      if (!data?.length) setError("데이터가 없습니다.");
+    } catch (e) {
+      console.error("순위 로드 실패:", e);
+      try { await fetchFallback(); } catch { setError("서버에 연결할 수 없습니다."); }
+    } finally { setLoading(false); }
   };
 
-  const handleSearch=useCallback((q)=>{
-    setSearchQuery(q);if(searchTimer.current)clearTimeout(searchTimer.current);
-    if(!q.trim()){fetchDefaultStocks();return;}
-    searchTimer.current=setTimeout(async()=>{
-      setLoading(true);
-      try{
-        const res=await searchStocks(q);const all=[];
-        const dom=res.filter(s=>isDomestic(s.market)).slice(0,10);
-        const dr=await Promise.allSettled(dom.map(async s=>{const p=await getDomesticPrice(s.symbol);return{...s,...p};}));
-        dr.forEach(x=>{if(x.status==="fulfilled"&&x.value)all.push(x.value);});
-        const ovr=res.filter(s=>!isDomestic(s.market)).slice(0,10);
-        const or2=await Promise.allSettled(ovr.map(async s=>{const p=await getOverseasPrice(s.symbol,getExchangeCode(s.market));return{...s,...p};}));
-        or2.forEach(x=>{if(x.status==="fulfilled"&&x.value)all.push(x.value);});
-        setStocks(all);
-      }catch{setError("검색 실패");}finally{setLoading(false);}
-    },400);
-  },[]);
+  const fetchFallback = async () => {
+    const list = market === "domestic" ? DOMESTIC_STOCKS : OVERSEAS_STOCKS;
+    const results = await Promise.allSettled(list.map(async s => {
+      const p = isDomestic(s.market) ? await getDomesticPrice(s.symbol) : await getOverseasPrice(s.symbol, s.exchange || "NAS");
+      return { ...s, ...p };
+    }));
+    setStocks(results.filter(r => r.status === "fulfilled").map(r => r.value));
+  };
 
-  const handleSelectStock=(stock)=>{setSelectedStock(stock);setRecentStocks(prev=>[stock,...prev.filter(s=>s.symbol!==stock.symbol)].slice(0,10));};
-  const handleOpenTrade=(stock,mode="buy")=>{if(!user){alert("로그인 후 이용해 주세요.");navigate("/login");return;}setTradeMode(mode);setTradeModalStock(stock);};
-  const filteredStocks=(()=>{
-    let list=[...stocks];
-    // 시장 필터
-    if(activeCat==="국내") list=list.filter(s=>isDomestic(s.market));
-    else if(activeCat==="해외") list=list.filter(s=>!isDomestic(s.market));
-    // 정렬
-    // 정렬 + 필터
-    const parseCP = (cp) => Number(String(cp||0).replace(/[+]/g,""));
-    if(activeSort==="급상승") { list=list.filter(s=>parseCP(s.changePercent)>0); list.sort((a,b)=>parseCP(b.changePercent)-parseCP(a.changePercent)); }
-    else if(activeSort==="급하락") { list=list.filter(s=>parseCP(s.changePercent)<0); list.sort((a,b)=>parseCP(a.changePercent)-parseCP(b.changePercent)); }
-    // 거래대금은 기본 순서 유지 (추후 API 연동)
-    return list.slice(0,30);
-  })();
-  const togglePanel=(id)=>setOpenPanel(prev=>prev===id?null:id);
+  // 검색
+  const handleSearch = (q) => {
+    setSearchQuery(q);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (!q.trim()) { setSearchResults(null); return; }
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const res = await searchStocks(q);
+        setSearchResults(res?.slice(0, 15) || []);
+      } catch { setSearchResults([]); }
+    }, 300);
+  };
 
-  // 관심종목에 실시간 가격 매칭
-  const watchlistWithPrices=watchlist.map(w=>{const live=stocks.find(s=>s.symbol===w.symbol);return live?{...w,...live}:w;});
+  const handleSelectStock = (stock) => { setSelectedStock(stock); setSearchResults(null); setSearchQuery(""); };
+  const handleOpenTrade = (stock, mode = "buy") => {
+    if (!user) { alert("로그인 후 이용해 주세요."); navigate("/login"); return; }
+    setTradeMode(mode); setTradeModalStock(stock);
+  };
+  const getAbbr = (name) => name?.substring(0, 2) || "??";
+  const getBg = (name) => ICON_COLORS[name] || "#64748b";
+  const getTc = (name) => ICON_TEXT[name] || "#fff";
 
-  return(
-    <div className="page-wrap">
-      <div className="content-area">
-        <div className="notice-bar">
-          <span className="notice-dot"/>
-          <span>{user?`${user.name}님, 모의 투자를 시작해 보세요!`:"실시간 주식 데이터가 연동되었습니다"}{wsConnected&&<span className="ws-badge">● LIVE</span>}</span>
-          <button className="notice-btn" onClick={fetchDefaultStocks}>새로고침</button>
+  const displayStocks = searchResults || stocks;
+  const lastColHeader = sortType === "VOLUME" ? (market === "domestic" ? "거래대금" : "거래량") : "거래대금";
+
+  return (
+    <div className="dash-page">
+      {/* 시장 지수 바 */}
+      <div className="market-indices">
+        <div className="index-card">
+          <div className="idx-label">달러 환율</div>
+          <div className="idx-value">{fmt(Math.round(exRate.rate))}</div>
+          <div className="idx-chart-placeholder"><svg viewBox="0 0 80 24"><polyline points="0,18 10,16 20,14 30,15 40,12 50,10 60,8 70,6 80,4" fill="none" stroke="#ef4444" strokeWidth="1.5"/></svg></div>
         </div>
-        <div className="ticker-bar"><div className="ticker-scroll">
-          <span className="ticker-item ticker-fx"><strong>USD/KRW</strong> {fmt(Math.round(exRate.rate))}원</span>
-          <span className="ticker-divider">|</span>
-          {stocks.slice(0,8).map(s=>(
-            <span key={s.symbol} className="ticker-item"><strong>{s.name}</strong> {s.price?fmtPrice(s.price,s.market):"-"}{" "}
-            {s.changePercent&&<span className={isUp(s.changePercent)?"up":"down"}>{fmtChange(s.changePercent)}</span>}</span>
-          ))}
-        </div></div>
+        <div className="index-card disabled">
+          <div className="idx-label">코스피 <span className="idx-pending">API 연동 예정</span></div>
+          <div className="idx-value muted">-</div>
+          <div className="idx-chart-placeholder"><svg viewBox="0 0 80 24"><polyline points="0,4 10,6 20,10 30,8 40,12 50,16 60,14 70,18 80,20" fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.3"/></svg></div>
+        </div>
+        <div className="index-card disabled">
+          <div className="idx-label">코스닥 <span className="idx-pending">API 연동 예정</span></div>
+          <div className="idx-value muted">-</div>
+          <div className="idx-chart-placeholder"><svg viewBox="0 0 80 24"><polyline points="0,6 10,8 20,12 30,10 40,14 50,18 60,16 70,20 80,22" fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.3"/></svg></div>
+        </div>
+        <div className="index-card disabled">
+          <div className="idx-label">나스닥 <span className="idx-pending">API 연동 예정</span></div>
+          <div className="idx-value muted">-</div>
+          <div className="idx-chart-placeholder"><svg viewBox="0 0 80 24"><polyline points="0,12 10,10 20,8 30,10 40,6 50,8 60,4 70,6 80,2" fill="none" stroke="#ef4444" strokeWidth="1.5" opacity="0.3"/></svg></div>
+        </div>
+        <div className="index-card disabled">
+          <div className="idx-label">S&P 500 <span className="idx-pending">API 연동 예정</span></div>
+          <div className="idx-value muted">-</div>
+          <div className="idx-chart-placeholder"><svg viewBox="0 0 80 24"><polyline points="0,14 10,12 20,10 30,12 40,8 50,6 60,8 70,4 80,6" fill="none" stroke="#ef4444" strokeWidth="1.5" opacity="0.3"/></svg></div>
+        </div>
+      </div>
 
-        <div className="main-area"><div className="content-row">
-          <section className="stock-section">
+      {/* 종목 티커 */}
+      <div className="ticker-strip">
+        {wsConnected && <span className="live-dot">● LIVE</span>}
+        {stocks.slice(0, 8).map(s => (
+          <div key={s.symbol} className="ticker-item">
+            <span className="ticker-name">{s.name}</span>
+            <span className={`ticker-val ${isUp(s.changePercent) ? "up" : "dn"}`}>
+              {s.price ? fmtPrice(s.price, s.market) : "-"} {s.changePercent ? fmtChange(s.changePercent) : ""}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="dash-body">
+        {/* 좌측: 종목 리스트 */}
+        <div className="dash-main">
+          {/* 검색 (모바일용) */}
+          <div className="mobile-search">
+            <input type="text" placeholder="종목명 / 코드 검색" value={searchQuery} onChange={e => handleSearch(e.target.value)} />
+          </div>
+
+          <div className="dash-card">
+            {/* 시장 탭 */}
             <div className="tab-row">
-              {["실시간 차트","테마·섹터"].map(t=><button key={t} className={`tab-btn ${activeTab===t?"active":""}`} onClick={()=>setActiveTab(t)}>{t}</button>)}
-              <div className="row-spacer"/>
-              <div className="search-inline">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                <input type="text" placeholder="종목명 / 코드 검색" value={searchQuery} onChange={e=>handleSearch(e.target.value)}/>
-              </div>
+              <div className={`tab ${market === "domestic" ? "active" : ""}`} onClick={() => setMarket("domestic")}>국내주식</div>
+              <div className={`tab ${market === "overseas" ? "active" : ""}`} onClick={() => setMarket("overseas")}>해외주식</div>
             </div>
-            <div className="cat-area">
-              <div className="filter-row">
-                <div className="chip-row">
-                  {MARKET_FILTERS.map(c=><button key={c} className={`chip ${activeCat===c?"active":""}`} onClick={()=>setActiveCat(c)}>{c}</button>)}
-                </div>
-                <div className="sort-row">
-                  {SORT_TABS.map(s=><button key={s} className={`sort-chip ${activeSort===s?"active":""}`} onClick={()=>setActiveSort(s)}>{s}</button>)}
-                </div>
-              </div>
+            {/* 정렬 탭 */}
+            <div className="sub-tab-row">
+              {[["VOLUME","거래대금"],["RISE","급상승"],["FALL","급하락"]].map(([key, label]) => (
+                <div key={key} className={`sub-tab ${sortType === key ? "active" : ""}`} onClick={() => setSortType(key)}>{label}</div>
+              ))}
             </div>
-            <div className="tbl-head"><span style={{textAlign:"left"}}>종목</span><span>현재가</span><span>등락률</span><span>주문</span></div>
-            <div className="tbl-body">
-              {loading?(<div className="empty-box"><div className="loading-spinner"/><p className="empty-title">종목 데이터를 불러오는 중...</p></div>
-              ):error?(<div className="empty-box"><span className="empty-ico">⚠️</span><p className="empty-title">{error}</p><button className="retry-btn" onClick={fetchDefaultStocks}>다시 시도</button></div>
-              ):!filteredStocks.length?(<div className="empty-box"><span className="empty-ico">📊</span><p className="empty-title">해당 종목이 없습니다</p></div>
-              ):filteredStocks.map(s=>(
-                <div key={s.symbol} className={`tbl-row ${selectedStock?.symbol===s.symbol?"selected":""}`} onClick={()=>handleSelectStock(s)}>
-                  <span className="stock-name-cell">
-                    <button className={`star-btn ${isWatched(s.symbol)?"on":""}`} onClick={(e)=>toggleWatch(s,e)} title="관심종목">{isWatched(s.symbol)?"★":"☆"}</button>
-                    <div><strong>{s.name}</strong><small>{s.symbol} · <span className={`market-mini ${s.market?.toLowerCase()}`}>{s.market}</span></small></div>
-                  </span>
-                  <span className="price-cell">{s.price?fmtPrice(s.price,s.market):"-"}</span>
-                  <span className={`change-cell ${isUp(s.changePercent)?"up":"down"}`}>{s.changePercent?fmtChange(s.changePercent):"-"}</span>
-                  <span className="order-cell"><button className="order-btn" onClick={e=>{e.stopPropagation();handleOpenTrade(s);}}>주문</button></span>
+            {/* 헤더 */}
+            <div className="list-header">
+              <span>순위</span><span style={{textAlign:"left"}}>종목</span><span>현재가</span><span>등락률</span><span>{lastColHeader}</span>
+            </div>
+            {/* 종목 리스트 */}
+            <div className="stock-list">
+              {loading ? (
+                <div className="list-empty"><div className="loading-spinner" /><p>불러오는 중...</p></div>
+              ) : error ? (
+                <div className="list-empty"><p>{error}</p><button onClick={fetchStocks}>다시 시도</button></div>
+              ) : displayStocks.length === 0 ? (
+                <div className="list-empty"><p>종목이 없습니다</p></div>
+              ) : displayStocks.map((s, i) => (
+                <div key={s.symbol} className={`stock-row ${selectedStock?.symbol === s.symbol ? "selected" : ""}`} onClick={() => handleSelectStock(s)}>
+                  <div className="rank">{i + 1}</div>
+                  <div className="stock-info">
+                    <button className={`star-btn ${isWatched(s.symbol) ? "on" : ""}`} onClick={e => toggleWatch(s, e)}>
+                      {isWatched(s.symbol) ? "★" : "☆"}
+                    </button>
+                    <div className="stock-icon" style={{ background: getBg(s.name), color: getTc(s.name) }}>{getAbbr(s.name)}</div>
+                    <div>
+                      <div className="stock-name">{s.name}</div>
+                      <div className="stock-code">{s.symbol} · {s.market}</div>
+                    </div>
+                  </div>
+                  <div className="price">{s.price ? fmtPrice(s.price, s.market) : "-"}</div>
+                  <div className={`change ${isUp(s.changePercent) ? "up" : "dn"}`}>{s.changePercent ? fmtChange(s.changePercent) : "-"}</div>
+                  <div className="volume">{s.volume ? fmt(s.volume) : "-"}</div>
                 </div>
               ))}
             </div>
-          </section>
+          </div>
+        </div>
 
-          <aside className={`chart-aside ${chartFullscreen?"hidden":""} ${selectedStock?"expanded":""}`}>
-            {selectedStock?(<>
-              <StockChart stock={selectedStock} fullscreen={chartFullscreen} onToggleFullscreen={()=>setChartFullscreen(v=>!v)}/>
-              <div className="chart-detail-row">
-                {isDomestic(selectedStock.market) && <OrderBook stock={selectedStock}/>}
-                <div className="trade-side">
-                  <div className="trade-quick-box">
-                    <button className="quick-buy" onClick={()=>handleOpenTrade(selectedStock,"buy")}>매수</button>
-                    <button className="quick-sell" onClick={()=>handleOpenTrade(selectedStock,"sell")}>매도</button>
-                  </div>
-                  <div className="ai-box"><div className="ai-box-title">✦ AI 큐빅 분석</div><p className="ai-box-desc">{selectedStock.name}({selectedStock.symbol}) 분석 준비 중</p></div>
-                </div>
+        {/* 우측: 종목 상세 또는 기본 패널 */}
+        {selectedStock ? (
+          <div className="dash-detail">
+            <div className="detail-header">
+              <div>
+                <div className="detail-name">{selectedStock.name}</div>
+                <div className="detail-code">{selectedStock.symbol} · {selectedStock.market}</div>
               </div>
-            </>):(<>
-              <div className="chart-box"><span className="chart-ico">📈</span><p>종목을 선택하면<br/>캔들차트가 표시됩니다</p></div>
-              <div className="ai-box"><div className="ai-box-title">✦ AI 큐빅 분석</div><p className="ai-box-desc">AI 분석 데이터 연동 예정</p></div>
-            </>)}
-          </aside>
-        </div></div>
+              <button className="detail-close" onClick={() => setSelectedStock(null)}>✕</button>
+            </div>
+            <div className="detail-price-row">
+              <span className="detail-price">{fmtPrice(selectedStock.price, selectedStock.market)}</span>
+              <span className={`detail-change ${isUp(selectedStock.changePercent) ? "up" : "dn"}`}>
+                {selectedStock.changePercent ? fmtChange(selectedStock.changePercent) : ""}
+              </span>
+            </div>
+            <StockChart stock={selectedStock} fullscreen={false} onToggleFullscreen={() => {}} />
+            {isDomestic(selectedStock.market) && <OrderBook stock={selectedStock} />}
+            <div className="detail-trade-btns">
+              <button className="dt-buy" onClick={() => handleOpenTrade(selectedStock, "buy")}>매수</button>
+              <button className="dt-sell" onClick={() => handleOpenTrade(selectedStock, "sell")}>매도</button>
+            </div>
+            {/* 뉴스 영역 (API 연동 예정) */}
+            <div className="news-section">
+              <div className="news-header">
+                <span className="news-title">{selectedStock.name} 관련 뉴스</span>
+                <span className="news-pending">API 연동 예정</span>
+              </div>
+              <div className="news-placeholder">
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <p className="news-hint">종목 관련 뉴스가 이 영역에 표시됩니다</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="dash-detail dash-default">
+            <div className="default-panel-title">종목을 선택해 주세요</div>
+            <p className="default-panel-desc">좌측 리스트에서 종목을 클릭하면 차트, 호가, 뉴스를 확인할 수 있어요.</p>
+            <div className="news-section">
+              <div className="news-header"><span className="news-title">오늘의 뉴스</span><span className="news-pending">API 연동 예정</span></div>
+              <div className="news-placeholder">
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <p className="news-hint">뉴스 API 연동 후 이 영역에 실시간 뉴스가 표시됩니다</p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {chartFullscreen&&selectedStock&&<StockChart stock={selectedStock} fullscreen={true} onToggleFullscreen={()=>setChartFullscreen(false)}/>}
-
-      <div className="sidebar">
-        <div className={`slide-panel ${openPanel?"open":""}`}>
-          {openPanel==="watchlist"&&<WatchlistPanel watchlist={watchlistWithPrices} onSelect={handleSelectStock} onRemove={(s)=>toggleWatch(s)}/>}
-          {openPanel==="ai"&&<AiPanel/>}
-          {openPanel==="recent"&&<RecentPanel stocks={recentStocks} onSelect={handleSelectStock}/>}
-          {openPanel==="realtime"&&<RealtimePanel stocks={stocks.slice(0,8)} connected={wsConnected}/>}
-        </div>
-        <div className="icon-col">
-          {SIDE_PANELS.map(p=><button key={p.id} className={`icon-btn ${openPanel===p.id?`active icon-${p.id}`:""}`} onClick={()=>togglePanel(p.id)} title={p.label}>{p.icon}<span>{p.label}</span></button>)}
-          <button className="darkmode-toggle" onClick={()=>setDark(v=>!v)} title={dark?"라이트 모드":"다크 모드"}>
-            <span className="dm-icon">{dark?<SunIcon/>:<MoonIcon/>}</span><span>{dark?"라이트":"다크"}</span>
-          </button>
-        </div>
-      </div>
-
-      {tradeModalStock&&<TradeModal stock={tradeModalStock} initialMode={tradeMode} onClose={()=>setTradeModalStock(null)} onSuccess={()=>{}}/>}
+      {tradeModalStock && <TradeModal stock={tradeModalStock} initialMode={tradeMode} onClose={() => setTradeModalStock(null)} onSuccess={() => {}} />}
     </div>
   );
 }
-
-function PanelShell({title,sub,children,theme=""}){return<div className={`panel-shell ${theme}`}><div className="panel-hd"><span className="panel-title">{title}</span>{sub&&<span className="panel-sub">{sub}</span>}</div><div className="panel-body">{children}</div></div>;}
-function EmptyMsg({icon,title,desc}){return<div className="panel-empty"><span className="panel-empty-ico">{icon}</span><p className="panel-empty-title">{title}</p><p className="panel-empty-desc">{desc}</p></div>;}
-function WatchlistPanel({watchlist=[],onSelect,onRemove}){
-  return<PanelShell title="관심종목" sub={`${watchlist.length}개 종목`} theme="theme-rose">{!watchlist.length?<EmptyMsg icon="♡" title="관심 종목이 없어요" desc={"종목 옆 ☆ 버튼을 눌러\n관심종목을 추가해 보세요."}/>:<div className="panel-list">{watchlist.map(s=><div key={s.symbol} className="panel-stock-item" onClick={()=>onSelect?.(s)}><div><strong>{s.name}</strong><small>{s.price?(isDomestic(s.market)?`${fmt(s.price)}원`:`$${s.price}`):s.symbol}</small></div><div style={{display:"flex",alignItems:"center",gap:6}}><span className={isUp(s.changePercent)?"up":"down"}>{s.changePercent?fmtChange(s.changePercent):""}</span><button onClick={e=>{e.stopPropagation();onRemove?.(s)}} style={{fontSize:14,border:"none",background:"none",color:"#e11d48",cursor:"pointer"}}>★</button></div></div>)}</div>}</PanelShell>;
-}
-function AiPanel(){return<PanelShell title="✦ AI 큐빅 분석" sub="3D 큐빅 모델 실시간 신호" theme="theme-violet"><EmptyMsg icon="✦" title="AI 분석 연동 예정" desc={"백엔드 연동 후\n실시간 신호가 표시됩니다."}/></PanelShell>;}
-function RecentPanel({stocks=[],onSelect}){return<PanelShell title="최근 본 종목" sub="오늘 조회한 종목" theme="theme-amber">{!stocks.length?<EmptyMsg icon="🕐" title="최근 본 종목이 없어요" desc={"종목을 클릭하면\n여기에 기록됩니다."}/>:<div className="panel-list">{stocks.map(s=><div key={s.symbol} className="panel-stock-item" onClick={()=>onSelect?.(s)}><div><strong>{s.name}</strong><small>{s.symbol}</small></div><span className={isUp(s.changePercent)?"up":"down"}>{s.changePercent?fmtChange(s.changePercent):""}</span></div>)}</div>}</PanelShell>;}
-function RealtimePanel({stocks=[],connected}){return<PanelShell title={<>실시간 체결 {connected&&<span style={{color:"#22c55e",fontSize:10}}>● LIVE</span>}</>} sub="주요 종목 현황" theme="theme-cyan">{!stocks.length?<EmptyMsg icon="⚡" title="데이터 로딩 중" desc="잠시만 기다려주세요."/>:<div className="panel-list">{stocks.map(s=><div key={s.symbol} className="panel-stock-item"><div><strong>{s.name}</strong><small>{s.price?(isDomestic(s.market)?`${fmt(s.price)}원`:`$${s.price}`):"-"}</small></div><span className={isUp(s.changePercent)?"up":"down"}>{s.changePercent?fmtChange(s.changePercent):""}</span></div>)}</div>}</PanelShell>;}

@@ -115,6 +115,34 @@ export const getOverseasMinute = async (symbol, exchange = "NAS", timeUnit = 5) 
   return res.data;
 };
 
+/* ═══════════ 시장 순위 ═══════════ */
+export const getDomesticRanking = async (type = "VOLUME") => {
+  const res = await api.get(`/api/market/domestic/ranking?type=${type}`);
+  return (res.data || []).map(s => ({ ...s, market: s.market || "KOSPI" }));
+};
+export const getOverseasRanking = async (type = "VOLUME") => {
+  const res = await api.get(`/api/market/overseas/ranking?type=${type}`);
+  return (res.data || []).map(s => ({ ...s, market: s.market || "NASDAQ" }));
+};
+
+/* ═══════════ AI ═══════════ */
+export const aiChat = async (message, history = []) => {
+  const res = await api.post("/api/ai/chat", { message, history });
+  return res.data; // { message }
+};
+export const aiAnalyzeHoldings = async () => {
+  const res = await api.post("/api/ai/analyze/holdings");
+  return res.data; // { message }
+};
+export const aiAnalyzePortfolio = async () => {
+  const res = await api.post("/api/ai/analyze/portfolio");
+  return res.data; // { message }
+};
+export const aiRecommend = async () => {
+  const res = await api.post("/api/ai/analyze/recommend");
+  return res.data; // { message }
+};
+
 /* ═══════════ 환율/환전 ═══════════ */
 export const getExchangeRate = async () => {
   const res = await api.get("/api/exchange/rate");
