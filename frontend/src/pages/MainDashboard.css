@@ -1,6 +1,27 @@
 /* MainDashboard.css */
 .dash-page { min-height: calc(100vh - 52px); background: var(--c-bg); transition: background 0.3s; }
 
+/* 시장 지수 바 */
+.market-indices {
+  display: flex; gap: 0; padding: 0 24px;
+  background: var(--c-surface); border-bottom: 1px solid var(--c-border);
+  overflow-x: auto; transition: background 0.3s;
+}
+.market-indices::-webkit-scrollbar { display: none; }
+.index-card {
+  flex: 1; min-width: 180px; padding: 14px 20px;
+  border-right: 1px solid var(--c-border);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.index-card:last-child { border-right: none; }
+.index-card.disabled { opacity: 0.5; }
+.idx-label { font-size: 12px; color: var(--c-text-muted); display: flex; align-items: center; gap: 6px; }
+.idx-pending { font-size: 9px; color: var(--c-text-muted); background: var(--c-hover); padding: 1px 5px; border-radius: 3px; }
+.idx-value { font-size: 16px; font-weight: 700; color: var(--c-text); }
+.idx-value.muted { color: var(--c-text-muted); }
+.idx-chart-placeholder { height: 24px; }
+.idx-chart-placeholder svg { width: 80px; height: 24px; }
+
 /* 티커 */
 .ticker-strip {
   display: flex; align-items: center; gap: 24px;
@@ -141,12 +162,39 @@
 .dt-sell { background: #3b82f6; }
 .dt-sell:hover { opacity: 0.9; }
 
+/* 뉴스 영역 */
+.news-section {
+  background: var(--c-hover); border-radius: 10px;
+  overflow: hidden;
+}
+.news-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 14px; border-bottom: 1px solid var(--c-border);
+}
+.news-title { font-size: 14px; font-weight: 700; color: var(--c-text); }
+.news-pending { font-size: 10px; color: var(--c-text-muted); background: var(--c-surface); padding: 2px 8px; border-radius: 4px; }
+.news-placeholder { padding: 14px; }
+.news-skeleton { padding: 10px 0; border-bottom: 1px solid var(--c-border); }
+.news-skeleton:last-of-type { border-bottom: none; }
+.sk-line { height: 10px; border-radius: 4px; background: var(--c-border); margin-bottom: 6px; }
+.sk-line.long { width: 85%; }
+.sk-line.short { width: 50%; }
+.news-hint { font-size: 12px; color: var(--c-text-muted); text-align: center; margin-top: 12px; }
+
+/* 기본 패널 (종목 미선택) */
+.dash-default { display: flex; flex-direction: column; align-items: center; }
+.default-panel-title { font-size: 16px; font-weight: 700; color: var(--c-text); margin-bottom: 6px; }
+.default-panel-desc { font-size: 13px; color: var(--c-text-muted); margin-bottom: 20px; text-align: center; }
+.dash-default .news-section { width: 100%; }
+
 /* 반응형 */
 @media (max-width: 900px) {
   .dash-body { flex-direction: column; }
   .dash-main.has-detail { max-width: none; }
   .dash-detail { width: 100%; position: static; max-height: none; }
   .mobile-search { display: block; }
+  .market-indices { padding: 0 12px; }
+  .index-card { min-width: 140px; padding: 10px 14px; }
 }
 @media (max-width: 600px) {
   .dash-body { padding: 12px; }

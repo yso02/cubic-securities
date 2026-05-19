@@ -119,11 +119,39 @@ export default function MainDashboard({ user }) {
 
   return (
     <div className="dash-page">
-      {/* 티커 */}
+      {/* 시장 지수 바 */}
+      <div className="market-indices">
+        <div className="index-card">
+          <div className="idx-label">달러 환율</div>
+          <div className="idx-value">{fmt(Math.round(exRate.rate))}</div>
+          <div className="idx-chart-placeholder"><svg viewBox="0 0 80 24"><polyline points="0,18 10,16 20,14 30,15 40,12 50,10 60,8 70,6 80,4" fill="none" stroke="#ef4444" strokeWidth="1.5"/></svg></div>
+        </div>
+        <div className="index-card disabled">
+          <div className="idx-label">코스피 <span className="idx-pending">API 연동 예정</span></div>
+          <div className="idx-value muted">-</div>
+          <div className="idx-chart-placeholder"><svg viewBox="0 0 80 24"><polyline points="0,4 10,6 20,10 30,8 40,12 50,16 60,14 70,18 80,20" fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.3"/></svg></div>
+        </div>
+        <div className="index-card disabled">
+          <div className="idx-label">코스닥 <span className="idx-pending">API 연동 예정</span></div>
+          <div className="idx-value muted">-</div>
+          <div className="idx-chart-placeholder"><svg viewBox="0 0 80 24"><polyline points="0,6 10,8 20,12 30,10 40,14 50,18 60,16 70,20 80,22" fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.3"/></svg></div>
+        </div>
+        <div className="index-card disabled">
+          <div className="idx-label">나스닥 <span className="idx-pending">API 연동 예정</span></div>
+          <div className="idx-value muted">-</div>
+          <div className="idx-chart-placeholder"><svg viewBox="0 0 80 24"><polyline points="0,12 10,10 20,8 30,10 40,6 50,8 60,4 70,6 80,2" fill="none" stroke="#ef4444" strokeWidth="1.5" opacity="0.3"/></svg></div>
+        </div>
+        <div className="index-card disabled">
+          <div className="idx-label">S&P 500 <span className="idx-pending">API 연동 예정</span></div>
+          <div className="idx-value muted">-</div>
+          <div className="idx-chart-placeholder"><svg viewBox="0 0 80 24"><polyline points="0,14 10,12 20,10 30,12 40,8 50,6 60,8 70,4 80,6" fill="none" stroke="#ef4444" strokeWidth="1.5" opacity="0.3"/></svg></div>
+        </div>
+      </div>
+
+      {/* 종목 티커 */}
       <div className="ticker-strip">
-        <div className="ticker-item"><span className="ticker-name">USD/KRW</span><span className="ticker-val">{fmt(Math.round(exRate.rate))}</span></div>
         {wsConnected && <span className="live-dot">● LIVE</span>}
-        {stocks.slice(0, 6).map(s => (
+        {stocks.slice(0, 8).map(s => (
           <div key={s.symbol} className="ticker-item">
             <span className="ticker-name">{s.name}</span>
             <span className={`ticker-val ${isUp(s.changePercent) ? "up" : "dn"}`}>
@@ -135,7 +163,7 @@ export default function MainDashboard({ user }) {
 
       <div className="dash-body">
         {/* 좌측: 종목 리스트 */}
-        <div className={`dash-main ${selectedStock ? "has-detail" : ""}`}>
+        <div className="dash-main">
           {/* 검색 (모바일용) */}
           <div className="mobile-search">
             <input type="text" placeholder="종목명 / 코드 검색" value={searchQuery} onChange={e => handleSearch(e.target.value)} />
@@ -187,8 +215,8 @@ export default function MainDashboard({ user }) {
           </div>
         </div>
 
-        {/* 우측: 종목 상세 */}
-        {selectedStock && (
+        {/* 우측: 종목 상세 또는 기본 패널 */}
+        {selectedStock ? (
           <div className="dash-detail">
             <div className="detail-header">
               <div>
@@ -208,6 +236,34 @@ export default function MainDashboard({ user }) {
             <div className="detail-trade-btns">
               <button className="dt-buy" onClick={() => handleOpenTrade(selectedStock, "buy")}>매수</button>
               <button className="dt-sell" onClick={() => handleOpenTrade(selectedStock, "sell")}>매도</button>
+            </div>
+            {/* 뉴스 영역 (API 연동 예정) */}
+            <div className="news-section">
+              <div className="news-header">
+                <span className="news-title">{selectedStock.name} 관련 뉴스</span>
+                <span className="news-pending">API 연동 예정</span>
+              </div>
+              <div className="news-placeholder">
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <p className="news-hint">종목 관련 뉴스가 이 영역에 표시됩니다</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="dash-detail dash-default">
+            <div className="default-panel-title">종목을 선택해 주세요</div>
+            <p className="default-panel-desc">좌측 리스트에서 종목을 클릭하면 차트, 호가, 뉴스를 확인할 수 있어요.</p>
+            <div className="news-section">
+              <div className="news-header"><span className="news-title">오늘의 뉴스</span><span className="news-pending">API 연동 예정</span></div>
+              <div className="news-placeholder">
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <p className="news-hint">뉴스 API 연동 후 이 영역에 실시간 뉴스가 표시됩니다</p>
+              </div>
             </div>
           </div>
         )}
