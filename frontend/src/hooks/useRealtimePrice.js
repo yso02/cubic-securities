@@ -11,7 +11,7 @@ export default function useRealtimePrice(stocks, onPriceUpdate) {
 
   useEffect(() => {
     const client = new Client({
-      brokerURL: NGROK_URL.replace("https://","wss://").replace("http://","ws://") + "/ws",
+      brokerURL: NGROK_URL.replace("https://","wss://").replace("http://","ws://") + "/ws/websocket",
       connectHeaders: { "ngrok-skip-browser-warning": "true" },
       reconnectDelay: 5000,
       onConnect: () => { console.log("✅ WebSocket 연결"); setConnected(true); },

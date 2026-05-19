@@ -70,7 +70,7 @@ export default function MainDashboard({ user }) {
       wsClientRef.current.deactivate();
     }
 
-    const wsUrl = NGROK_URL.replace("https://", "wss://").replace("http://", "ws://") + "/ws";
+    const wsUrl = NGROK_URL.replace("https://", "wss://").replace("http://", "ws://") + "/ws/websocket";
     const client = new Client({
       brokerURL: wsUrl,
       reconnectDelay: 5000,
