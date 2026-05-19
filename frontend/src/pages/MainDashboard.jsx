@@ -8,7 +8,7 @@ import {
   getExchangeRate as fetchRate,
   getExchangeCode, isDomestic, fmt, fmtPrice, fmtChange, isUp,
   getWatchlist, addWatchlist, removeWatchlist,
-  DOMESTIC_STOCKS, OVERSEAS_STOCKS, NGROK_URL,
+  DOMESTIC_STOCKS, OVERSEAS_STOCKS, NGROK_URL, getLogoUrl,
 } from "../api/stockApi";
 import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
@@ -263,7 +263,30 @@ export default function MainDashboard({ user }) {
                     <button className={`star-btn ${isWatched(s.symbol) ? "on" : ""}`} onClick={e => toggleWatch(s, e)}>
                       {isWatched(s.symbol) ? "★" : "☆"}
                     </button>
-                    <div className="stock-icon" style={{ background: getBg(s.name), color: getTc(s.name) }}>{getAbbr(s.name)}</div>
+                    {(() => {
+                      const logoUrl = getLogoUrl(s.symbol, s.market);
+                      return logoUrl ? (
+                        <img
+                          src={logoUrl}
+                          alt={s.name}
+                          className="stock-icon-img"
+                          onError={e => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null;
+                    })()}
+                    <div
+                      className="stock-icon"
+                      style={{
+                        background: getBg(s.name),
+                        color: getTc(s.name),
+                        display: getLogoUrl(s.symbol, s.market) ? 'none' : 'flex'
+                      }}
+                    >
+                      {getAbbr(s.name)}
+                    </div>
                     <div>
                       <div className="stock-name">{s.name}</div>
                       <div className="stock-code">{s.symbol} · {s.market}</div>

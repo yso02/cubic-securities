@@ -201,3 +201,89 @@ export const OVERSEAS_STOCKS = [
 
 export { NGROK_URL };
 export default api;
+
+export const LOGO_DEV_TOKEN = "pk_WZdBD7DGSR2HtYYW9uOP0g";
+
+export const DOMESTIC_LOGO_MAP = {
+  '005930': 'samsung.com',
+  '000660': 'skhynix.com',
+  '005380': 'hyundai.com',
+  '000270': 'kia.com',
+  '005490': 'posco.com',
+  '035420': 'naver.com',
+  '035720': 'kakao.com',
+  '051910': 'lgchem.com',
+  '006400': 'samsungsdi.co.kr',
+  '028260': 'samsung.com',
+  '066570': 'lg.com',
+  '096770': 'skoil.co.kr',
+  '017670': 'sktelecom.com',
+  '030200': 'kt.com',
+  '055550': 'shinhan.com',
+  '105560': 'kb.co.kr',
+  '086790': 'hanafinancial.com',
+  '032830': 'samsunglife.com',
+  '003550': 'lgcorp.com',
+  '009150': 'samsungelectro.com',
+  '012330': 'mobis.co.kr',
+  '018260': 'samsung-sds.com',
+  '034730': 'sk.com',
+  '015760': 'kepco.co.kr',
+  '024110': 'ibk.co.kr',
+  '000810': 'samsungfire.com',
+  '032640': 'lguplus.com',
+  '011200': 'hmm21.com',
+  '003490': 'koreanair.com',
+  '090430': 'amorepacific.com',
+  '068270': 'celltrion.com',
+  '207940': 'samsungbio.com',
+  '373220': 'lgensol.com',
+  '000720': 'hdec.co.kr',
+  '009540': 'hd-hyundai.com',
+  '042660': 'hanwhaocean.com',
+  '329180': 'hd-hyundai.com',
+  '005935': 'samsung.com',
+  '316140': 'wooribank.com',
+  '097950': 'cjcheiljedang.co.kr',
+  '000100': 'yuhan.co.kr',
+  '161390': 'hanwha.com',
+  '003670': 'posco.com',
+  '247540': 'ecoprobm.com',
+  '086520': 'ecopro.co.kr',
+  '122630': 'mirae-asset.com',
+  '252670': 'mirae-asset.com',
+  '114800': 'mirae-asset.com',
+  '069500': 'blackrock.com',
+  '396500': 'tigeretf.com',
+};
+
+export const OVERSEAS_LOGO_MAP = {
+  'NVDA': 'nvidia.com',
+  'TSLA': 'tesla.com',
+  'AAPL': 'apple.com',
+  'MSFT': 'microsoft.com',
+  'AMZN': 'amazon.com',
+  'META': 'meta.com',
+  'GOOGL': 'google.com',
+  'GOOG': 'google.com',
+  'INTC': 'intel.com',
+  'AMD': 'amd.com',
+  'NFLX': 'netflix.com',
+  'JPM': 'jpmorganchase.com',
+  'V': 'visa.com',
+  'MA': 'mastercard.com',
+  'WMT': 'walmart.com',
+  'BABA': 'alibaba.com',
+  'TSM': 'tsmc.com',
+  'ASML': 'asml.com',
+  'SHOP': 'shopify.com',
+  'SPOT': 'spotify.com',
+};
+
+export const getLogoUrl = (symbol, market) => {
+  const isOverseas = !isDomestic(market);
+  const map = isOverseas ? OVERSEAS_LOGO_MAP : DOMESTIC_LOGO_MAP;
+  const domain = map[symbol];
+  if (!domain) return null;
+  return `https://img.logo.dev/${domain}?token=${LOGO_DEV_TOKEN}&size=40`;
+};
