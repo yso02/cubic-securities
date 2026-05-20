@@ -58,18 +58,10 @@ export default function MainDashboard({ user }) {
   const [wsConnected, setWsConnected] = useState(false);
   const wsClientRef = useRef(null);
   const wsSubsRef = useRef(new Map());
+  const stocksRef = useRef([]);
 
-  // 종목 변경 시 WebSocket 구독
+  // WebSocket 클라이언트 초기화 (최초 1회)
   useEffect(() => {
-    if (!stocks.length) return;
-
-    // 기존 연결 정리
-    if (wsClientRef.current) {
-      wsSubsRef.current.forEach(sub => { try { sub.unsubscribe(); } catch {} });
-      wsSubsRef.current.clear();
-      wsClientRef.current.deactivate();
-    }
-
     const wsUrl = NGROK_URL.replace("https://", "wss://").replace("http://", "ws://") + "/ws/websocket";
     const client = new Client({
       brokerURL: wsUrl,
@@ -78,51 +70,63 @@ export default function MainDashboard({ user }) {
       onConnect: () => {
         console.log("✅ 홈 WebSocket 연결 성공");
         setWsConnected(true);
-
-        stocks.forEach(stock => {
-          const dom = isDomestic(stock.market);
-          const key = `${dom ? "d" : "o"}-${stock.symbol}`;
-          if (wsSubsRef.current.has(key)) return;
-
-          try {
-            if (dom) {
-              client.publish({ destination: "/app/subscribe/domestic", body: stock.symbol });
-              const sub = client.subscribe(`/topic/domestic/${stock.symbol}`, msg => {
-                try {
-                  const data = JSON.parse(msg.body);
-                  setStocks(prev => prev.map(s => s.symbol === data.symbol ? { ...s, ...data } : s));
-                  setSelectedStock(prev => prev?.symbol === data.symbol ? { ...prev, ...data } : prev);
-                } catch {}
-              });
-              wsSubsRef.current.set(key, sub);
-            } else {
-              const exc = stock.exchange || getExchangeCode(stock.market);
-              client.publish({ destination: "/app/subscribe/overseas", body: `${stock.symbol},${exc}` });
-              const sub = client.subscribe(`/topic/overseas/${stock.symbol}`, msg => {
-                try {
-                  const data = JSON.parse(msg.body);
-                  setStocks(prev => prev.map(s => s.symbol === data.symbol ? { ...s, ...data } : s));
-                  setSelectedStock(prev => prev?.symbol === data.symbol ? { ...prev, ...data } : prev);
-                } catch {}
-              });
-              wsSubsRef.current.set(key, sub);
-            }
-          } catch (e) { console.warn(`구독 실패 [${stock.symbol}]:`, e); }
-        });
+        subscribeStocks(client);
       },
       onDisconnect: () => setWsConnected(false),
       onStompError: (frame) => console.error("STOMP 에러:", frame.headers?.message),
     });
-
     client.activate();
     wsClientRef.current = client;
-
     return () => {
       wsSubsRef.current.forEach(sub => { try { sub.unsubscribe(); } catch {} });
       wsSubsRef.current.clear();
-      if (client) client.deactivate();
+      client.deactivate();
     };
-  }, [stocks.map(s => s.symbol).join(",")]);
+  }, []);
+
+  // stocks 변경 시 구독 업데이트
+  const subscribeStocks = useCallback((client) => {
+    const cl = client || wsClientRef.current;
+    if (!cl?.connected || !stocksRef.current.length) return;
+
+    wsSubsRef.current.forEach(sub => { try { sub.unsubscribe(); } catch {} });
+    wsSubsRef.current.clear();
+
+    stocksRef.current.forEach(stock => {
+      const dom = isDomestic(stock.market);
+      const key = `${dom ? "d" : "o"}-${stock.symbol}`;
+      try {
+        if (dom) {
+          cl.publish({ destination: "/app/subscribe/domestic", body: stock.symbol });
+          const sub = cl.subscribe(`/topic/domestic/${stock.symbol}`, msg => {
+            try {
+              const data = JSON.parse(msg.body);
+              setStocks(prev => prev.map(s => s.symbol === data.symbol ? { ...s, ...data } : s));
+              setSelectedStock(prev => prev?.symbol === data.symbol ? { ...prev, ...data } : prev);
+            } catch {}
+          });
+          wsSubsRef.current.set(key, sub);
+        } else {
+          const exc = stock.exchange || getExchangeCode(stock.market);
+          cl.publish({ destination: "/app/subscribe/overseas", body: `${stock.symbol},${exc}` });
+          const sub = cl.subscribe(`/topic/overseas/${stock.symbol}`, msg => {
+            try {
+              const data = JSON.parse(msg.body);
+              setStocks(prev => prev.map(s => s.symbol === data.symbol ? { ...s, ...data } : s));
+              setSelectedStock(prev => prev?.symbol === data.symbol ? { ...prev, ...data } : prev);
+            } catch {}
+          });
+          wsSubsRef.current.set(key, sub);
+        }
+      } catch (e) { console.warn(`구독 실패 [${stock.symbol}]:`, e); }
+    });
+  }, []);
+
+  // stocks 변경 시 재구독
+  useEffect(() => {
+    stocksRef.current = stocks;
+    if (wsConnected) subscribeStocks();
+  }, [stocks, wsConnected]);
 
   // 데이터 로드
   useEffect(() => { fetchStocks(); }, [market, sortType]);
