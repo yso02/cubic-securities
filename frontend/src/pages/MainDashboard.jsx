@@ -97,7 +97,7 @@ export default function MainDashboard({ user }) {
       const key = `${dom ? "d" : "o"}-${stock.symbol}`;
       try {
         if (dom) {
-          cl.publish({ destination: "/app/subscribe/domestic", body: stock.symbol });
+          cl.publish({ destination: "/app/subscribe/domestic/price", body: stock.symbol });
           const sub = cl.subscribe(`/topic/domestic/${stock.symbol}`, msg => {
             try {
               const data = JSON.parse(msg.body);
