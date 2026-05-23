@@ -10,9 +10,6 @@ import {
   getWatchlist, addWatchlist, removeWatchlist,
   DOMESTIC_STOCKS, OVERSEAS_STOCKS, NGROK_URL, getLogoUrl,
 } from "../api/stockApi";
-import StockChart from "../components/StockChart";
-import OrderBook from "../components/OrderBook";
-import TradeModal from "../components/TradeModal";
 import "./MainDashboard.css";
 
 const ICON_COLORS = {
@@ -31,9 +28,6 @@ export default function MainDashboard({ user }) {
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedStock, setSelectedStock] = useState(null);
-  const [tradeModalStock, setTradeModalStock] = useState(null);
-  const [tradeMode, setTradeMode] = useState("buy");
   const [exRate, setExRate] = useState({ rate: 1380 });
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
@@ -102,7 +96,6 @@ export default function MainDashboard({ user }) {
             try {
               const data = JSON.parse(msg.body);
               setStocks(prev => prev.map(s => s.symbol === data.symbol ? { ...s, ...data } : s));
-              setSelectedStock(prev => prev?.symbol === data.symbol ? { ...prev, ...data } : prev);
             } catch {}
           });
           wsSubsRef.current.set(key, sub);
@@ -113,7 +106,6 @@ export default function MainDashboard({ user }) {
             try {
               const data = JSON.parse(msg.body);
               setStocks(prev => prev.map(s => s.symbol === data.symbol ? { ...s, ...data } : s));
-              setSelectedStock(prev => prev?.symbol === data.symbol ? { ...prev, ...data } : prev);
             } catch {}
           });
           wsSubsRef.current.set(key, sub);
@@ -132,8 +124,6 @@ export default function MainDashboard({ user }) {
   useEffect(() => { fetchStocks(); }, [market, sortType]);
   useEffect(() => { (async () => { try { setExRate(await fetchRate()); } catch {} })(); }, []);
   useEffect(() => {
-    const saved = sessionStorage.getItem("cubic_selected_stock");
-    if (saved) { try { setSelectedStock(JSON.parse(saved)); } catch {} sessionStorage.removeItem("cubic_selected_stock"); }
   }, []);
 
   const fetchStocks = async () => {
@@ -172,11 +162,12 @@ export default function MainDashboard({ user }) {
     }, 300);
   };
 
-  const handleSelectStock = (stock) => { setSelectedStock(stock); setSearchResults(null); setSearchQuery(""); };
-  const handleOpenTrade = (stock, mode = "buy") => {
-    if (!user) { alert("로그인 후 이용해 주세요."); navigate("/login"); return; }
-    setTradeMode(mode); setTradeModalStock(stock);
+  const handleSelectStock = (stock) => {
+    sessionStorage.setItem("cubic_detail_stock", JSON.stringify(stock));
+    navigate(`/stock/${stock.symbol}`);
+    setSearchResults(null); setSearchQuery("");
   };
+  
   const getAbbr = (name) => name?.substring(0, 2) || "??";
   const getBg = (name) => ICON_COLORS[name] || "#64748b";
   const getTc = (name) => ICON_TEXT[name] || "#fff";
@@ -261,7 +252,7 @@ export default function MainDashboard({ user }) {
               ) : displayStocks.length === 0 ? (
                 <div className="list-empty"><p>종목이 없습니다</p></div>
               ) : displayStocks.map((s, i) => (
-                <div key={s.symbol} className={`stock-row ${selectedStock?.symbol === s.symbol ? "selected" : ""}`} onClick={() => handleSelectStock(s)}>
+                <div key={s.symbol} className={`stock-row `} onClick={() => handleSelectStock(s)}>
                   <div className="rank">{i + 1}</div>
                   <div className="stock-info">
                     <button className={`star-btn ${isWatched(s.symbol) ? "on" : ""}`} onClick={e => toggleWatch(s, e)}>
@@ -305,61 +296,22 @@ export default function MainDashboard({ user }) {
           </div>
         </div>
 
-        {/* 우측: 종목 상세 또는 기본 패널 */}
-        {selectedStock ? (
-          <div className="dash-detail">
-            <div className="detail-header">
-              <div>
-                <div className="detail-name">{selectedStock.name}</div>
-                <div className="detail-code">{selectedStock.symbol} · {selectedStock.market}</div>
-              </div>
-              <button className="detail-close" onClick={() => setSelectedStock(null)}>✕</button>
-            </div>
-            <div className="detail-price-row">
-              <span className="detail-price">{fmtPrice(selectedStock.price, selectedStock.market)}</span>
-              <span className={`detail-change ${isUp(selectedStock.changePercent) ? "up" : "dn"}`}>
-                {selectedStock.changePercent ? fmtChange(selectedStock.changePercent) : ""}
-              </span>
-            </div>
-            <StockChart stock={selectedStock} fullscreen={false} onToggleFullscreen={() => {}} />
-            {isDomestic(selectedStock.market) && <OrderBook stock={selectedStock} />}
-            <div className="detail-trade-btns">
-              <button className="dt-buy" onClick={() => handleOpenTrade(selectedStock, "buy")}>매수</button>
-              <button className="dt-sell" onClick={() => handleOpenTrade(selectedStock, "sell")}>매도</button>
-            </div>
-            {/* 뉴스 영역 (API 연동 예정) */}
-            <div className="news-section">
-              <div className="news-header">
-                <span className="news-title">{selectedStock.name} 관련 뉴스</span>
-                <span className="news-pending">API 연동 예정</span>
-              </div>
-              <div className="news-placeholder">
-                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-                <p className="news-hint">종목 관련 뉴스가 이 영역에 표시됩니다</p>
-              </div>
+        {/* 우측: 뉴스 패널 */}
+        <div className="dash-detail dash-default">
+          <div className="default-panel-title">종목을 선택해 주세요</div>
+          <p className="default-panel-desc">종목을 클릭하면 상세 페이지에서 차트, 호가, 뉴스를 확인할 수 있어요.</p>
+          <div className="news-section">
+            <div className="news-header"><span className="news-title">오늘의 뉴스</span><span className="news-pending">API 연동 예정</span></div>
+            <div className="news-placeholder">
+              <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+              <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+              <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+              <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+              <p className="news-hint">뉴스 API 연동 후 이 영역에 실시간 뉴스가 표시됩니다</p>
             </div>
           </div>
-        ) : (
-          <div className="dash-detail dash-default">
-            <div className="default-panel-title">종목을 선택해 주세요</div>
-            <p className="default-panel-desc">좌측 리스트에서 종목을 클릭하면 차트, 호가, 뉴스를 확인할 수 있어요.</p>
-            <div className="news-section">
-              <div className="news-header"><span className="news-title">오늘의 뉴스</span><span className="news-pending">API 연동 예정</span></div>
-              <div className="news-placeholder">
-                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-                <p className="news-hint">뉴스 API 연동 후 이 영역에 실시간 뉴스가 표시됩니다</p>
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
-
-      {tradeModalStock && <TradeModal stock={tradeModalStock} initialMode={tradeMode} onClose={() => setTradeModalStock(null)} onSuccess={() => {}} />}
     </div>
   );
 }

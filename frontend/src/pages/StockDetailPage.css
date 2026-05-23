@@ -1,0 +1,74 @@
+/* StockDetailPage.css */
+.detail-page { min-height: calc(100vh - 52px); background: var(--c-bg); transition: background 0.3s; }
+.detail-container { max-width: 1200px; margin: 0 auto; padding: 20px 24px; }
+.detail-loading { display: flex; align-items: center; justify-content: center; min-height: 300px; }
+
+/* 뒤로가기 */
+.back-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: none; border: none; font-size: 14px; color: var(--c-text-muted);
+  cursor: pointer; padding: 6px 0; margin-bottom: 16px; font-family: inherit;
+}
+.back-btn:hover { color: var(--c-text); }
+
+/* 종목 헤더 */
+.detail-stock-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 24px;
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: 12px; margin-bottom: 16px;
+  transition: background 0.3s;
+}
+.detail-stock-left { display: flex; align-items: center; gap: 14px; }
+.detail-logo { width: 48px; height: 48px; border-radius: 50%; object-fit: contain; background: #fff; border: 1px solid var(--c-border); }
+.detail-logo-fallback {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: #64748b; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 700; flex-shrink: 0;
+}
+.detail-h1 { font-size: 22px; font-weight: 800; color: var(--c-text); margin: 0; }
+.detail-sub { font-size: 13px; color: var(--c-text-muted); }
+.detail-price-area { text-align: right; }
+.detail-big-price { font-size: 28px; font-weight: 800; color: var(--c-text); display: block; }
+.detail-big-change { font-size: 15px; font-weight: 600; }
+.detail-big-change.up { color: #ef4444; }
+.detail-big-change.dn { color: #3b82f6; }
+
+/* 매수/매도 */
+.detail-actions { display: flex; gap: 10px; margin-bottom: 16px; }
+.da-buy, .da-sell {
+  flex: 1; padding: 14px; border: none; border-radius: 10px;
+  font-size: 16px; font-weight: 700; color: #fff;
+  cursor: pointer; font-family: inherit; transition: opacity 0.15s;
+}
+.da-buy { background: #ef4444; }
+.da-buy:hover { opacity: 0.9; }
+.da-sell { background: #3b82f6; }
+.da-sell:hover { opacity: 0.9; }
+
+/* 차트 + 호가 */
+.detail-body { display: flex; gap: 16px; margin-bottom: 16px; }
+.detail-chart-col { flex: 1; min-width: 0; }
+.detail-ob-col { width: 360px; flex-shrink: 0; }
+
+/* 뉴스 */
+.detail-news {
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: 12px; overflow: hidden; transition: background 0.3s;
+}
+
+.loading-spinner { width: 28px; height: 28px; border: 3px solid var(--c-border); border-top-color: #14b8a6; border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 900px) {
+  .detail-body { flex-direction: column; }
+  .detail-ob-col { width: 100%; }
+  .detail-stock-header { flex-direction: column; gap: 12px; align-items: flex-start; }
+  .detail-price-area { text-align: left; }
+}
+@media (max-width: 600px) {
+  .detail-container { padding: 12px; }
+  .detail-big-price { font-size: 22px; }
+  .detail-h1 { font-size: 18px; }
+}
