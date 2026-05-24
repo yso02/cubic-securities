@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
+import Sidebar from "./components/Sidebar";
 import MainDashboard from "./pages/MainDashboard";
 import LoginPage from "./pages/LoginPage";
 import AccountPage from "./pages/AccountPage";
@@ -52,14 +53,19 @@ export default function App() {
   return (
     <BrowserRouter>
       <Navbar isLoggedIn={!!user} onLogout={handleLogout} user={user} />
-      <Routes>
-        <Route path="/" element={<MainDashboard user={user} />} />
-        <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage onLogin={handleLogin} />} />
-        <Route path="/ai" element={<AiPage user={user} />} />
-        <Route path="/stock/:symbol" element={<StockDetailPage user={user} />} />
-        <Route path="/account" element={user ? <AccountPage user={user} setUser={setUser} /> : <Navigate to="/login" replace />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <div style={{ display: "flex" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <Routes>
+            <Route path="/" element={<MainDashboard user={user} />} />
+            <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage onLogin={handleLogin} />} />
+            <Route path="/ai" element={<AiPage user={user} />} />
+            <Route path="/stock/:symbol" element={<StockDetailPage user={user} />} />
+            <Route path="/account" element={user ? <AccountPage user={user} setUser={setUser} /> : <Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+        <Sidebar user={user} />
+      </div>
     </BrowserRouter>
   );
 }

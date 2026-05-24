@@ -164,6 +164,13 @@ export default function MainDashboard({ user }) {
 
   const handleSelectStock = (stock) => {
     sessionStorage.setItem("cubic_detail_stock", JSON.stringify(stock));
+    // 최근 본 종목 저장
+    try {
+      const recent = JSON.parse(sessionStorage.getItem("cubic_recent") || "[]");
+      const updated = [stock, ...recent.filter(s => s.symbol !== stock.symbol)].slice(0, 10);
+      sessionStorage.setItem("cubic_recent", JSON.stringify(updated));
+      window.dispatchEvent(new Event("cubic_recent_update"));
+    } catch {}
     navigate(`/stock/${stock.symbol}`);
     setSearchResults(null); setSearchQuery("");
   };

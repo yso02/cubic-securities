@@ -18,14 +18,21 @@ export default function StockDetailPage({ user }) {
   const [stock, setStock] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tradeModal, setTradeModal] = useState(null);
+  const [chartFullscreen, setChartFullscreen] = useState(false);
   const wsRef = useRef(null);
 
   useEffect(() => {
     const saved = sessionStorage.getItem("cubic_detail_stock");
-    if (saved) {
-      try { const s = JSON.parse(saved); if (s.symbol === symbol) { setStock(s); setLoading(false); } } catch {}
-    }
+    if (saved) { try { const s = JSON.parse(saved); if (s.symbol === symbol) { setStock(s); setLoading(false); } } catch {} }
     fetchPrice();
+    // 최근 본 종목 기록
+    try {
+      const info = saved ? JSON.parse(saved) : { symbol, name: symbol, market: "KOSPI" };
+      const recent = JSON.parse(sessionStorage.getItem("cubic_recent") || "[]");
+      const updated = [info, ...recent.filter(s => s.symbol !== symbol)].slice(0, 10);
+      sessionStorage.setItem("cubic_recent", JSON.stringify(updated));
+      window.dispatchEvent(new Event("cubic_recent_update"));
+    } catch {}
   }, [symbol]);
 
   const fetchPrice = async () => {
@@ -68,6 +75,7 @@ export default function StockDetailPage({ user }) {
     return () => { if (client) client.deactivate(); };
   }, [stock?.symbol]);
 
+  // 탭 타이틀
   useEffect(() => {
     if (stock?.name && stock?.price) document.title = `${fmtPrice(stock.price, stock.market)} ${fmtChange(stock.changePercent)} | ${stock.name}`;
     return () => { document.title = "CUBIC 증권"; };
@@ -83,16 +91,22 @@ export default function StockDetailPage({ user }) {
 
   return (
     <div className="detail-page">
+      {/* 전체화면 차트 */}
+      {chartFullscreen && stock && (
+        <StockChart stock={stock} fullscreen={true} onToggleFullscreen={() => setChartFullscreen(false)} />
+      )}
+
       <div className="detail-container">
         <button className="back-btn" onClick={() => navigate("/")}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
-          홈
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+          홈으로
         </button>
 
         {stock && (<>
+          {/* 헤더 */}
           <div className="detail-stock-header">
             <div className="detail-stock-left">
-              {logoUrl ? <img src={logoUrl} alt={stock.name} className="detail-logo" onError={e=>{e.target.style.display='none';e.target.nextSibling&&(e.target.nextSibling.style.display='flex');}}/> : null}
+              {logoUrl ? <img src={logoUrl} alt={stock.name} className="detail-logo" onError={e=>{e.target.style.display='none';if(e.target.nextSibling)e.target.nextSibling.style.display='flex';}}/> : null}
               <div className="detail-logo-fallback" style={{display:logoUrl?'none':'flex'}}>{stock.name?.substring(0,2)}</div>
               <div>
                 <h1 className="detail-h1">{stock.name}</h1>
@@ -107,14 +121,16 @@ export default function StockDetailPage({ user }) {
             </div>
           </div>
 
+          {/* 매수/매도 */}
           <div className="detail-actions">
             <button className="da-buy" onClick={()=>handleTrade("buy")}>매수</button>
             <button className="da-sell" onClick={()=>handleTrade("sell")}>매도</button>
           </div>
 
+          {/* 차트 + 호가 */}
           <div className="detail-body">
             <div className="detail-chart-col">
-              <StockChart stock={stock} fullscreen={false} onToggleFullscreen={()=>{}}/>
+              <StockChart stock={stock} fullscreen={false} onToggleFullscreen={() => setChartFullscreen(true)} />
             </div>
             {isDomestic(stock.market) && (
               <div className="detail-ob-col">
@@ -123,6 +139,7 @@ export default function StockDetailPage({ user }) {
             )}
           </div>
 
+          {/* 뉴스 */}
           <div className="detail-news">
             <div className="news-header"><span className="news-title">{stock.name} 관련 뉴스</span><span className="news-pending">API 연동 예정</span></div>
             <div className="news-placeholder">
@@ -134,6 +151,7 @@ export default function StockDetailPage({ user }) {
           </div>
         </>)}
       </div>
+
       {tradeModal && stock && <TradeModal stock={stock} initialMode={tradeModal} onClose={()=>setTradeModal(null)} onSuccess={fetchPrice}/>}
     </div>
   );
