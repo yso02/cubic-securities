@@ -434,9 +434,13 @@ export default function MainDashboard({ user }) {
                     <div className="sector-label up">📈 {marketNews.positive.sector}</div>
                     <div className="sector-stocks">
                       {marketNews.positive.stocks?.map((s, i) => (
-                        <span key={i} className="sector-stock up">
-                          {s.symbol} <strong>{s.changePercent}</strong>
-                        </span>
+                        <div key={i} className="sector-stock-row up">
+                          <div className="sector-stock-name">
+                            <span className="sector-stock-symbol">{s.symbol}</span>
+                            {s.name && <span className="sector-stock-fullname">{s.name}</span>}
+                          </div>
+                          <strong className="sector-stock-change">{s.changePercent}</strong>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -448,9 +452,13 @@ export default function MainDashboard({ user }) {
                     <div className="sector-label dn">📉 {marketNews.negative.sector}</div>
                     <div className="sector-stocks">
                       {marketNews.negative.stocks?.map((s, i) => (
-                        <span key={i} className="sector-stock dn">
-                          {s.symbol} <strong>{s.changePercent}</strong>
-                        </span>
+                        <div key={i} className="sector-stock-row dn">
+                          <div className="sector-stock-name">
+                            <span className="sector-stock-symbol">{s.symbol}</span>
+                            {s.name && <span className="sector-stock-fullname">{s.name}</span>}
+                          </div>
+                          <strong className="sector-stock-change">{s.changePercent}</strong>
+                        </div>
                       ))}
                     </div>
                   </div>

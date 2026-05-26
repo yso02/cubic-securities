@@ -183,14 +183,25 @@
 .sector-label { font-size: 13px; font-weight: 700; }
 .sector-label.up { color: #ef4444; }
 .sector-label.dn { color: #3b82f6; }
-.sector-stocks { display: flex; flex-wrap: wrap; gap: 8px; }
-.sector-stock {
-  font-size: 12px; padding: 3px 8px;
-  border-radius: 6px; background: var(--c-surface);
+.sector-stocks { display: flex; flex-direction: column; gap: 6px; }
+.sector-stock-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 10px; border-radius: 8px; background: var(--c-surface);
 }
-.sector-stock.up { color: #ef4444; }
-.sector-stock.dn { color: #3b82f6; }
-.sector-stock strong { font-weight: 700; }
+.sector-stock-name {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.sector-stock-symbol {
+  font-size: 13px; font-weight: 700;
+}
+.sector-stock-fullname {
+  font-size: 11px; color: var(--c-text-muted);
+}
+.sector-stock-change { font-size: 13px; font-weight: 700; }
+.sector-stock-row.up .sector-stock-symbol { color: #ef4444; }
+.sector-stock-row.up .sector-stock-change { color: #ef4444; }
+.sector-stock-row.dn .sector-stock-symbol { color: #3b82f6; }
+.sector-stock-row.dn .sector-stock-change { color: #3b82f6; }
 
 .news-summary {
   border-top: 1px solid var(--c-border);
