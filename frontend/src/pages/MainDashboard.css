@@ -1,5 +1,5 @@
 /* MainDashboard.css */
-.dash-page { min-height: calc(100vh - 52px); background: var(--c-bg); transition: background 0.3s; }
+.dash-page { min-height: calc(100vh - 72px); background: var(--c-bg); transition: background 0.3s; }
 
 /* 시장 지수 바 */
 .market-indices {
