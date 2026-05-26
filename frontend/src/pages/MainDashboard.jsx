@@ -193,14 +193,6 @@ export default function MainDashboard({ user }) {
 
   return (
     <div className="dash-page">
-      {/* 배포 시간 표시 */}
-      <div style={{
-        textAlign: 'center', padding: '6px', fontSize: '12px',
-        background: '#14b8a6', color: '#fff', fontWeight: 600
-      }}>
-        🕐 최신 배포: {new Date(__BUILD_TIME__).toLocaleString('ko-KR', {timeZone: 'Asia/Seoul'})}
-      </div>
-
       {/* 시장 지수 바 */}
       <div className="market-indices">
         <div className="market-indices-inner">

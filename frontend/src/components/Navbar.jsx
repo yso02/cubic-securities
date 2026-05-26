@@ -63,6 +63,9 @@ export default function Navbar({ isLoggedIn, onLogout, user }) {
       </div>
 
       <div className="topnav-right">
+        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap' }}>
+          {new Date(__BUILD_TIME__).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month:'numeric', day:'numeric', hour:'numeric', minute:'numeric' })}
+        </span>
         <div className="search-wrap" ref={searchRef}>
           <div className="search-box">
             <svg className="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -97,7 +100,6 @@ export default function Navbar({ isLoggedIn, onLogout, user }) {
           </div>
         ) : (
           <div className="auth-btns">
-            <button className="signup-btn" onClick={() => navigate("/login")}>회원가입</button>
             <button className="login-btn" onClick={() => navigate("/login")}>로그인</button>
           </div>
         )}
