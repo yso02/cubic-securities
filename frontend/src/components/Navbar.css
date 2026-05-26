@@ -1,7 +1,7 @@
 /* Navbar.css */
 .topnav {
   display: flex; align-items: center; justify-content: space-between;
-  height: 72px; padding: 0 32px;
+  height: 72px; min-height: 72px; padding: 0 32px;
   background: var(--c-surface); border-bottom: 1px solid var(--c-border);
   position: sticky; top: 0; z-index: 100;
   transition: background 0.3s;
