@@ -313,21 +313,6 @@ export default function MainDashboard({ user }) {
         </div>
       </div>
 
-      {/* 종목 티커 */}
-      <div className="ticker-strip">
-        <div className="ticker-strip-inner">
-          {wsConnected && <span className="live-dot">● LIVE</span>}
-          {stocks.slice(0, 8).map(s => (
-            <div key={s.symbol} className="ticker-item">
-              <span className="ticker-name">{s.name}</span>
-              <span className={`ticker-val ${isUp(s.changePercent) ? "up" : "dn"}`}>
-                {s.price ? fmtPrice(s.price, s.market) : "-"} {s.changePercent ? fmtChange(s.changePercent) : ""}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
       <div className="dash-body">
         {/* 좌측: 종목 리스트 */}
         <div className="dash-main">
