@@ -48,6 +48,14 @@ export default function Navbar({ isLoggedIn, onLogout, user }) {
   }, []);
 
   return (
+    <>
+    <div style={{
+      textAlign: 'center', padding: '4px', fontSize: '11px',
+      background: '#0f766e', color: 'rgba(255,255,255,0.8)',
+      fontWeight: 500, letterSpacing: '0.3px'
+    }}>
+      🕐 최신 배포: {new Date(__BUILD_TIME__).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}
+    </div>
     <header className="topnav">
       <div className="topnav-left">
         <div className="logo" onClick={() => navigate("/")}>
@@ -63,9 +71,6 @@ export default function Navbar({ isLoggedIn, onLogout, user }) {
       </div>
 
       <div className="topnav-right">
-        <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', whiteSpace: 'nowrap' }}>
-          {new Date(__BUILD_TIME__).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month:'numeric', day:'numeric', hour:'numeric', minute:'numeric' })}
-        </span>
         <div className="search-wrap" ref={searchRef}>
           <div className="search-box">
             <svg className="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -105,5 +110,6 @@ export default function Navbar({ isLoggedIn, onLogout, user }) {
         )}
       </div>
     </header>
+    </>
   );
 }

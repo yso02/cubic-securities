@@ -1,26 +1,26 @@
 /* Navbar.css */
 .topnav {
   display: flex; align-items: center; justify-content: space-between;
-  height: 52px; padding: 0 24px;
+  height: 64px; padding: 0 32px;
   background: var(--c-surface); border-bottom: 1px solid var(--c-border);
   position: sticky; top: 0; z-index: 100;
   transition: background 0.3s;
 }
-.topnav-left { display: flex; align-items: center; gap: 32px; }
+.topnav-left { display: flex; align-items: center; gap: 40px; }
 .logo {
   display: flex; align-items: center; gap: 8px;
   font-size: 16px; font-weight: 800; color: var(--c-text);
   cursor: pointer; letter-spacing: -0.3px;
 }
-.nav-links { display: flex; gap: 24px; }
+.nav-links { display: flex; gap: 32px; }
 .nav-link {
-  font-size: 14px; color: var(--c-text-muted); cursor: pointer;
+  font-size: 15px; color: var(--c-text-muted); cursor: pointer;
   padding-bottom: 2px; transition: color 0.15s; font-weight: 500;
 }
 .nav-link:hover { color: var(--c-text-sub); }
 .nav-link.active { color: var(--c-text); font-weight: 700; border-bottom: 2px solid var(--c-text); }
 
-.topnav-right { display: flex; align-items: center; gap: 12px; }
+.topnav-right { display: flex; align-items: center; gap: 16px; }
 
 /* 검색 */
 .search-wrap { position: relative; }
