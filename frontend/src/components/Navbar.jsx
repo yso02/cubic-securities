@@ -62,7 +62,7 @@ export default function Navbar({ isLoggedIn, onLogout, user }) {
         </nav>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', alignSelf: 'stretch' }}>
         <span style={{ fontSize: '11px', color: 'var(--c-text-muted)', opacity: 0.6 }}>
           빌드 {new Date(__BUILD_TIME__).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' })}
         </span>
