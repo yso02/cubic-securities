@@ -53,7 +53,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Navbar isLoggedIn={!!user} onLogout={handleLogout} user={user} />
-      <div style={{ display: "flex" }}>
+      <div style={{ display: "flex", alignItems: "flex-start" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <Routes>
             <Route path="/" element={<MainDashboard user={user} />} />
