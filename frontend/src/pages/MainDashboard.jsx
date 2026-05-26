@@ -195,6 +195,7 @@ export default function MainDashboard({ user }) {
     <div className="dash-page">
       {/* 시장 지수 바 */}
       <div className="market-indices">
+        <div className="market-indices-inner">
         {/* 달러 환율 카드 - 기존 유지 */}
         <div className="index-card">
           <div className="idx-label">달러 환율</div>
@@ -301,19 +302,22 @@ export default function MainDashboard({ user }) {
             </div>
           );
         })()}
+        </div>
       </div>
 
       {/* 종목 티커 */}
       <div className="ticker-strip">
-        {wsConnected && <span className="live-dot">● LIVE</span>}
-        {stocks.slice(0, 8).map(s => (
-          <div key={s.symbol} className="ticker-item">
-            <span className="ticker-name">{s.name}</span>
-            <span className={`ticker-val ${isUp(s.changePercent) ? "up" : "dn"}`}>
-              {s.price ? fmtPrice(s.price, s.market) : "-"} {s.changePercent ? fmtChange(s.changePercent) : ""}
-            </span>
-          </div>
-        ))}
+        <div className="ticker-strip-inner">
+          {wsConnected && <span className="live-dot">● LIVE</span>}
+          {stocks.slice(0, 8).map(s => (
+            <div key={s.symbol} className="ticker-item">
+              <span className="ticker-name">{s.name}</span>
+              <span className={`ticker-val ${isUp(s.changePercent) ? "up" : "dn"}`}>
+                {s.price ? fmtPrice(s.price, s.market) : "-"} {s.changePercent ? fmtChange(s.changePercent) : ""}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="dash-body">

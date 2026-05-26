@@ -3,9 +3,12 @@
 
 /* 시장 지수 바 */
 .market-indices {
-  display: flex; gap: 0; padding: 0 24px;
+  display: flex; gap: 0; padding: 0;
   background: var(--c-surface); border-bottom: 1px solid var(--c-border);
   overflow-x: auto; transition: background 0.3s;
+}
+.market-indices-inner {
+  display: flex; width: 100%; max-width: 1600px; margin: 0 auto; padding: 0 24px;
 }
 .market-indices::-webkit-scrollbar { display: none; }
 .index-card {
@@ -27,10 +30,14 @@
 
 /* 티커 */
 .ticker-strip {
-  display: flex; align-items: center; gap: 24px;
-  padding: 0 24px; height: 38px;
+  display: flex; align-items: center;
+  height: 38px; padding: 0;
   background: var(--c-surface); border-bottom: 1px solid var(--c-border);
   overflow-x: auto; transition: background 0.3s;
+}
+.ticker-strip-inner {
+  display: flex; align-items: center; gap: 24px;
+  width: 100%; max-width: 1600px; margin: 0 auto; padding: 0 24px;
 }
 .ticker-strip::-webkit-scrollbar { display: none; }
 .ticker-item { display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 13px; }
@@ -41,7 +48,7 @@
 .live-dot { font-size: 10px; color: #22c55e; font-weight: 700; white-space: nowrap; }
 
 /* 본문 */
-.dash-body { display: flex; max-width: 1280px; margin: 0 auto; padding: 20px 24px; gap: 20px; }
+.dash-body { display: flex; max-width: 1600px; margin: 0 auto; padding: 20px 24px; gap: 20px; }
 .dash-main { flex: 1; min-width: 0; transition: max-width 0.3s; }
 .dash-main.has-detail { max-width: 600px; }
 
@@ -196,7 +203,6 @@
   .dash-main.has-detail { max-width: none; }
   .dash-detail { width: 100%; position: static; max-height: none; }
   .mobile-search { display: block; }
-  .market-indices { padding: 0 12px; }
   .index-card { min-width: 140px; padding: 10px 14px; }
 }
 @media (max-width: 600px) {
