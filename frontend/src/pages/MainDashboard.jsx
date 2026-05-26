@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Client } from "@stomp/stompjs";
 import {
   searchStocks, getDomesticPrice, getOverseasPrice,
-  getDomesticRanking, getOverseasRanking,
+  getDomesticRanking, getOverseasRanking, getMarketIndices,
   getExchangeRate as fetchRate,
   getExchangeCode, isDomestic, fmt, fmtPrice, fmtChange, isUp,
   getWatchlist, addWatchlist, removeWatchlist,
@@ -29,6 +29,7 @@ export default function MainDashboard({ user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [exRate, setExRate] = useState({ rate: 1380 });
+  const [indices, setIndices] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const searchTimer = useRef(null);
@@ -124,6 +125,14 @@ export default function MainDashboard({ user }) {
   useEffect(() => { fetchStocks(); }, [market, sortType]);
   useEffect(() => { (async () => { try { setExRate(await fetchRate()); } catch {} })(); }, []);
   useEffect(() => {
+    (async () => {
+      try {
+        const data = await getMarketIndices();
+        setIndices(data || []);
+      } catch (e) {
+        console.error("지수 로드 실패:", e);
+      }
+    })();
   }, []);
 
   const fetchStocks = async () => {
@@ -186,31 +195,112 @@ export default function MainDashboard({ user }) {
     <div className="dash-page">
       {/* 시장 지수 바 */}
       <div className="market-indices">
+        {/* 달러 환율 카드 - 기존 유지 */}
         <div className="index-card">
           <div className="idx-label">달러 환율</div>
           <div className="idx-value">{fmt(Math.round(exRate.rate))}</div>
-          <div className="idx-chart-placeholder"><svg viewBox="0 0 80 24"><polyline points="0,18 10,16 20,14 30,15 40,12 50,10 60,8 70,6 80,4" fill="none" stroke="#ef4444" strokeWidth="1.5"/></svg></div>
+          <div className="idx-chart-placeholder">
+            <svg viewBox="0 0 80 24">
+              <polyline points="0,18 10,16 20,14 30,15 40,12 50,10 60,8 70,6 80,4" fill="none" stroke="#ef4444" strokeWidth="1.5"/>
+            </svg>
+          </div>
         </div>
-        <div className="index-card disabled">
-          <div className="idx-label">코스피 <span className="idx-pending">API 연동 예정</span></div>
-          <div className="idx-value muted">-</div>
-          <div className="idx-chart-placeholder"><svg viewBox="0 0 80 24"><polyline points="0,4 10,6 20,10 30,8 40,12 50,16 60,14 70,18 80,20" fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.3"/></svg></div>
-        </div>
-        <div className="index-card disabled">
-          <div className="idx-label">코스닥 <span className="idx-pending">API 연동 예정</span></div>
-          <div className="idx-value muted">-</div>
-          <div className="idx-chart-placeholder"><svg viewBox="0 0 80 24"><polyline points="0,6 10,8 20,12 30,10 40,14 50,18 60,16 70,20 80,22" fill="none" stroke="#3b82f6" strokeWidth="1.5" opacity="0.3"/></svg></div>
-        </div>
-        <div className="index-card disabled">
-          <div className="idx-label">나스닥 <span className="idx-pending">API 연동 예정</span></div>
-          <div className="idx-value muted">-</div>
-          <div className="idx-chart-placeholder"><svg viewBox="0 0 80 24"><polyline points="0,12 10,10 20,8 30,10 40,6 50,8 60,4 70,6 80,2" fill="none" stroke="#ef4444" strokeWidth="1.5" opacity="0.3"/></svg></div>
-        </div>
-        <div className="index-card disabled">
-          <div className="idx-label">S&P 500 <span className="idx-pending">API 연동 예정</span></div>
-          <div className="idx-value muted">-</div>
-          <div className="idx-chart-placeholder"><svg viewBox="0 0 80 24"><polyline points="0,14 10,12 20,10 30,12 40,8 50,6 60,8 70,4 80,6" fill="none" stroke="#ef4444" strokeWidth="1.5" opacity="0.3"/></svg></div>
-        </div>
+
+        {/* 코스피 */}
+        {(() => {
+          const idx = indices.find(i => i.code === "KOSPI");
+          const up = idx ? isUp(idx.changePercent) : true;
+          return (
+            <div className={`index-card ${!idx ? "disabled" : ""}`}>
+              <div className="idx-label">코스피 {!idx && <span className="idx-pending">로딩중</span>}</div>
+              <div className={`idx-value ${!idx ? "muted" : up ? "up" : "dn"}`}>
+                {idx ? fmt(Math.round(Number(idx.price))) : "-"}
+              </div>
+              {idx && (
+                <div className={`idx-change ${up ? "up" : "dn"}`}>
+                  {fmtChange(idx.changePercent)}
+                </div>
+              )}
+              <div className="idx-chart-placeholder">
+                <svg viewBox="0 0 80 24">
+                  <polyline points="0,4 10,6 20,10 30,8 40,12 50,16 60,14 70,18 80,20" fill="none" stroke={up ? "#ef4444" : "#3b82f6"} strokeWidth="1.5" opacity={idx ? "1" : "0.3"}/>
+                </svg>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* 코스닥 */}
+        {(() => {
+          const idx = indices.find(i => i.code === "KOSDAQ");
+          const up = idx ? isUp(idx.changePercent) : true;
+          return (
+            <div className={`index-card ${!idx ? "disabled" : ""}`}>
+              <div className="idx-label">코스닥 {!idx && <span className="idx-pending">로딩중</span>}</div>
+              <div className={`idx-value ${!idx ? "muted" : up ? "up" : "dn"}`}>
+                {idx ? fmt(Math.round(Number(idx.price))) : "-"}
+              </div>
+              {idx && (
+                <div className={`idx-change ${up ? "up" : "dn"}`}>
+                  {fmtChange(idx.changePercent)}
+                </div>
+              )}
+              <div className="idx-chart-placeholder">
+                <svg viewBox="0 0 80 24">
+                  <polyline points="0,6 10,8 20,12 30,10 40,14 50,18 60,16 70,20 80,22" fill="none" stroke={up ? "#ef4444" : "#3b82f6"} strokeWidth="1.5" opacity={idx ? "1" : "0.3"}/>
+                </svg>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* 나스닥 */}
+        {(() => {
+          const idx = indices.find(i => i.code === "NASDAQ");
+          const up = idx ? isUp(idx.changePercent) : true;
+          return (
+            <div className={`index-card ${!idx ? "disabled" : ""}`}>
+              <div className="idx-label">나스닥 {!idx && <span className="idx-pending">로딩중</span>}</div>
+              <div className={`idx-value ${!idx ? "muted" : up ? "up" : "dn"}`}>
+                {idx ? fmt(Math.round(Number(idx.price))) : "-"}
+              </div>
+              {idx && (
+                <div className={`idx-change ${up ? "up" : "dn"}`}>
+                  {fmtChange(idx.changePercent)}
+                </div>
+              )}
+              <div className="idx-chart-placeholder">
+                <svg viewBox="0 0 80 24">
+                  <polyline points="0,12 10,10 20,8 30,10 40,6 50,8 60,4 70,6 80,2" fill="none" stroke={up ? "#ef4444" : "#3b82f6"} strokeWidth="1.5" opacity={idx ? "1" : "0.3"}/>
+                </svg>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* S&P 500 */}
+        {(() => {
+          const idx = indices.find(i => i.code === "SP500");
+          const up = idx ? isUp(idx.changePercent) : true;
+          return (
+            <div className={`index-card ${!idx ? "disabled" : ""}`}>
+              <div className="idx-label">S&P 500 {!idx && <span className="idx-pending">로딩중</span>}</div>
+              <div className={`idx-value ${!idx ? "muted" : up ? "up" : "dn"}`}>
+                {idx ? fmt(Math.round(Number(idx.price))) : "-"}
+              </div>
+              {idx && (
+                <div className={`idx-change ${up ? "up" : "dn"}`}>
+                  {fmtChange(idx.changePercent)}
+                </div>
+              )}
+              <div className="idx-chart-placeholder">
+                <svg viewBox="0 0 80 24">
+                  <polyline points="0,14 10,12 20,10 30,12 40,8 50,6 60,8 70,4 80,6" fill="none" stroke={up ? "#ef4444" : "#3b82f6"} strokeWidth="1.5" opacity={idx ? "1" : "0.3"}/>
+                </svg>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* 종목 티커 */}

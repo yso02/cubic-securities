@@ -19,6 +19,9 @@
 .idx-pending { font-size: 9px; color: var(--c-text-muted); background: var(--c-hover); padding: 1px 5px; border-radius: 3px; }
 .idx-value { font-size: 16px; font-weight: 700; color: var(--c-text); }
 .idx-value.muted { color: var(--c-text-muted); }
+.idx-change { font-size: 11px; font-weight: 500; margin-top: 2px; }
+.idx-change.up { color: #ef4444; }
+.idx-change.dn { color: #3b82f6; }
 .idx-chart-placeholder { height: 24px; }
 .idx-chart-placeholder svg { width: 80px; height: 24px; }
 

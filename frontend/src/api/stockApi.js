@@ -125,6 +125,12 @@ export const getOverseasRanking = async (type = "VOLUME") => {
   return (res.data || []).map(s => ({ ...s, market: s.market || "NASDAQ" }));
 };
 
+/* ═══════════ 시장 지수 ═══════════ */
+export const getMarketIndices = async () => {
+  const res = await api.get("/api/market/indices");
+  return res.data; // [{ code, name, price, change, changePercent }]
+};
+
 /* ═══════════ AI ═══════════ */
 export const aiChat = async (message, history = []) => {
   const res = await api.post("/api/ai/chat", { message, history });
