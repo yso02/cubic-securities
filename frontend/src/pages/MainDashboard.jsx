@@ -432,6 +432,9 @@ export default function MainDashboard({ user }) {
                 {marketNews.positive && (
                   <div className="news-sector positive">
                     <div className="sector-label up">📈 {marketNews.positive.sector}</div>
+                    {marketNews.positive.reason && (
+                      <p className="sector-reason">{marketNews.positive.reason}</p>
+                    )}
                     <div className="sector-stocks">
                       {marketNews.positive.stocks?.map((s, i) => (
                         <div key={i} className="sector-stock-row up">
@@ -450,6 +453,9 @@ export default function MainDashboard({ user }) {
                 {marketNews.negative && (
                   <div className="news-sector negative">
                     <div className="sector-label dn">📉 {marketNews.negative.sector}</div>
+                    {marketNews.negative.reason && (
+                      <p className="sector-reason">{marketNews.negative.reason}</p>
+                    )}
                     <div className="sector-stocks">
                       {marketNews.negative.stocks?.map((s, i) => (
                         <div key={i} className="sector-stock-row dn">
