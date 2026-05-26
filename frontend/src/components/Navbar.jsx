@@ -48,14 +48,6 @@ export default function Navbar({ isLoggedIn, onLogout, user }) {
   }, []);
 
   return (
-    <>
-    <div style={{
-      textAlign: 'center', padding: '4px', fontSize: '11px',
-      background: '#0f766e', color: 'rgba(255,255,255,0.8)',
-      fontWeight: 500, letterSpacing: '0.3px'
-    }}>
-      🕐 최신 배포: {new Date(__BUILD_TIME__).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}
-    </div>
     <header className="topnav">
       <div className="topnav-left">
         <div className="logo" onClick={() => navigate("/")}>
@@ -68,6 +60,12 @@ export default function Navbar({ isLoggedIn, onLogout, user }) {
               onClick={() => navigate(item.path)}>{item.label}</span>
           ))}
         </nav>
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+        <span style={{ fontSize: '11px', color: 'var(--c-text-muted)', opacity: 0.6 }}>
+          빌드 {new Date(__BUILD_TIME__).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric' })}
+        </span>
       </div>
 
       <div className="topnav-right">
@@ -110,6 +108,5 @@ export default function Navbar({ isLoggedIn, onLogout, user }) {
         )}
       </div>
     </header>
-    </>
   );
 }
