@@ -417,6 +417,9 @@ export default function MainDashboard({ user }) {
       {/* 푸터 */}
       <div className="dash-footer">
         <p>여기서 제공하는 투자 정보는 고객의 투자 판단을 위한 단순 참고용일 뿐,<br/>투자 제안 및 권유, 종목 추천을 위해 작성된 것이 아닙니다.</p>
+        <p style={{marginTop: '6px', fontSize: '11px', opacity: 0.6}}>
+          🕐 배포: {new Date(__BUILD_TIME__).toLocaleString('ko-KR', {timeZone: 'Asia/Seoul'})}
+        </p>
       </div>
     </div>
   );
