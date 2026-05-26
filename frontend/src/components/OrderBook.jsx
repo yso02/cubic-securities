@@ -1,118 +1,210 @@
 // src/components/OrderBook.jsx
 import { useState, useEffect, useRef } from "react";
-
 import { Client } from "@stomp/stompjs";
-import { getDomesticOrderbook, isDomestic, fmt, NGROK_URL } from "../api/stockApi";
+import {
+  getDomesticOrderbook,
+  getOverseasOrderbook,
+  isDomestic,
+  getExchangeCode,
+  fmt,
+  fmtPrice,
+  NGROK_URL,
+} from "../api/stockApi";
 import "./OrderBook.css";
 
 export default function OrderBook({ stock }) {
   const [orderbook, setOrderbook] = useState(null);
   const [trades, setTrades] = useState([]);
-  const [activeTab, setActiveTab] = useState("orderbook"); // orderbook | trades
+  const [activeTab, setActiveTab] = useState("orderbook");
   const [loading, setLoading] = useState(false);
   const clientRef = useRef(null);
   const subsRef = useRef([]);
 
-  // 국내 주식만 호가창 지원
-  if (!stock || !isDomestic(stock.market)) return null;
+  if (!stock) return null;
+
+  const domestic = isDomestic(stock.market);
+  const exchange = getExchangeCode(stock.market); // NAS / NYS / AMS
 
   // REST로 초기 호가 로드
   useEffect(() => {
-    if (!stock) return;
     setLoading(true);
+    setOrderbook(null);
+    setTrades([]);
     (async () => {
       try {
-        const data = await getDomesticOrderbook(stock.symbol);
+        const data = domestic
+          ? await getDomesticOrderbook(stock.symbol)
+          : await getOverseasOrderbook(stock.symbol, exchange);
         setOrderbook(data);
-      } catch (e) { console.warn("호가 로드 실패:", e); }
-      finally { setLoading(false); }
+      } catch (e) {
+        console.warn("호가 로드 실패:", e);
+      } finally {
+        setLoading(false);
+      }
     })();
-    setTrades([]);
   }, [stock.symbol]);
 
   // WebSocket 실시간 호가 + 체결
   useEffect(() => {
-    if (!stock) return;
+    // ✅ /ws/websocket (raw WebSocket) — ngrok CORS 우회
+    const wsURL =
+      NGROK_URL.replace("https://", "wss://").replace("http://", "ws://") +
+      "/ws/websocket";
+
     const client = new Client({
-      brokerURL: NGROK_URL.replace("https://","wss://").replace("http://","ws://") + "/ws",
+      brokerURL: wsURL,
       connectHeaders: { "ngrok-skip-browser-warning": "true" },
       reconnectDelay: 5000,
       onConnect: () => {
-        // 국내 구독하면 호가+체결 자동 구독됨
-        client.publish({ destination: "/app/subscribe/domestic", body: stock.symbol });
+        if (domestic) {
+          // 국내: /app/subscribe/domestic → 호가+체결 자동 구독
+          client.publish({
+            destination: "/app/subscribe/domestic",
+            body: stock.symbol,
+          });
 
-        // 호가창 실시간
-        const obSub = client.subscribe(`/topic/orderbook/${stock.symbol}`, (msg) => {
-          try { setOrderbook(JSON.parse(msg.body)); } catch {}
-        });
-        subsRef.current.push(obSub);
+          const obSub = client.subscribe(
+            `/topic/orderbook/${stock.symbol}`,
+            (msg) => {
+              try { setOrderbook(JSON.parse(msg.body)); } catch {}
+            }
+          );
+          const ttSub = client.subscribe(
+            `/topic/tradetick/${stock.symbol}`,
+            (msg) => {
+              try {
+                const tick = JSON.parse(msg.body);
+                setTrades((prev) => [tick, ...prev].slice(0, 30));
+              } catch {}
+            }
+          );
+          subsRef.current.push(obSub, ttSub);
+        } else {
+          // 해외: 가격 구독 (체결도 함께 수신됨)
+          client.publish({
+            destination: "/app/subscribe/overseas",
+            body: `${stock.symbol},${exchange}`,
+          });
+          // 해외: 호가 별도 구독
+          client.publish({
+            destination: "/app/subscribe/overseas/orderbook",
+            body: `${stock.symbol},${exchange}`,
+          });
 
-        // 체결 실시간
-        const ttSub = client.subscribe(`/topic/tradetick/${stock.symbol}`, (msg) => {
-          try {
-            const tick = JSON.parse(msg.body);
-            setTrades(prev => [tick, ...prev].slice(0, 30));
-          } catch {}
-        });
-        subsRef.current.push(ttSub);
+          const obSub = client.subscribe(
+            `/topic/orderbook/${stock.symbol}`,
+            (msg) => {
+              try { setOrderbook(JSON.parse(msg.body)); } catch {}
+            }
+          );
+          // 해외 체결: /topic/tradetick/overseas/{symbol}
+          const ttSub = client.subscribe(
+            `/topic/tradetick/overseas/${stock.symbol}`,
+            (msg) => {
+              try {
+                const tick = JSON.parse(msg.body);
+                setTrades((prev) => [tick, ...prev].slice(0, 30));
+              } catch {}
+            }
+          );
+          subsRef.current.push(obSub, ttSub);
+        }
       },
     });
+
     client.activate();
     clientRef.current = client;
 
     return () => {
-      subsRef.current.forEach(s => { try { s.unsubscribe(); } catch {} });
+      subsRef.current.forEach((s) => { try { s.unsubscribe(); } catch {} });
       subsRef.current = [];
+      if (client.connected) {
+        if (domestic) {
+          client.publish({ destination: "/app/unsubscribe/domestic", body: stock.symbol });
+        } else {
+          client.publish({ destination: "/app/unsubscribe/overseas", body: `${stock.symbol},${exchange}` });
+          client.publish({ destination: "/app/unsubscribe/overseas/orderbook", body: `${stock.symbol},${exchange}` });
+        }
+      }
       client.deactivate();
     };
   }, [stock.symbol]);
 
-  const maxQty = orderbook ? Math.max(
-    ...((orderbook.asks || []).map(a => Number(a.quantity) || 0)),
-    ...((orderbook.bids || []).map(b => Number(b.quantity) || 0)),
-    1
-  ) : 1;
+  const maxQty = orderbook
+    ? Math.max(
+        ...((orderbook.asks || []).map((a) => Number(a.quantity) || 0)),
+        ...((orderbook.bids || []).map((b) => Number(b.quantity) || 0)),
+        1
+      )
+    : 1;
+
+  // 가격 포맷: 국내는 fmt(정수), 해외는 소수점
+  const formatPrice = (price) =>
+    domestic ? fmt(price) : `$${Number(price).toFixed(2)}`;
 
   return (
     <div className="orderbook-wrap">
       <div className="ob-tabs">
-        <button className={`ob-tab ${activeTab === "orderbook" ? "active" : ""}`} onClick={() => setActiveTab("orderbook")}>호가</button>
-        <button className={`ob-tab ${activeTab === "trades" ? "active" : ""}`} onClick={() => setActiveTab("trades")}>체결</button>
+        <button
+          className={`ob-tab ${activeTab === "orderbook" ? "active" : ""}`}
+          onClick={() => setActiveTab("orderbook")}
+        >
+          호가
+        </button>
+        <button
+          className={`ob-tab ${activeTab === "trades" ? "active" : ""}`}
+          onClick={() => setActiveTab("trades")}
+        >
+          체결
+        </button>
       </div>
 
       {activeTab === "orderbook" && (
         <div className="ob-body">
+          {!domestic && (
+            <div className="ob-overseas-notice">
+              미국 정규장(한국 23:30~06:00)에만 실시간 데이터가 수신돼요
+            </div>
+          )}
           {loading || !orderbook ? (
             <div className="ob-loading">호가 로딩 중...</div>
           ) : (
             <>
-              {/* 매도호가 (위) — 역순으로 표시 */}
+              {/* 매도호가 — 역순 */}
               <div className="ob-section asks">
                 {[...(orderbook.asks || [])].reverse().map((a, i) => (
                   <div key={`ask-${i}`} className="ob-row ask">
                     <div className="ob-bar-wrap">
-                      <div className="ob-bar ask-bar" style={{ width: `${(Number(a.quantity) / maxQty) * 100}%` }} />
+                      <div
+                        className="ob-bar ask-bar"
+                        style={{ width: `${(Number(a.quantity) / maxQty) * 100}%` }}
+                      />
                     </div>
                     <span className="ob-qty">{fmt(a.quantity)}</span>
-                    <span className="ob-price ask-price">{fmt(a.price)}</span>
+                    <span className="ob-price ask-price">{formatPrice(a.price)}</span>
                   </div>
                 ))}
               </div>
 
               {/* 현재가 */}
               <div className="ob-current">
-                <span className="ob-current-price">{fmt(stock.price)}</span>
+                <span className="ob-current-price">
+                  {fmtPrice(stock.price, stock.market)}
+                </span>
                 <span className="ob-current-label">현재가</span>
               </div>
 
-              {/* 매수호가 (아래) */}
+              {/* 매수호가 */}
               <div className="ob-section bids">
                 {(orderbook.bids || []).map((b, i) => (
                   <div key={`bid-${i}`} className="ob-row bid">
-                    <span className="ob-price bid-price">{fmt(b.price)}</span>
+                    <span className="ob-price bid-price">{formatPrice(b.price)}</span>
                     <span className="ob-qty">{fmt(b.quantity)}</span>
                     <div className="ob-bar-wrap">
-                      <div className="ob-bar bid-bar" style={{ width: `${(Number(b.quantity) / maxQty) * 100}%` }} />
+                      <div
+                        className="ob-bar bid-bar"
+                        style={{ width: `${(Number(b.quantity) / maxQty) * 100}%` }}
+                      />
                     </div>
                   </div>
                 ))}
@@ -135,17 +227,27 @@ export default function OrderBook({ stock }) {
             <span>수량</span>
             <span>구분</span>
           </div>
-          {trades.length === 0 ? (
-            <div className="ob-loading">체결 대기 중...</div>
-          ) : trades.map((t, i) => (
-            <div key={i} className={`ob-trade-row ${t.tradeType === "BUY" ? "buy" : "sell"}`}>
-              <span className="ob-trade-price">{fmt(t.price)}</span>
-              <span className="ob-trade-vol">{fmt(t.volume)}</span>
-              <span className={`ob-trade-type ${t.tradeType === "BUY" ? "buy" : "sell"}`}>
-                {t.tradeType === "BUY" ? "매수" : "매도"}
-              </span>
+          {!domestic && trades.length === 0 && (
+            <div className="ob-loading" style={{ fontSize: "12px", padding: "12px 8px" }}>
+              미국 정규장 시간에만 체결 데이터가 수신돼요
             </div>
-          ))}
+          )}
+          {trades.length === 0 && domestic ? (
+            <div className="ob-loading">체결 대기 중...</div>
+          ) : (
+            trades.map((t, i) => (
+              <div
+                key={i}
+                className={`ob-trade-row ${t.tradeType === "BUY" ? "buy" : "sell"}`}
+              >
+                <span className="ob-trade-price">{formatPrice(t.price)}</span>
+                <span className="ob-trade-vol">{fmt(t.volume)}</span>
+                <span className={`ob-trade-type ${t.tradeType === "BUY" ? "buy" : "sell"}`}>
+                  {t.tradeType === "BUY" ? "매수" : "매도"}
+                </span>
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>
