@@ -131,6 +131,12 @@ export const getMarketIndices = async () => {
   return res.data; // [{ code, name, price, change, changePercent }]
 };
 
+/* ═══════════ AI 시장 뉴스 ═══════════ */
+export const getMarketNews = async () => {
+  const res = await api.get("/api/market/news");
+  return res.data; // { updatedAt, headlines, positive, negative, summary }
+};
+
 /* ═══════════ AI ═══════════ */
 export const aiChat = async (message, history = []) => {
   const res = await api.post("/api/ai/chat", { message, history });

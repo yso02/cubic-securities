@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Client } from "@stomp/stompjs";
 import {
   searchStocks, getDomesticPrice, getOverseasPrice,
-  getDomesticRanking, getOverseasRanking, getMarketIndices,
+  getDomesticRanking, getOverseasRanking, getMarketIndices, getMarketNews,
   getExchangeRate as fetchRate,
   getExchangeCode, isDomestic, fmt, fmtPrice, fmtChange, isUp,
   getWatchlist, addWatchlist, removeWatchlist,
@@ -30,6 +30,8 @@ export default function MainDashboard({ user }) {
   const [error, setError] = useState(null);
   const [exRate, setExRate] = useState({ rate: 1380 });
   const [indices, setIndices] = useState([]);
+  const [marketNews, setMarketNews] = useState(null);
+  const [newsLoading, setNewsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const searchTimer = useRef(null);
@@ -131,6 +133,19 @@ export default function MainDashboard({ user }) {
         setIndices(data || []);
       } catch (e) {
         console.error("지수 로드 실패:", e);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await getMarketNews();
+        setMarketNews(data || null);
+      } catch (e) {
+        console.error("뉴스 로드 실패:", e);
+      } finally {
+        setNewsLoading(false);
       }
     })();
   }, []);
@@ -384,17 +399,72 @@ export default function MainDashboard({ user }) {
 
         {/* 우측: 뉴스 패널 */}
         <div className="dash-detail dash-default">
-          <div className="default-panel-title">종목을 선택해 주세요</div>
-          <p className="default-panel-desc">종목을 클릭하면 상세 페이지에서 차트, 호가, 뉴스를 확인할 수 있어요.</p>
           <div className="news-section">
-            <div className="news-header"><span className="news-title">오늘의 뉴스</span><span className="news-pending">API 연동 예정</span></div>
-            <div className="news-placeholder">
-              <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-              <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-              <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-              <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-              <p className="news-hint">뉴스 API 연동 후 이 영역에 실시간 뉴스가 표시됩니다</p>
+            <div className="news-header">
+              <span className="news-title">오늘의 뉴스</span>
+              {marketNews && <span className="news-updated">{marketNews.updatedAt} 기준</span>}
             </div>
+
+            {newsLoading ? (
+              <div className="news-placeholder">
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+              </div>
+            ) : !marketNews ? (
+              <div className="news-placeholder">
+                <p className="news-hint">뉴스 데이터를 불러올 수 없습니다.<br/>잠시 후 다시 시도해주세요.</p>
+              </div>
+            ) : (
+              <div className="news-content">
+                {/* 주요 뉴스 헤드라인 */}
+                <div className="news-headlines">
+                  {marketNews.headlines?.map((h, i) => (
+                    <div key={i} className="news-headline-item">
+                      <span className="news-dot">•</span>
+                      <span>{h}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 호재 섹터 */}
+                {marketNews.positive && (
+                  <div className="news-sector positive">
+                    <div className="sector-label up">📈 {marketNews.positive.sector}</div>
+                    <div className="sector-stocks">
+                      {marketNews.positive.stocks?.map((s, i) => (
+                        <span key={i} className="sector-stock up">
+                          {s.symbol} <strong>{s.changePercent}</strong>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 악재 섹터 */}
+                {marketNews.negative && (
+                  <div className="news-sector negative">
+                    <div className="sector-label dn">📉 {marketNews.negative.sector}</div>
+                    <div className="sector-stocks">
+                      {marketNews.negative.stocks?.map((s, i) => (
+                        <span key={i} className="sector-stock dn">
+                          {s.symbol} <strong>{s.changePercent}</strong>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* AI 한줄 요약 */}
+                {marketNews.summary && (
+                  <div className="news-summary">
+                    <span className="summary-label">💬 AI 요약</span>
+                    <p>{marketNews.summary}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
