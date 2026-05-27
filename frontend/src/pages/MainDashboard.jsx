@@ -9,7 +9,8 @@ import {
   getDomesticRanking,
   getOverseasRanking,
   getMarketIndices,
-  getMarketNews,
+  getOverseasMarketNews,
+  getDomesticMarketNews,
   getExchangeRate as fetchRate,
   getExchangeCode,
   isDomestic,
@@ -59,7 +60,8 @@ export default function MainDashboard({ user }) {
   const [error, setError] = useState(null);
   const [exRate, setExRate] = useState({ rate: 1380 });
   const [indices, setIndices] = useState([]);
-  const [marketNews, setMarketNews] = useState(null);
+  const [domesticNews, setDomesticNews] = useState(null);
+  const [overseasNews, setOverseasNews] = useState(null);
   const [newsLoading, setNewsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
@@ -214,8 +216,12 @@ export default function MainDashboard({ user }) {
   useEffect(() => {
     (async () => {
       try {
-        const data = await getMarketNews();
-        setMarketNews(data || null);
+        const [domestic, overseas] = await Promise.allSettled([
+          getDomesticMarketNews(),
+          getOverseasMarketNews(),
+        ]);
+        if (domestic.status === "fulfilled") setDomesticNews(domestic.value || null);
+        if (overseas.status === "fulfilled") setOverseasNews(overseas.value || null);
       } catch (e) {
         console.error("뉴스 로드 실패:", e);
       } finally {
@@ -483,18 +489,20 @@ export default function MainDashboard({ user }) {
 
           <div className="dash-card">
             {/* 시장 탭 */}
-            <div className="tab-row">
+            <div className="market-tab-row">
               <div
-                className={`tab ${market === "domestic" ? "active" : ""}`}
+                className={`market-tab ${market === "domestic" ? "active" : ""}`}
                 onClick={() => setMarket("domestic")}
               >
-                국내주식
+                <span className="market-flag">🇰🇷</span>
+                <span className="market-tab-label">국내주식</span>
               </div>
               <div
-                className={`tab ${market === "overseas" ? "active" : ""}`}
+                className={`market-tab ${market === "overseas" ? "active" : ""}`}
                 onClick={() => setMarket("overseas")}
               >
-                해외주식
+                <span className="market-flag">🇺🇸</span>
+                <span className="market-tab-label">해외주식</span>
               </div>
             </div>
             {/* 정렬 탭 */}
@@ -608,128 +616,111 @@ export default function MainDashboard({ user }) {
         <div className="dash-detail dash-default">
           <div className="news-section">
             <div className="news-header">
-              <span className="news-title">오늘의 뉴스</span>
-              {marketNews && (
+              <span className="news-title">
+                {market === "domestic" ? "🇰🇷 국내 시장 뉴스" : "🇺🇸 해외 시장 뉴스"}
+              </span>
+              {(market === "domestic" ? domesticNews : overseasNews) && (
                 <span className="news-updated">
-                  {marketNews.updatedAt} 기준
+                  {(market === "domestic" ? domesticNews : overseasNews).updatedAt} 기준
                 </span>
               )}
             </div>
 
-            {newsLoading ? (
-              <div className="news-placeholder">
-                <div className="news-skeleton">
-                  <div className="sk-line long" />
-                  <div className="sk-line short" />
-                </div>
-                <div className="news-skeleton">
-                  <div className="sk-line long" />
-                  <div className="sk-line short" />
-                </div>
-                <div className="news-skeleton">
-                  <div className="sk-line long" />
-                  <div className="sk-line short" />
-                </div>
-                <div className="news-skeleton">
-                  <div className="sk-line long" />
-                  <div className="sk-line short" />
-                </div>
-              </div>
-            ) : !marketNews ? (
-              <div className="news-placeholder">
-                <p className="news-hint">
-                  뉴스 데이터를 불러올 수 없습니다.
-                  <br />
-                  잠시 후 다시 시도해주세요.
-                </p>
-              </div>
-            ) : (
-              <div className="news-content">
-                {/* 주요 뉴스 헤드라인 */}
-                <div className="news-headlines">
-                  {marketNews.headlines?.map((h, i) => (
-                    <div key={i} className="news-headline-item">
-                      <span className="news-dot">•</span>
-                      <span>{h}</span>
-                    </div>
-                  ))}
-                </div>
+            {(() => {
+              const marketNews = market === "domestic" ? domesticNews : overseasNews;
 
-                {/* 호재 섹터 */}
-                {marketNews.positive && (
-                  <div className="news-sector positive">
-                    <div className="sector-label up">
-                      📈 {marketNews.positive.sector}
+              const weatherMap = {
+                SUNNY: { emoji: "☀️", label: "상승장", color: "#ef4444" },
+                CLOUDY: { emoji: "⛅", label: "혼조세", color: "#f59e0b" },
+                RAINY: { emoji: "🌧️", label: "하락장", color: "#3b82f6" },
+                STORM: { emoji: "⛈️", label: "급락", color: "#7c3aed" },
+              };
+              const weather = marketNews?.weather ? weatherMap[marketNews.weather] : null;
+
+              return (
+                <>
+                  {weather && (
+                    <div className="news-weather" style={{ borderColor: weather.color + "40", background: weather.color + "0a" }}>
+                      <span className="weather-emoji">{weather.emoji}</span>
+                      <div className="weather-info">
+                        <span className="weather-label" style={{ color: weather.color }}>{weather.label}</span>
+                        <span className="weather-desc">현재 시장 상황</span>
+                      </div>
                     </div>
-                    {marketNews.positive.reason && (
-                      <p className="sector-reason">
-                        {marketNews.positive.reason}
-                      </p>
-                    )}
-                    <div className="sector-stocks">
-                      {marketNews.positive.stocks?.map((s, i) => (
-                        <div key={i} className="sector-stock-row up">
-                          <div className="sector-stock-name">
-                            <span className="sector-stock-symbol">
-                              {s.symbol}
-                            </span>
-                            {s.name && (
-                              <span className="sector-stock-fullname">
-                                {s.name}
-                              </span>
-                            )}
+                  )}
+
+                  {newsLoading ? (
+                    <div className="news-placeholder">
+                      <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                      <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                      <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
+                    </div>
+                  ) : !marketNews ? (
+                    <div className="news-placeholder">
+                      <p className="news-hint">뉴스 데이터를 불러올 수 없습니다.<br/>잠시 후 다시 시도해주세요.</p>
+                    </div>
+                  ) : (
+                    <div className="news-content">
+                      <div className="news-headlines">
+                        {marketNews.headlines?.map((h, i) => (
+                          <div key={i} className="news-headline-item">
+                            <span className="news-dot">•</span>
+                            <span>{h}</span>
                           </div>
-                          <strong className="sector-stock-change">
-                            {s.changePercent}
-                          </strong>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                        ))}
+                      </div>
 
-                {/* 악재 섹터 */}
-                {marketNews.negative && (
-                  <div className="news-sector negative">
-                    <div className="sector-label dn">
-                      📉 {marketNews.negative.sector}
-                    </div>
-                    {marketNews.negative.reason && (
-                      <p className="sector-reason">
-                        {marketNews.negative.reason}
-                      </p>
-                    )}
-                    <div className="sector-stocks">
-                      {marketNews.negative.stocks?.map((s, i) => (
-                        <div key={i} className="sector-stock-row dn">
-                          <div className="sector-stock-name">
-                            <span className="sector-stock-symbol">
-                              {s.symbol}
-                            </span>
-                            {s.name && (
-                              <span className="sector-stock-fullname">
-                                {s.name}
-                              </span>
-                            )}
+                      {marketNews.positive && (
+                        <div className="news-sector positive">
+                          <div className="sector-label up">📈 {marketNews.positive.sector}</div>
+                          {marketNews.positive.reason && (
+                            <p className="sector-reason">{marketNews.positive.reason}</p>
+                          )}
+                          <div className="sector-stocks">
+                            {marketNews.positive.stocks?.map((s, i) => (
+                              <div key={i} className="sector-stock-row up">
+                                <div className="sector-stock-name">
+                                  <span className="sector-stock-symbol">{s.symbol}</span>
+                                  {s.name && <span className="sector-stock-fullname">{s.name}</span>}
+                                </div>
+                                <strong className="sector-stock-change">{s.changePercent}</strong>
+                              </div>
+                            ))}
                           </div>
-                          <strong className="sector-stock-change">
-                            {s.changePercent}
-                          </strong>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                      )}
 
-                {/* AI 한줄 요약 */}
-                {marketNews.summary && (
-                  <div className="news-summary">
-                    <span className="summary-label">💬 AI 요약</span>
-                    <p>{marketNews.summary}</p>
-                  </div>
-                )}
-              </div>
-            )}
+                      {marketNews.negative && (
+                        <div className="news-sector negative">
+                          <div className="sector-label dn">📉 {marketNews.negative.sector}</div>
+                          {marketNews.negative.reason && (
+                            <p className="sector-reason">{marketNews.negative.reason}</p>
+                          )}
+                          <div className="sector-stocks">
+                            {marketNews.negative.stocks?.map((s, i) => (
+                              <div key={i} className="sector-stock-row dn">
+                                <div className="sector-stock-name">
+                                  <span className="sector-stock-symbol">{s.symbol}</span>
+                                  {s.name && <span className="sector-stock-fullname">{s.name}</span>}
+                                </div>
+                                <strong className="sector-stock-change">{s.changePercent}</strong>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {marketNews.summary && (
+                        <div className="news-summary">
+                          <span className="summary-label">💬 AI 요약</span>
+                          <p>{marketNews.summary}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>

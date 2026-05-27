@@ -176,9 +176,13 @@ export const getMarketIndices = async () => {
 };
 
 /* ═══════════ AI 시장 뉴스 ═══════════ */
-export const getMarketNews = async () => {
-  const res = await api.get("/api/market/news");
-  return res.data; // { updatedAt, headlines, positive, negative, summary }
+export const getOverseasMarketNews = async () => {
+  const res = await api.get("/api/market/news/overseas");
+  return res.data;
+};
+export const getDomesticMarketNews = async () => {
+  const res = await api.get("/api/market/news/domestic");
+  return res.data;
 };
 
 /* ═══════════ AI ═══════════ */
