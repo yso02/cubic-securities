@@ -3,7 +3,6 @@ import { useState, useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
 import {
   getDomesticOrderbook,
-  getOverseasOrderbook,
   isDomestic,
   getExchangeCode,
   fmt,
@@ -25,16 +24,20 @@ export default function OrderBook({ stock }) {
   const domestic = isDomestic(stock.market);
   const exchange = getExchangeCode(stock.market); // NAS / NYS / AMS
 
-  // REST로 초기 호가 로드
+  // REST로 초기 호가 로드 (국내만)
   useEffect(() => {
     setLoading(true);
     setOrderbook(null);
     setTrades([]);
+
+    if (!domestic) {
+      setLoading(false); // 해외는 REST 없이 WebSocket만 대기
+      return;
+    }
+
     (async () => {
       try {
-        const data = domestic
-          ? await getDomesticOrderbook(stock.symbol)
-          : await getOverseasOrderbook(stock.symbol, exchange);
+        const data = await getDomesticOrderbook(stock.symbol);
         setOrderbook(data);
       } catch (e) {
         console.warn("호가 로드 실패:", e);
@@ -163,11 +166,13 @@ export default function OrderBook({ stock }) {
         <div className="ob-body">
           {!domestic && (
             <div className="ob-overseas-notice">
-              미국 정규장(한국 23:30~06:00)에만 실시간 데이터가 수신돼요
+              미국 정규장(한국 22:30~05:00, 서머타임 기준)에만 실시간 데이터가 수신돼요
             </div>
           )}
           {loading || !orderbook ? (
-            <div className="ob-loading">호가 로딩 중...</div>
+            <div className="ob-loading">
+              {domestic ? "호가 로딩 중..." : "정규장 시간에 실시간 호가가 표시돼요"}
+            </div>
           ) : (
             <>
               {/* 매도호가 — 역순 */}
@@ -227,12 +232,11 @@ export default function OrderBook({ stock }) {
             <span>수량</span>
             <span>구분</span>
           </div>
-          {!domestic && trades.length === 0 && (
+          {!domestic && trades.length === 0 ? (
             <div className="ob-loading" style={{ fontSize: "12px", padding: "12px 8px" }}>
-              미국 정규장 시간에만 체결 데이터가 수신돼요
+              정규장 시간에 실시간 체결 데이터가 표시돼요
             </div>
-          )}
-          {trades.length === 0 && domestic ? (
+          ) : trades.length === 0 ? (
             <div className="ob-loading">체결 대기 중...</div>
           ) : (
             trades.map((t, i) => (
