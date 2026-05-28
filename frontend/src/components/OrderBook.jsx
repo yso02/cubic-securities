@@ -164,12 +164,14 @@ export default function OrderBook({ stock }) {
 
       {activeTab === "orderbook" && (
         <div className="ob-body">
-          {!domestic && (
+          {!domestic && (!orderbook || (orderbook.asks?.length === 0 && orderbook.bids?.length === 0)) && (
             <div className="ob-overseas-notice">
               미국 정규장(한국 22:30~05:00, 서머타임 기준)에만 실시간 데이터가 수신돼요
             </div>
           )}
-          {loading || !orderbook ? (
+          {loading || (domestic && !orderbook) ? (
+            <div className="ob-loading">호가 로딩 중...</div>
+          ) : !orderbook || (orderbook.asks?.length === 0 && orderbook.bids?.length === 0) ? (
             <div className="ob-loading">
               {domestic ? "호가 로딩 중..." : "정규장 시간에 실시간 호가가 표시돼요"}
             </div>
