@@ -55,23 +55,30 @@
 .ask-total { color: #3b82f6; }
 .bid-total { color: #ef4444; }
 
+/* 해외 안내 문구 */
+.ob-overseas-notice {
+  padding: 8px 12px; font-size: 11px; color: var(--c-text-muted);
+  background: var(--c-hover); border-bottom: 1px solid var(--c-border-light);
+  text-align: center;
+}
+
 /* 체결 내역 */
 .ob-trades { max-height: 420px; overflow-y: auto; }
 .ob-trades-head {
-  display: grid; grid-template-columns: 1fr 1fr 0.6fr;
+  display: grid; grid-template-columns: 1fr 1fr;
   padding: 8px 12px; font-size: 11px; color: var(--c-text-muted); font-weight: 600;
   border-bottom: 1px solid var(--c-border-light); background: var(--c-hover);
 }
 .ob-trades-head span:nth-child(2) { text-align: right; }
-.ob-trades-head span:nth-child(3) { text-align: center; }
 .ob-trade-row {
-  display: grid; grid-template-columns: 1fr 1fr 0.6fr;
+  display: grid; grid-template-columns: 1fr 1fr;
   padding: 5px 12px; font-size: 12px; border-bottom: 1px solid var(--c-border-light);
   transition: background 0.15s;
 }
 .ob-trade-row:hover { background: var(--c-hover); }
 .ob-trade-price { font-weight: 600; color: var(--c-text); }
-.ob-trade-vol { text-align: right; color: var(--c-text-sub); }
-.ob-trade-type { text-align: center; font-weight: 700; font-size: 11px; }
-.ob-trade-type.buy { color: #ef4444; }
-.ob-trade-type.sell { color: #3b82f6; }
+
+/* 체결량 색상: 매수=빨강, 매도=파랑 */
+.ob-trade-vol { text-align: right; font-weight: 600; }
+.ob-trade-vol.buy { color: #ef4444; }
+.ob-trade-vol.sell { color: #3b82f6; }

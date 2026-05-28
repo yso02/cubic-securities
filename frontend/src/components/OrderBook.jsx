@@ -177,7 +177,7 @@ export default function OrderBook({ stock }) {
             <>
               {/* 매도호가 — 역순 */}
               <div className="ob-section asks">
-                {[...(orderbook.asks || [])].reverse().map((a, i) => (
+                {[...(orderbook.asks || [])].sort((a, b) => Number(b.price) - Number(a.price)).map((a, i) => (
                   <div key={`ask-${i}`} className="ob-row ask">
                     <div className="ob-bar-wrap">
                       <div
@@ -229,8 +229,7 @@ export default function OrderBook({ stock }) {
         <div className="ob-trades">
           <div className="ob-trades-head">
             <span>체결가</span>
-            <span>수량</span>
-            <span>구분</span>
+            <span>체결량</span>
           </div>
           {!domestic && trades.length === 0 ? (
             <div className="ob-loading" style={{ fontSize: "12px", padding: "12px 8px" }}>
@@ -240,14 +239,10 @@ export default function OrderBook({ stock }) {
             <div className="ob-loading">체결 대기 중...</div>
           ) : (
             trades.map((t, i) => (
-              <div
-                key={i}
-                className={`ob-trade-row ${t.tradeType === "BUY" ? "buy" : "sell"}`}
-              >
+              <div key={i} className="ob-trade-row">
                 <span className="ob-trade-price">{formatPrice(t.price)}</span>
-                <span className="ob-trade-vol">{fmt(t.volume)}</span>
-                <span className={`ob-trade-type ${t.tradeType === "BUY" ? "buy" : "sell"}`}>
-                  {t.tradeType === "BUY" ? "매수" : "매도"}
+                <span className={`ob-trade-vol ${t.side === "BUY" ? "buy" : "sell"}`}>
+                  {fmt(t.quantity)}
                 </span>
               </div>
             ))
