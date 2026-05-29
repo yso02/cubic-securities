@@ -121,15 +121,22 @@ export default function OrderBook({ stock }) {
     return () => {
       subsRef.current.forEach((s) => { try { s.unsubscribe(); } catch {} });
       subsRef.current = [];
-      if (client.connected) {
-        if (domestic) {
-          client.publish({ destination: "/app/unsubscribe/domestic", body: stock.symbol });
+      try {
+        if (client.connected) {
+          if (domestic) {
+            client.publish({ destination: "/app/unsubscribe/domestic", body: stock.symbol });
+          } else {
+            client.publish({ destination: "/app/unsubscribe/overseas", body: `${stock.symbol},${exchange}` });
+            client.publish({ destination: "/app/unsubscribe/overseas/orderbook", body: `${stock.symbol},${exchange}` });
+          }
+          // unsubscribe 메시지 전달 후 약간 대기 후 deactivate
+          setTimeout(() => client.deactivate(), 300);
         } else {
-          client.publish({ destination: "/app/unsubscribe/overseas", body: `${stock.symbol},${exchange}` });
-          client.publish({ destination: "/app/unsubscribe/overseas/orderbook", body: `${stock.symbol},${exchange}` });
+          client.deactivate();
         }
+      } catch {
+        client.deactivate();
       }
-      client.deactivate();
     };
   }, [stock.symbol]);
 
