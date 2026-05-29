@@ -1,6 +1,7 @@
 // src/components/OrderBook.jsx
 import { useState, useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
+import SockJS from 'sockjs-client';
 import {
   getDomesticOrderbook,
   isDomestic,
@@ -49,13 +50,8 @@ export default function OrderBook({ stock }) {
 
   // WebSocket 실시간 호가 + 체결
   useEffect(() => {
-    // ✅ /ws/websocket (raw WebSocket) — ngrok CORS 우회
-    const wsURL =
-      NGROK_URL.replace("https://", "wss://").replace("http://", "ws://") +
-      "/ws/websocket";
-
     const client = new Client({
-      brokerURL: wsURL,
+      webSocketFactory: () => new SockJS(`${NGROK_URL}/ws`),
       connectHeaders: { "ngrok-skip-browser-warning": "true" },
       reconnectDelay: 5000,
       onConnect: () => {
