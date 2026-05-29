@@ -595,7 +595,11 @@ export default function MainDashboard({ user }) {
                       </div>
                     </div>
                     <div className="price">
-                      {s.price ? fmtPrice(s.price, s.market) : "-"}
+                      {s.price
+                        ? isDomestic(s.market)
+                          ? `${fmt(Math.round(Number(s.price)))}원`
+                          : `${fmt(Math.round(Number(s.price) * exRate.rate))}원`
+                        : "-"}
                     </div>
                     <div
                       className={`change ${isUp(s.changePercent) ? "up" : "dn"}`}
