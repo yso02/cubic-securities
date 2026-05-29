@@ -129,8 +129,7 @@ export default function OrderBook({ stock }) {
             client.publish({ destination: "/app/unsubscribe/overseas", body: `${stock.symbol},${exchange}` });
             client.publish({ destination: "/app/unsubscribe/overseas/orderbook", body: `${stock.symbol},${exchange}` });
           }
-          // unsubscribe 메시지 전달 후 약간 대기 후 deactivate
-          setTimeout(() => client.deactivate(), 300);
+          client.deactivate();
         } else {
           client.deactivate();
         }
