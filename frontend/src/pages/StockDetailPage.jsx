@@ -60,7 +60,7 @@ export default function StockDetailPage({ user }) {
       onConnect: () => {
         const dom = isDomestic(stock.market);
         if (dom) {
-          client.publish({ destination: "/app/subscribe/domestic/price", body: stock.symbol });
+          client.publish({ destination: "/app/subscribe/domestic", body: stock.symbol });
           client.subscribe(`/topic/domestic/${stock.symbol}`, msg => {
             try { setStock(prev => prev ? { ...prev, ...JSON.parse(msg.body) } : prev); } catch {}
           });
@@ -74,7 +74,17 @@ export default function StockDetailPage({ user }) {
       },
     });
     client.activate(); wsRef.current = client;
-    return () => { if (client) client.deactivate(); };
+    return () => {
+      if (client.connected) {
+        if (isDomestic(stock.market)) {
+          client.publish({ destination: "/app/unsubscribe/domestic", body: stock.symbol });
+        } else {
+          const exc = stock.exchange || getExchangeCode(stock.market);
+          client.publish({ destination: "/app/unsubscribe/overseas", body: `${stock.symbol},${exc}` });
+        }
+      }
+      client.deactivate();
+    };
   }, [stock?.symbol]);
 
   // 탭 타이틀
