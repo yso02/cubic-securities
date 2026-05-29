@@ -1,4 +1,4 @@
-# CUBIC 증권 — 프로젝트 컨텍스트 (2025.05.27 기준)
+# CUBIC 증권 — 프로젝트 컨텍스트 (2025.05.28 기준)
 
 ## 프로젝트 개요
 React 기반 모의 증권 거래 웹앱 (캡스톤). 토스증권 스타일 UI.
@@ -29,7 +29,7 @@ frontend/
 │   │   ├── Sidebar.jsx / .css       ← 전역 사이드바 (관심/최근본/실시간/다크모드)
 │   │   ├── StockChart.jsx / .css    ← TradingView 캔들차트 (전체화면 토글, MA, 거래량)
 │   │   ├── TradeModal.jsx / .css    ← 매수/매도 모달
-│   │   ├── OrderBook.jsx / .css     ← 호가창 (국내+해외 REST+WebSocket, 체결탭)
+│   │   ├── OrderBook.jsx / .css     ← 호가창 (국내+해외 WebSocket, 체결탭)
 │   ├── hooks/
 │   │   └── useRealtimePrice.js      ← WebSocket 실시간 가격 훅
 │   ├── pages/
@@ -97,17 +97,19 @@ frontend/
 - 종목 헤더 (로고+이름+코드+실시간 가격)
 - 매수/매도 버튼
 - 캔들차트 (StockChart, 전체화면 토글 지원)
-- 호가창 (OrderBook, 국내+해외)
+- 호가창 (OrderBook, 국내+해외 모두 표시)
 - 뉴스 자리 (API 연동 예정)
 - WebSocket 실시간 구독
 - 브라우저 탭 타이틀에 실시간 가격 표시
+- ⚠️ `isDomestic()` 조건 제거됨 → 해외주식도 OrderBook 렌더링
 
-### OrderBook (국내+해외) ✅ 2025.05.27 완성
+### OrderBook (국내+해외) ✅ 2025.05.28 완성
 - **국내**: REST `getDomesticOrderbook` + WebSocket `/topic/orderbook/{symbol}` + 체결 `/topic/tradetick/{symbol}`
-- **해외**: REST `getOverseasOrderbook` + WebSocket 구독 `/app/subscribe/overseas/orderbook` → `/topic/orderbook/{symbol}` + 체결 `/topic/tradetick/overseas/{symbol}`
-- **호가 탭 / 체결 탭** 전환
-- 매도호가 빨강, 매수호가 파랑, 바 그래프
-- 해외 장외 시간 안내 문구 표시
+- **해외**: REST 없음 (API 미제공) → WebSocket만 사용. 정규장(한국 22:30~05:00, 서머타임)에만 데이터 수신
+- **호가 탭**: 매도호가 내림차순 정렬(`.sort((a,b) => b.price - a.price)`), 매수호가 그대로
+- **체결 탭**: 체결가 + 체결량 (매수=빨강, 매도=파랑 색상으로 구분, 라벨 없음)
+- **체결 데이터 필드**: `price`, `quantity`, `side` (`BUY`/`SELL`) — `volume`/`tradeType` 아님
+- 해외 장외 시간 안내 문구 표시 (서머타임 기준 22:30~05:00)
 - ⚠️ WebSocket URL 반드시 `/ws/websocket` 사용 (SockJS `/ws`는 ngrok CORS 차단)
 
 ### AccountPage (내 계좌)
@@ -148,8 +150,8 @@ frontend/
 - `GET /api/stocks/chart/overseas/{symbol}/minute?exchange=NAS&timeUnit=5`
 
 ### 호가
-- `GET /api/stocks/orderbook/domestic/{symbol}` → 국내 호가
-- `GET /api/stocks/orderbook/overseas/{symbol}?exchange=NAS` → 해외 호가
+- `GET /api/stocks/orderbook/domestic/{symbol}` → 국내 호가 (REST)
+- ⚠️ 해외 호가 REST API 없음 → WebSocket으로만 수신
 
 ### 관심종목
 - `GET/POST/DELETE /api/watchlist`
@@ -195,7 +197,7 @@ connectHeaders: { "ngrok-skip-browser-warning": "true" }
 - 호가 구독: `destination: "/app/subscribe/overseas/orderbook", body: "AAPL,NAS"`
 - 호가 수신: `/topic/orderbook/AAPL`
 - 체결 수신: `/topic/tradetick/overseas/AAPL`
-- ⚠️ 호가/체결은 미국 정규장(한국 23:30~06:00)에만 수신됨
+- ⚠️ 호가/체결은 미국 정규장(한국 22:30~05:00, 서머타임 기준)에만 수신됨
 
 ---
 
@@ -252,9 +254,15 @@ connectHeaders: { "ngrok-skip-browser-warning": "true" }
 - 종목 상세 페이지 분리 (/stock/:symbol)
 - 사이드바 전역화 (App.jsx 레벨)
 - 시가총액(MARKET_CAP) 정렬 추가 (MainDashboard 정렬 탭)
-- **[2025.05.27] OrderBook.jsx 해외 호가/체결 지원** (WebSocket URL 버그 수정 포함)
+- **[2025.05.27] OrderBook.jsx 해외 호가/체결 WebSocket 지원** (URL 버그 `/ws`→`/ws/websocket` 수정 포함)
 - **[2025.05.27] stockApi.js `getOverseasOrderbook` 함수 추가**
-- **[2025.05.27] 국내주식 실시간 체결 WebSocket 정상화** (URL `/ws`→`/ws/websocket` 수정)
+- **[2025.05.27] 국내주식 실시간 체결 WebSocket 정상화**
+- **[2025.05.28] StockDetailPage `isDomestic` 조건 제거** → 해외주식도 OrderBook 렌더링
+- **[2025.05.28] 해외 호가 REST 제거** (API 미제공, WebSocket만 사용)
+- **[2025.05.28] 체결 데이터 필드 수정** (`volume`→`quantity`, `tradeType`→`side`)
+- **[2025.05.28] 체결 탭 UI 개선** (매수/매도 라벨 제거, 체결량 색상으로 구분: 매수=빨강/매도=파랑)
+- **[2025.05.28] 매도호가 정렬 수정** (`.reverse()` → `.sort()` 내림차순 명시)
+- **[2025.05.28] 서머타임 안내 문구 수정** (23:30 → 22:30~05:00)
 
 ---
 
@@ -264,6 +272,7 @@ connectHeaders: { "ngrok-skip-browser-warning": "true" }
 - [ ] 테마·섹터 탭 내용
 - [ ] 실시간 패널 체결 데이터 표시
 - [ ] 다크모드 세부 스타일 보완
+- [ ] 해외 호가 WebSocket 데이터 수신 확인 (정규장 시간 테스트 필요)
 
 ---
 
@@ -280,4 +289,5 @@ npm install axios sockjs-client @stomp/stompjs lightweight-charts react-markdown
 3. **WebSocket URL**: 반드시 `/ws/websocket` (raw WebSocket). `/ws`는 SockJS용이며 ngrok CORS 차단됨
 4. **국내주식 구독 경로**: 홈은 `/app/subscribe/domestic/price`, 상세(호가 포함)는 `/app/subscribe/domestic`
 5. **최근 본 종목**: sessionStorage `cubic_recent` + `cubic_recent_update` 이벤트로 Sidebar 동기화
-6. **해외 호가/체결**: 미국 정규장(한국 23:30~06:00)에만 데이터 수신. 장외 시간엔 빈 화면 정상
+6. **해외 호가/체결**: 미국 정규장(한국 22:30~05:00, 서머타임 기준)에만 데이터 수신. 장외 시간엔 안내 문구 정상
+7. **체결 데이터 필드**: `price`, `quantity`, `side` (`BUY`/`SELL`) 사용. `volume`/`tradeType` 아님

@@ -39,6 +39,16 @@ export default function StockChart({ stock, fullscreen, onToggleFullscreen }) {
   const [showMA20, setShowMA20] = useState(true);
   const [showMA60, setShowMA60] = useState(false);
   const [showVol, setShowVol] = useState(true);
+  const [darkMode, setDarkMode] = useState(() => document.documentElement.getAttribute("data-theme") === "dark");
+
+  // 다크모드 변경 감지
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setDarkMode(document.documentElement.getAttribute("data-theme") === "dark");
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    return () => observer.disconnect();
+  }, []);
 
   const dom = isDomestic(stock?.market);
   const periods = dom ? DOM_PERIODS : OVR_PERIODS;
@@ -62,7 +72,7 @@ export default function StockChart({ stock, fullscreen, onToggleFullscreen }) {
       finally{if(!cancelled)setLoading(false);}
     })();
     return()=>{cancelled=true;};
-  },[stock?.symbol,period,showMA5,showMA20,showMA60,showVol,fullscreen]);
+  },[stock?.symbol,period,showMA5,showMA20,showMA60,showVol,fullscreen,darkMode]);
 
   const renderChart=(data)=>{
     if(chartRef.current){chartRef.current.remove();chartRef.current=null;}

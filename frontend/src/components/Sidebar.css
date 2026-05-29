@@ -28,6 +28,7 @@
   border-radius: 8px; color: var(--c-text-muted); cursor: pointer;
   font-size: 10px; font-weight: 600; font-family: inherit;
   transition: all 0.15s;
+  position: relative;
 }
 .sb-btn svg { width: 18px; height: 18px; }
 .sb-btn:hover { background: var(--c-hover); color: var(--c-text-sub); }
@@ -86,6 +87,98 @@
 .sb-empty-t { font-size: 14px; font-weight: 700; color: var(--c-text); }
 .sb-empty-d { font-size: 12px; color: var(--c-text-muted); text-align: center; line-height: 1.6; white-space: pre-line; }
 
+/* ── 실시간 체결 ── */
+.rt-market-status {
+  display: flex; gap: 6px; padding: 10px 16px;
+  border-bottom: 1px solid var(--c-border-light);
+}
+.rt-market-badge {
+  padding: 3px 8px; border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+.rt-market-badge.open { background: rgba(34,197,94,0.12); color: #16a34a; }
+.rt-market-badge.closed { background: var(--c-hover); color: var(--c-text-muted); }
+
+.rt-list { display: flex; flex-direction: column; }
+.rt-head {
+  display: grid; grid-template-columns: 1fr 1fr 0.7fr;
+  padding: 8px 16px;
+  font-size: 11px; font-weight: 600; color: var(--c-text-muted);
+  background: var(--c-hover);
+  border-bottom: 1px solid var(--c-border-light);
+}
+.rt-head span:nth-child(2), .rt-head span:nth-child(3) { text-align: right; }
+.rt-row {
+  display: grid; grid-template-columns: 1fr 1fr 0.7fr;
+  padding: 6px 16px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--c-border-light);
+  transition: background 0.1s;
+  animation: fadeIn 0.2s ease;
+}
+.rt-row:hover { background: var(--c-hover); }
+@keyframes fadeIn {
+  from { opacity: 0; background: rgba(20,184,166,0.08); }
+  to { opacity: 1; background: transparent; }
+}
+.rt-name { color: var(--c-text); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rt-price { text-align: right; font-weight: 600; color: var(--c-text); }
+.rt-qty { text-align: right; font-weight: 700; }
+.rt-qty.buy { color: #ef4444; }
+.rt-qty.sell { color: #3b82f6; }
+
+/* 실시간 알림 점 */
+.rt-dot {
+  position: absolute; top: 6px; right: 6px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #ef4444;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
 @media (max-width: 768px) {
   .sidebar { display: none; }
 }
+
+/* ── 내 투자 패널 ── */
+.my-balances {
+  display: flex; align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--c-border-light);
+  gap: 0;
+}
+.my-bal-item { display: flex; align-items: center; gap: 8px; flex: 1; }
+.my-bal-flag { font-size: 20px; }
+.my-bal-label { display: block; font-size: 11px; color: var(--c-text-muted); }
+.my-bal-amount { display: block; font-size: 13px; font-weight: 700; color: var(--c-text); }
+.my-bal-divider { width: 1px; height: 32px; background: var(--c-border-light); margin: 0 12px; }
+
+.my-invest-summary {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--c-border-light);
+  background: var(--c-hover);
+}
+.my-invest-label { font-size: 11px; color: var(--c-text-muted); font-weight: 600; }
+.my-invest-value { font-size: 18px; font-weight: 800; color: var(--c-text); margin: 2px 0; }
+.my-invest-pl { font-size: 12px; font-weight: 600; }
+.my-invest-pl.up { color: #ef4444; }
+.my-invest-pl.dn { color: #3b82f6; }
+
+.my-holding-right { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; }
+.my-holding-eval { font-size: 12px; font-weight: 700; color: var(--c-text); }
+.my-holding-pl { font-size: 11px; font-weight: 600; }
+.my-holding-pl.up { color: #ef4444; }
+.my-holding-pl.dn { color: #3b82f6; }
+
+.loading-spinner-sm {
+  width: 20px; height: 20px;
+  border: 2px solid var(--c-border);
+  border-top-color: #14b8a6;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin: 40px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

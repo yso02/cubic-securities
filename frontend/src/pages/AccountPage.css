@@ -1,84 +1,170 @@
 /* AccountPage.css */
-.account-page { height: calc(100vh - 56px); background: var(--c-bg); overflow-y: auto; padding: 32px 24px; transition: background 0.3s; }
-.account-container { max-width: 1100px; margin: 0 auto; }
-.account-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 28px; }
-.account-header h1 { font-size: 26px; font-weight: 800; color: var(--c-text); letter-spacing: -0.5px; margin-bottom: 4px; }
-.account-header p { font-size: 14px; color: var(--c-text-sub); }
-.refresh-btn { padding: 8px 16px; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-sm); font-size: 13px; font-weight: 600; color: var(--c-text-sub); cursor: pointer; transition: all 0.15s; font-family: inherit; }
-.refresh-btn:hover { background: var(--c-hover); }
-.ws-badge-acc { display: inline-block; margin-left: 8px; padding: 1px 6px; background: rgba(34,197,94,0.1); color: #16a34a; border-radius: 3px; font-size: 10px; font-weight: 700; }
+
+/* ── 전체 레이아웃 ── */
+.account-page {
+  display: flex;
+  height: calc(100vh - 72px);
+  background: var(--c-bg);
+  transition: background 0.3s;
+}
+
+/* ── 좌측 사이드바 ── */
+.account-sidebar {
+  width: 180px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--c-border);
+  background: var(--c-surface);
+  padding: 16px 0;
+  transition: background 0.3s;
+}
+
+.acc-tab {
+  display: block; width: 100%;
+  padding: 12px 20px;
+  background: none; border: none;
+  text-align: left;
+  font-size: 14px; font-weight: 500;
+  color: var(--c-text-sub);
+  cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+  border-left: 3px solid transparent;
+}
+.acc-tab:hover { background: var(--c-hover); color: var(--c-text); }
+.acc-tab.active {
+  color: var(--c-text); font-weight: 700;
+  background: var(--c-hover);
+  border-left-color: #14b8a6;
+}
+
+/* ── 메인 콘텐츠 ── */
+.account-main {
+  flex: 1; min-width: 0;
+  overflow-y: auto;
+}
+
+.acc-content { padding: 28px 32px; }
+
+/* ── 총 자산 ── */
+.total-asset-area { margin-bottom: 28px; }
+.total-asset-top { margin-bottom: 4px; }
+.total-asset-label {
+  font-size: 13px; color: var(--c-text-muted); display: flex; align-items: center; gap: 6px;
+}
+.total-asset-value-row {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 4px;
+}
+.total-asset-value-num {
+  font-size: 32px; font-weight: 800;
+  color: var(--c-text); letter-spacing: -0.5px;
+}
+.total-asset-pl { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+.total-asset-pl.up { color: #ef4444; }
+.total-asset-pl.dn { color: #3b82f6; }
+
+/* 환전 버튼 */
+.ex-inline-btn {
+  padding: 6px 14px;
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: 8px; font-size: 13px; font-weight: 600;
+  color: var(--c-text-sub); cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.ex-inline-btn:hover { background: var(--c-hover); color: var(--c-text); }
+
+/* 환전 인라인 패널 */
+.ex-inline-panel {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  max-width: 480px;
+  animation: slideDown 0.2s ease;
+}
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.ex-inline-balances {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px; font-size: 13px; font-weight: 600;
+  color: var(--c-text-sub); flex-wrap: wrap;
+}
+.ex-inline-arrow { color: var(--c-text-muted); font-size: 16px; }
+.ex-rate-badge {
+  margin-left: auto; font-size: 11px; color: var(--c-text-muted);
+  background: var(--c-hover); padding: 3px 10px; border-radius: 20px;
+}
+
+.ws-badge-acc {
+  display: inline-block; padding: 1px 6px;
+  background: rgba(34,197,94,0.1); color: #16a34a;
+  border-radius: 3px; font-size: 10px; font-weight: 700;
+}
 [data-theme="dark"] .ws-badge-acc { background: rgba(74,222,128,0.1); color: #4ade80; }
 
-/* 자산 카드 */
-.asset-summary { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 14px; margin-bottom: 20px; }
-.asset-card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-lg); padding: 22px 24px; display: flex; flex-direction: column; gap: 6px; transition: background 0.3s; }
-.asset-card.primary { background: linear-gradient(135deg, #f0fdfa, #ccfbf1); border-color: #99f6e4; }
-[data-theme="dark"] .asset-card.primary { background: linear-gradient(135deg, #042f2e, #0f3d3c); border-color: rgba(94,234,212,0.2); }
-.asset-label { font-size: 12px; font-weight: 600; color: var(--c-text-muted); }
-.asset-card.primary .asset-label { color: #0f766e; }
-[data-theme="dark"] .asset-card.primary .asset-label { color: #5eead4; }
-.asset-value { font-size: 28px; font-weight: 800; color: var(--c-text); letter-spacing: -0.5px; }
-.asset-card.primary .asset-value { color: #134e4a; }
-[data-theme="dark"] .asset-card.primary .asset-value { color: #ccfbf1; }
-.asset-sub { font-size: 11.5px; color: var(--c-text-muted); }
-.asset-profit { font-size: 14px; font-weight: 700; margin-top: 2px; }
-.asset-profit.up { color: #ef4444; }
-.asset-profit.down { color: #3b82f6; }
+/* ── 자산 항목 리스트 ── */
+.asset-list {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 28px;
+  transition: background 0.3s;
+}
+.asset-list-title {
+  padding: 14px 20px 10px;
+  font-size: 12px; font-weight: 600;
+  color: var(--c-text-muted);
+  border-bottom: 1px solid var(--c-border-light);
+}
+.asset-list-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--c-border-light);
+  background: none; border-left: none; border-right: none; border-top: none;
+  width: 100%; font-family: inherit;
+  transition: background 0.15s;
+}
+.asset-list-row:last-child { border-bottom: none; }
+.asset-list-row.clickable { cursor: pointer; }
+.asset-list-row.clickable:hover { background: var(--c-hover); }
+.asset-list-left { display: flex; align-items: center; gap: 12px; }
+.asset-flag { font-size: 24px; }
+.asset-list-name { display: block; font-size: 14px; font-weight: 600; color: var(--c-text); text-align: left; }
+.asset-list-sub { display: block; font-size: 12px; color: var(--c-text-muted); margin-top: 1px; text-align: left; }
+.asset-list-right { display: flex; align-items: center; gap: 6px; }
+.asset-list-amount { font-size: 14px; font-weight: 700; color: var(--c-text); }
 
-/* ═══════════ 환전 카드 (토스 스타일) ═══════════ */
-.exchange-card { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-lg); padding: 0; margin-bottom: 20px; overflow: hidden; transition: background 0.3s; }
+/* ── 섹션 ── */
+.acc-section { margin-bottom: 32px; }
+.acc-section-title {
+  font-size: 16px; font-weight: 800;
+  color: var(--c-text); margin-bottom: 12px;
+}
 
-.ex-header { padding: 20px 24px; border-bottom: 1px solid var(--c-border-light); }
-.ex-balances { display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 12px; }
-.ex-bal-item { display: flex; align-items: center; gap: 10px; }
-.ex-flag { font-size: 28px; }
-.ex-currency { font-size: 12px; color: var(--c-text-muted); display: block; }
-.ex-amount { font-size: 20px; font-weight: 800; color: var(--c-text); display: block; }
-.ex-arrow { font-size: 18px; color: var(--c-text-muted); font-weight: 700; }
-.ex-rate-badge { text-align: center; font-size: 12px; color: var(--c-text-sub); background: var(--c-hover); display: inline-block; padding: 4px 12px; border-radius: 20px; margin: 0 auto; display: block; width: fit-content; }
-
-.ex-actions { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--c-border-light); }
-.ex-action-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 16px; background: none; border: none; border-right: 1px solid var(--c-border-light); cursor: pointer; transition: all 0.15s; font-family: inherit; }
-.ex-action-btn:last-child { border-right: none; }
-.ex-action-btn:hover { background: var(--c-hover); }
-.ex-action-btn.active { background: var(--c-primary-muted); }
-.ex-action-btn.active.buy { border-bottom: 2px solid #14b8a6; }
-.ex-action-btn.active.sell { border-bottom: 2px solid #3b82f6; }
-.ex-action-icon { font-size: 24px; }
-.ex-action-btn span { font-size: 14px; font-weight: 700; color: var(--c-text); }
-.ex-action-btn small { font-size: 11px; color: var(--c-text-muted); }
-
-.ex-form { padding: 20px 24px; }
-.ex-input-row { display: flex; align-items: center; background: var(--c-bg); border: 1.5px solid var(--c-border); border-radius: var(--r-md); padding: 0 16px; transition: border-color 0.15s; }
-.ex-input-row:focus-within { border-color: #14b8a6; }
-.ex-input-row input { flex: 1; border: none; background: none; padding: 14px 0; font-size: 18px; font-weight: 700; color: var(--c-text); outline: none; font-family: inherit; }
-.ex-input-row input::placeholder { color: var(--c-text-muted); font-weight: 400; }
-.ex-unit { font-size: 14px; color: var(--c-text-muted); font-weight: 600; }
-.ex-preview { text-align: right; font-size: 14px; color: #14b8a6; font-weight: 600; margin-top: 8px; }
-.ex-submit { width: 100%; margin-top: 14px; padding: 14px; background: #14b8a6; color: #fff; border: none; border-radius: var(--r-md); font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background 0.15s; }
-.ex-submit:hover:not(:disabled) { background: #0d9488; }
-.ex-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-.ex-msg { margin-top: 10px; padding: 10px 12px; border-radius: var(--r-sm); font-size: 13px; font-weight: 600; text-align: center; }
-.ex-msg.success { background: rgba(20,184,166,0.1); color: #0f766e; }
-.ex-msg.error { background: rgba(239,68,68,0.1); color: #dc2626; }
-
-/* 포트폴리오 요약 */
-.portfolio-summary-bar { display: flex; gap: 24px; padding: 14px 20px; background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-md); margin-bottom: 20px; font-size: 13px; color: var(--c-text-sub); transition: background 0.3s; flex-wrap: wrap; }
-.portfolio-summary-bar strong { color: var(--c-text); font-weight: 700; }
-.portfolio-summary-bar .up { color: #ef4444; } .portfolio-summary-bar .up strong { color: #ef4444; }
-.portfolio-summary-bar .down { color: #3b82f6; } .portfolio-summary-bar .down strong { color: #3b82f6; }
-
-/* 섹션 제목 */
-.acc-section-title { font-size: 16px; font-weight: 800; color: var(--c-text); margin: 24px 0 12px; }
-
-/* 테이블 */
-.acc-table { background: var(--c-surface); border: 1px solid var(--c-border); border-radius: var(--r-lg); overflow: hidden; margin-bottom: 8px; transition: background 0.3s; }
-.acc-table-head { display: grid; padding: 12px 18px; background: var(--c-hover); border-bottom: 1px solid var(--c-border-light); }
+/* ── 테이블 ── */
+.acc-table {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 12px; overflow: hidden;
+  transition: background 0.3s;
+}
+.acc-table-head {
+  display: grid; padding: 11px 18px;
+  background: var(--c-hover);
+  border-bottom: 1px solid var(--c-border-light);
+}
 .acc-table-head span { font-size: 11.5px; color: var(--c-text-muted); font-weight: 600; text-align: right; }
 .acc-table-head span:first-child { text-align: left; }
-.holdings-grid-v2 { grid-template-columns: 2.2fr 1fr 0.8fr 1fr 1.2fr 1.2fr; }
+.holdings-grid { grid-template-columns: 2.2fr 1fr 0.8fr 1fr 1.2fr 1.2fr; }
 .orders-grid { grid-template-columns: 2.5fr 0.8fr 1fr 1fr 1.4fr; }
-.acc-table-row { display: grid; padding: 14px 18px; border-bottom: 1px solid var(--c-border-light); align-items: center; transition: background 0.12s; }
+
+.acc-table-row {
+  display: grid; padding: 14px 18px;
+  border-bottom: 1px solid var(--c-border-light);
+  align-items: center; transition: background 0.12s;
+}
 .acc-table-row:last-child { border-bottom: none; }
 .acc-table-row:hover { background: var(--c-hover); }
 .acc-table-row.clickable { cursor: pointer; }
@@ -106,25 +192,143 @@
 
 .acc-empty { padding: 48px 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .acc-empty-ico { font-size: 36px; opacity: 0.6; }
-.acc-empty p { font-size: 14px; font-weight: 700; color: var(--c-text); }
+.acc-empty p { font-size: 14px; font-weight: 700; color: var(--c-text); margin: 0; }
 .acc-empty small { font-size: 12px; color: var(--c-text-muted); }
 
+/* ── 수익분석 ── */
 .profit-period-tabs { display: flex; gap: 4px; padding: 12px 18px; border-bottom: 1px solid var(--c-border-light); }
-.period-chip { padding: 5px 12px; border-radius: var(--r-sm); border: 1px solid var(--c-border); background: var(--c-surface); font-size: 12px; font-weight: 500; color: var(--c-text-sub); cursor: pointer; font-family: inherit; transition: all 0.12s; }
-.period-chip:hover { background: var(--c-primary-muted); }
+.period-chip { padding: 5px 12px; border-radius: 6px; border: 1px solid var(--c-border); background: var(--c-surface); font-size: 12px; font-weight: 500; color: var(--c-text-sub); cursor: pointer; font-family: inherit; transition: all 0.12s; }
+.period-chip:hover { background: var(--c-hover); }
 .period-chip.active { background: #14b8a6; color: #fff; border-color: #14b8a6; }
 .profit-total { display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; border-bottom: 1px solid var(--c-border-light); font-size: 14px; color: var(--c-text-sub); }
 .profit-total strong { font-size: 18px; font-weight: 800; }
 .profit-total strong.up { color: #ef4444; }
 .profit-total strong.down { color: #3b82f6; }
 
+/* ── 환전 서브페이지 ── */
+.ex-page { max-width: 480px; padding: 28px 32px; }
+
+.ex-page-header {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 28px;
+}
+.ex-back-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 50%;
+  background: none; border: none;
+  color: var(--c-text-muted); cursor: pointer;
+  transition: background 0.15s;
+}
+.ex-back-btn:hover { background: var(--c-hover); color: var(--c-text); }
+.ex-page-title { font-size: 18px; font-weight: 800; color: var(--c-text); }
+
+.ex-balance-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: 12px; padding: 20px 24px;
+  margin-bottom: 12px;
+}
+.ex-balance-item { display: flex; align-items: center; gap: 12px; }
+.ex-balance-flag { font-size: 28px; }
+.ex-balance-label { display: block; font-size: 12px; color: var(--c-text-muted); margin-bottom: 2px; }
+.ex-balance-amount { display: block; font-size: 18px; font-weight: 800; color: var(--c-text); }
+
+.ex-rate-info {
+  text-align: center; font-size: 12px; color: var(--c-text-muted);
+  margin-bottom: 24px;
+}
+
+.ex-input-section { margin-bottom: 20px; }
+.ex-input-label { display: block; font-size: 13px; font-weight: 600; color: var(--c-text-sub); margin-bottom: 8px; }
+.ex-input-wrap {
+  display: flex; align-items: center;
+  background: var(--c-surface); border: 1.5px solid var(--c-border);
+  border-radius: 10px; padding: 0 16px;
+  transition: border-color 0.15s;
+}
+.ex-input-wrap:focus-within { border-color: #14b8a6; }
+.ex-input-wrap input {
+  flex: 1; border: none; background: none;
+  padding: 16px 0; font-size: 24px; font-weight: 700;
+  color: var(--c-text); outline: none; font-family: inherit;
+}
+.ex-input-wrap input::placeholder { color: var(--c-text-muted); font-weight: 400; }
+.ex-input-unit { font-size: 16px; font-weight: 600; color: var(--c-text-muted); }
+.ex-preview-text { text-align: right; font-size: 14px; color: #14b8a6; font-weight: 600; margin-top: 8px; }
+
+.ex-confirm-btn {
+  width: 100%; padding: 16px;
+  background: #14b8a6; color: #fff;
+  border: none; border-radius: 10px;
+  font-size: 16px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: background 0.15s;
+}
+.ex-confirm-btn:hover:not(:disabled) { background: #0d9488; }
+.ex-confirm-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.ex-result-msg {
+  margin-top: 12px; padding: 12px 16px;
+  border-radius: 8px; font-size: 14px; font-weight: 600; text-align: center;
+}
+.ex-result-msg.success { background: rgba(20,184,166,0.1); color: #0f766e; }
+.ex-result-msg.error { background: rgba(239,68,68,0.1); color: #dc2626; }
+
+/* ── 로딩 ── */
 .loading-spinner { width: 28px; height: 28px; border: 3px solid var(--c-border); border-top-color: #14b8a6; border-radius: 50%; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── 반응형 ── */
 @media (max-width: 768px) {
-  .asset-summary { grid-template-columns: 1fr; }
-  .holdings-grid-v2 { grid-template-columns: 2fr 1fr 1fr 1fr; }
-  .holdings-grid-v2 span:nth-child(3), .holdings-grid-v2 span:nth-child(4) { display: none; }
-  .ex-balances { flex-direction: column; gap: 12px; }
-  .portfolio-summary-bar { flex-direction: column; gap: 8px; }
+  .account-sidebar { width: 120px; }
+  .acc-tab { padding: 12px 14px; font-size: 13px; }
+  .acc-content { padding: 20px 16px; }
+  .holdings-grid { grid-template-columns: 2fr 1fr 1fr 1fr; }
+  .holdings-grid span:nth-child(4) { display: none; }
+  .ex-page { padding: 20px 16px; }
 }
+
+/* ── 환전 탭 모드 스위처 ── */
+.ex-mode-tabs {
+  display: flex;
+  background: var(--c-hover);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 24px;
+}
+.ex-mode-tab {
+  flex: 1; padding: 10px;
+  background: none; border: none; border-radius: 8px;
+  font-size: 14px; font-weight: 600;
+  color: var(--c-text-muted);
+  cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.ex-mode-tab.active {
+  background: var(--c-surface);
+  color: var(--c-text);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+/* ── 총 투자 금액 섹션 ── */
+.invest-total-row {
+  border-top: 1px solid var(--c-border-light);
+  padding-top: 14px;
+}
+.invest-total-right {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+}
+.asset-invest-pl { font-size: 12px; font-weight: 600; }
+.asset-invest-pl.up { color: #ef4444; }
+.asset-invest-pl.dn { color: #3b82f6; }
+
+/* 서브 행 (국내/해외 들여쓰기) */
+.asset-sub-row {
+  padding-left: 32px !important;
+  background: var(--c-hover);
+}
+.asset-flag-sm { font-size: 18px; }
+.asset-list-name-sm { display: block; font-size: 13px; font-weight: 500; color: var(--c-text-sub); text-align: left; }
+.asset-list-amount-sm { font-size: 13px; font-weight: 600; color: var(--c-text); }
+.asset-invest-pl-sm { font-size: 11px; font-weight: 600; }
+.asset-invest-pl-sm.up { color: #ef4444; }
+.asset-invest-pl-sm.dn { color: #3b82f6; }
