@@ -8,11 +8,13 @@ import AccountPage from "./pages/AccountPage";
 import AiPage from "./pages/AiPage";
 import StockDetailPage from "./pages/StockDetailPage";
 import { getMyInfo, logout as apiLogout } from "./api/stockApi";
+import QuizModal from "./components/QuizModal";
 import "./App.css";
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
+  const [quizOpen, setQuizOpen] = useState(false);
 
   // JWT 토큰이 있으면 서버에서 내 정보 확인
   useEffect(() => {
@@ -64,8 +66,9 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
-        <Sidebar user={user} />
+        <Sidebar user={user} onQuizOpen={() => setQuizOpen(true)} />
       </div>
+      {quizOpen && <QuizModal onClose={() => setQuizOpen(false)} />}
     </BrowserRouter>
   );
 }
