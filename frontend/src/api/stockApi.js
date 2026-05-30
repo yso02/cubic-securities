@@ -350,6 +350,16 @@ export const OVERSEAS_LOGO_MAP = {
   SPOT: "spotify.com",
 };
 
+/* ═══════════ 데일리 퀴즈 ═══════════ */
+export const getTodayQuiz = async () => {
+  const res = await api.get("/api/quiz/today");
+  return res.data;
+};
+export const submitQuiz = async (quizId, answer) => {
+  const res = await api.post("/api/quiz/submit", { quizId, answer });
+  return res.data;
+};
+
 export const getLogoUrl = (symbol, market) => {
   const isOverseas = !isDomestic(market);
   const map = isOverseas ? OVERSEAS_LOGO_MAP : DOMESTIC_LOGO_MAP;
