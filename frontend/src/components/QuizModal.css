@@ -18,6 +18,12 @@
   padding: 24px;
   width: 100%;
   max-width: 420px;
+  animation: quiz-fade 0.2s ease-out both;
+}
+
+@keyframes quiz-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .quiz-header {
