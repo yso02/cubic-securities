@@ -51,6 +51,22 @@ const ICON_COLORS = {
 };
 const ICON_TEXT = { 카카오: "#3C1E1E" };
 
+const fmtVolume = (val, isOverseasVolume = false) => {
+  if (!val) return "-";
+  const num = Number(val);
+  if (isNaN(num)) return "-";
+
+  if (isOverseasVolume) {
+    if (num >= 1_000_000_000_000) return (num / 1_000_000_000_000).toFixed(1) + "조";
+    if (num >= 100_000_000) return Math.round(num / 100_000_000) + "억";
+    return fmt(Math.round(num));
+  }
+
+  if (num >= 1_000_000_000_000) return (num / 1_000_000_000_000).toFixed(1) + "조";
+  if (num >= 100_000_000) return Math.round(num / 100_000_000) + "억";
+  return fmt(Math.round(num));
+};
+
 export default function MainDashboard({ user }) {
   const navigate = useNavigate();
   const [market, setMarket] = useState("domestic");
@@ -614,11 +630,9 @@ export default function MainDashboard({ user }) {
                       {s.changePercent ? fmtChange(s.changePercent) : "-"}
                     </div>
                     <div className="volume">
-                      {s.volume
-                        ? market === "overseas" && sortType === "VOLUME"
-                          ? `${fmt(Math.round(Number(s.volume) * exRate.rate))}원`
-                          : fmt(s.volume)
-                        : "-"}
+                      {market === "overseas" && sortType === "VOLUME"
+                        ? fmtVolume(Math.round(Number(s.volume) * exRate.rate), true)
+                        : fmtVolume(s.volume)}
                     </div>
                   </div>
                 ))
