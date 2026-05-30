@@ -40,7 +40,21 @@ export default function QuizModal({ onClose }) {
   const options = quiz?.type === "OX" ? ["O", "X"] : (quiz?.options || []);
 
   return createPortal(
-    <div className="quiz-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div
+      onClick={e => e.target === e.currentTarget && onClose()}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'rgba(0,0,0,0.45)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 999999,
+      }}
+    >
       <div className={`quiz-modal ${result ? "result-mode" : ""}`}>
 
         {/* 로딩 */}
