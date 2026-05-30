@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { getTodayQuiz, submitQuiz } from "../api/stockApi";
 import "./QuizModal.css";
 
@@ -38,7 +39,7 @@ export default function QuizModal({ onClose }) {
 
   const options = quiz?.type === "OX" ? ["O", "X"] : (quiz?.options || []);
 
-  return (
+  return createPortal(
     <div className="quiz-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className={`quiz-modal ${result ? "result-mode" : ""}`}>
 
@@ -139,6 +140,7 @@ export default function QuizModal({ onClose }) {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
