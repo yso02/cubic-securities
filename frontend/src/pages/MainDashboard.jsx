@@ -320,12 +320,7 @@ export default function MainDashboard({ user }) {
   const getTc = (name) => ICON_TEXT[name] || "#fff";
 
   const displayStocks = searchResults || stocks;
-  const lastColHeader =
-    sortType === "VOLUME"
-      ? market === "domestic"
-        ? "거래대금"
-        : "거래량"
-      : "거래대금";
+  const lastColHeader = "거래대금";
 
   return (
     <div className="dash-page">
@@ -619,7 +614,11 @@ export default function MainDashboard({ user }) {
                       {s.changePercent ? fmtChange(s.changePercent) : "-"}
                     </div>
                     <div className="volume">
-                      {s.volume ? fmt(s.volume) : "-"}
+                      {s.volume
+                        ? market === "overseas" && sortType === "VOLUME"
+                          ? `${fmt(Math.round(Number(s.volume) * exRate.rate))}원`
+                          : fmt(s.volume)
+                        : "-"}
                     </div>
                   </div>
                 ))
