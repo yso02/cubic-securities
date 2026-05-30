@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { getTodayQuiz, submitQuiz } from "../api/stockApi";
 import "./QuizModal.css";
@@ -36,6 +36,48 @@ export default function QuizModal({ onClose }) {
       setSubmitting(false);
     }
   };
+
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    if (!result?.isCorrect) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+
+    const particles = Array.from({ length: 60 }, () => ({
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      vx: (Math.random() - 0.5) * 12,
+      vy: (Math.random() - 0.5) * 12 - 3,
+      r: Math.random() * 4 + 2,
+      color: ["#14b8a6", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6"][Math.floor(Math.random() * 5)],
+      alpha: 1,
+    }));
+
+    let frame;
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.3;
+        p.alpha -= 0.02;
+        ctx.globalAlpha = Math.max(p.alpha, 0);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      if (particles.some(p => p.alpha > 0)) {
+        frame = requestAnimationFrame(animate);
+      }
+    };
+    animate();
+    return () => cancelAnimationFrame(frame);
+  }, [result]);
 
   const options = quiz?.type === "OX" ? ["O", "X"] : (quiz?.options || []);
 
@@ -109,6 +151,15 @@ export default function QuizModal({ onClose }) {
         {/* 결과 화면 */}
         {result && (
           <div className={`quiz-result ${result.isCorrect ? "correct" : "wrong"}`}>
+            {result.isCorrect && (
+              <canvas ref={canvasRef} style={{
+                position: "absolute",
+                top: 0, left: 0,
+                width: "100%", height: "100%",
+                pointerEvents: "none",
+                borderRadius: "var(--r-lg)",
+              }} />
+            )}
             <div className="quiz-header">
               <span className={`quiz-badge ${result.isCorrect ? "correct" : "wrong"}`}>
                 {result.isCorrect ? "정답" : "오답"}
