@@ -94,6 +94,7 @@ body {
 #root {
   display: flex;
   flex-direction: column;
+  isolation: isolate;
 }
 
 a {
