@@ -134,9 +134,21 @@ export default function MainDashboard({ user }) {
     const cl = client || wsClientRef.current;
     if (!cl?.connected || !stocksRef.current.length) return;
 
-    wsSubsRef.current.forEach((sub) => {
+    // 이전 구독 취소 (STOMP + KIS 취소 메시지)
+    wsSubsRef.current.forEach((sub, key) => {
       try {
         sub.unsubscribe();
+      } catch {}
+      // key 형식: "d-005930" 또는 "o-AAPL"
+      try {
+        const [type, symbol] = key.split(/-(.+)/);
+        if (type === "d") {
+          cl.publish({ destination: "/app/unsubscribe/domestic/price", body: symbol });
+        } else {
+          const stock = stocksRef.current.find(s => s.symbol === symbol);
+          const exc = stock?.exchange || getExchangeCode(stock?.market || "NASDAQ");
+          cl.publish({ destination: "/app/unsubscribe/overseas", body: `${symbol},${exc}` });
+        }
       } catch {}
     });
     wsSubsRef.current.clear();
