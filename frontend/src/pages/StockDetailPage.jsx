@@ -5,7 +5,7 @@ import { Client } from "@stomp/stompjs";
 import {
   getDomesticPrice, getOverseasPrice,
   getExchangeCode, isDomestic, fmt, fmtPrice, fmtChange, isUp,
-  getLogoUrl, NGROK_URL,
+  getLogoUrl, NGROK_URL, getStockInfo,
 } from "../api/stockApi";
 import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
@@ -20,6 +20,8 @@ export default function StockDetailPage({ user }) {
   const [tradeModal, setTradeModal] = useState(null);
   const [chartFullscreen, setChartFullscreen] = useState(false);
   const [activeTab, setActiveTab] = useState("chart"); // chart | info
+  const [stockInfo, setStockInfo] = useState(null);
+  const [infoLoading, setInfoLoading] = useState(false);
   const wsRef = useRef(null);
 
   useEffect(() => {
@@ -163,7 +165,16 @@ export default function StockDetailPage({ user }) {
             </button>
             <button
               className={`detail-tab ${activeTab === "info" ? "active" : ""}`}
-              onClick={() => setActiveTab("info")}
+              onClick={() => {
+                setActiveTab("info");
+                if (!stockInfo && stock) {
+                  setInfoLoading(true);
+                  getStockInfo(stock.symbol, stock.market)
+                    .then(data => setStockInfo(data))
+                    .catch(() => {})
+                    .finally(() => setInfoLoading(false));
+                }
+              }}
             >
               종목정보
             </button>
@@ -186,8 +197,46 @@ export default function StockDetailPage({ user }) {
           )}
 
           {activeTab === "info" && (
-            <div className="detail-info-empty">
-              <p>종목정보 준비 중입니다</p>
+            <div className="detail-info-wrap">
+              {infoLoading ? (
+                <div className="detail-info-loading">
+                  <div className="loading-spinner" />
+                  <p>분석 중...</p>
+                </div>
+              ) : stockInfo ? (
+                <>
+                  <div className="info-metrics">
+                    <div className="info-metric-card">
+                      <span className="info-metric-label">시가총액</span>
+                      <span className="info-metric-value">{stockInfo.marketCap}</span>
+                    </div>
+                    <div className="info-metric-card">
+                      <span className="info-metric-label">시총 순위</span>
+                      <span className="info-metric-value">{stockInfo.marketCapRank}</span>
+                    </div>
+                    <div className="info-metric-card">
+                      <span className="info-metric-label">PER</span>
+                      <span className="info-metric-value">{stockInfo.per ? `${stockInfo.per}배` : "-"}</span>
+                    </div>
+                    <div className="info-metric-card">
+                      <span className="info-metric-label">PBR</span>
+                      <span className="info-metric-value">{stockInfo.pbr ? `${stockInfo.pbr}배` : "-"}</span>
+                    </div>
+                  </div>
+
+                  <div className="info-ai-section">
+                    <div className="info-ai-header">
+                      <span className="info-ai-badge">AI 분석</span>
+                      <span className="info-ai-sub">투자 참고용 정보입니다</span>
+                    </div>
+                    <div className="info-ai-content">
+                      {stockInfo.aiAnalysis?.split("\n").filter(s => s.trim()).map((line, i) => (
+                        <p key={i} className="info-ai-line">{line}</p>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : null}
             </div>
           )}
         </div>

@@ -350,6 +350,12 @@ export const OVERSEAS_LOGO_MAP = {
   SPOT: "spotify.com",
 };
 
+/* ═══════════ 종목정보 ═══════════ */
+export const getStockInfo = async (symbol, market) => {
+  const res = await api.get(`/api/stocks/info/${symbol}?market=${market}`);
+  return res.data;
+};
+
 /* ═══════════ 데일리 퀴즈 ═══════════ */
 export const getTodayQuiz = async () => {
   const res = await api.get("/api/quiz/today");

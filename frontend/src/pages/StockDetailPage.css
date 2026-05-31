@@ -112,11 +112,95 @@
 .detail-chart-col { flex: 1; min-width: 0; }
 .detail-ob-col { width: 340px; flex-shrink: 0; }
 
-/* 종목정보 빈 상태 */
-.detail-info-empty {
-  display: flex; align-items: center; justify-content: center;
-  min-height: 300px;
-  color: var(--c-text-muted); font-size: 14px;
+/* 종목정보 */
+.detail-info-wrap {
+  padding: 20px;
+  max-width: 800px;
+}
+
+.detail-info-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 0;
+  color: var(--c-text-muted);
+  font-size: 14px;
+}
+
+.info-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.info-metric-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.info-metric-label {
+  font-size: 12px;
+  color: var(--c-text-muted);
+}
+
+.info-metric-value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.info-ai-section {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.info-ai-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.info-ai-badge {
+  background: #534AB7;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.info-ai-sub {
+  font-size: 12px;
+  color: var(--c-text-muted);
+}
+
+.info-ai-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-ai-line {
+  font-size: 14px;
+  color: var(--c-text);
+  line-height: 1.7;
+  padding-left: 12px;
+  border-left: 3px solid #CECBF6;
+  margin: 0;
+}
+
+@media (max-width: 680px) {
+  .info-metrics { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* 로딩 스피너 */
