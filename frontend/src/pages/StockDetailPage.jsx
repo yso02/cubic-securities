@@ -7,9 +7,8 @@ import {
   getExchangeCode, isDomestic, fmt, fmtPrice, fmtChange, isUp,
   getLogoUrl, NGROK_URL, getStockInfo, getInvestorTrend,
 } from "../api/stockApi";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine,
-} from "recharts";
+import * as Recharts from "recharts";
+const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } = Recharts;
 import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
 import TradeModal from "../components/TradeModal";
