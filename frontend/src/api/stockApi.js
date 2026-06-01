@@ -356,6 +356,12 @@ export const getStockInfo = async (symbol, market) => {
   return res.data;
 };
 
+/* ═══════════ 투자자별 매매동향 ═══════════ */
+export const getInvestorTrend = async (symbol, market) => {
+  const res = await api.get(`/api/stocks/investor/${symbol}?market=${market}`);
+  return res.data;
+};
+
 /* ═══════════ 데일리 퀴즈 ═══════════ */
 export const getTodayQuiz = async () => {
   const res = await api.get("/api/quiz/today");

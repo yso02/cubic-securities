@@ -213,6 +213,61 @@
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── 투자자별 매매동향 ── */
+.info-investor-section {
+  margin-top: 20px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.info-section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.info-section-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--c-text-muted);
+}
+
+.info-trend-table {
+  margin-top: 16px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--c-border);
+  font-size: 12px;
+}
+
+.info-trend-header {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--c-hover);
+  color: var(--c-text-muted);
+  font-weight: 500;
+}
+
+.info-trend-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--c-border);
+  color: var(--c-text);
+}
+
+.info-trend-row .up { color: #ef4444; }
+.info-trend-row .dn { color: #3b82f6; }
+
 /* ── 반응형 ── */
 @media (max-width: 900px) {
   .detail-body { flex-direction: column; }
