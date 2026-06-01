@@ -268,6 +268,18 @@
 .info-trend-row .up { color: #ef4444; }
 .info-trend-row .dn { color: #3b82f6; }
 
+/* ── CSS 막대 차트 ── */
+.info-bar-chart { display: flex; flex-direction: column; gap: 12px; }
+.ibc-row { display: flex; align-items: center; gap: 10px; }
+.ibc-date { font-size: 11px; color: var(--c-text-muted); width: 36px; flex-shrink: 0; }
+.ibc-bars { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.ibc-bar-group { display: flex; align-items: center; gap: 6px; }
+.ibc-label { font-size: 10px; color: var(--c-text-muted); width: 32px; flex-shrink: 0; text-align: right; }
+.ibc-bar-wrap { flex: 1; display: flex; align-items: center; height: 10px; }
+.ibc-bar-neg { height: 100%; background: #3b82f6; border-radius: 2px 0 0 2px; order: 1; }
+.ibc-center { width: 1px; background: var(--c-border); height: 100%; order: 2; flex-shrink: 0; }
+.ibc-bar-pos { height: 100%; background: #ef4444; border-radius: 0 2px 2px 0; order: 3; }
+
 /* ── 반응형 ── */
 @media (max-width: 900px) {
   .detail-body { flex-direction: column; }

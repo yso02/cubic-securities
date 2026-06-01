@@ -7,8 +7,6 @@ import {
   getExchangeCode, isDomestic, fmt, fmtPrice, fmtChange, isUp,
   getLogoUrl, NGROK_URL, getStockInfo, getInvestorTrend,
 } from "../api/stockApi";
-import * as Recharts from "recharts";
-const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } = Recharts;
 import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
 import TradeModal from "../components/TradeModal";
@@ -259,31 +257,51 @@ export default function StockDetailPage({ user }) {
                         </div>
                       ) : investorTrend && investorTrend.length > 0 ? (
                         <>
-                          <ResponsiveContainer width="100%" height={220}>
-                            <BarChart
-                              data={investorTrend.map(d => ({
-                                date: d.date.slice(4, 6) + "/" + d.date.slice(6, 8),
-                                개인: Number(d.personalNet),
-                                외국인: Number(d.foreignNet),
-                                기관: Number(d.institutionNet),
-                              }))}
-                              margin={{ top: 8, right: 8, left: 8, bottom: 4 }}
-                              barCategoryGap="30%"
-                            >
-                              <CartesianGrid strokeDasharray="3 3" stroke="var(--c-border)" vertical={false} />
-                              <XAxis dataKey="date" tick={{ fontSize: 11, fill: "var(--c-text-muted)" }} axisLine={false} tickLine={false} />
-                              <YAxis tick={{ fontSize: 10, fill: "var(--c-text-muted)" }} axisLine={false} tickLine={false} tickFormatter={v => v >= 1000000 ? (v/1000000).toFixed(1)+"M" : v >= 1000 ? (v/1000).toFixed(0)+"K" : v} />
-                              <Tooltip
-                                formatter={(value, name) => [Number(value).toLocaleString() + "주", name]}
-                                contentStyle={{ background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: 8, fontSize: 12 }}
-                              />
-                              <Legend wrapperStyle={{ fontSize: 12 }} />
-                              <ReferenceLine y={0} stroke="var(--c-border)" />
-                              <Bar dataKey="개인" fill="#534AB7" radius={[3,3,0,0]} />
-                              <Bar dataKey="외국인" fill="#14b8a6" radius={[3,3,0,0]} />
-                              <Bar dataKey="기관" fill="#f59e0b" radius={[3,3,0,0]} />
-                            </BarChart>
-                          </ResponsiveContainer>
+                          <div className="info-bar-chart">
+                            {investorTrend.map((d, i) => {
+                              const maxVal = Math.max(...investorTrend.flatMap(x => [
+                                Math.abs(Number(x.personalNet)),
+                                Math.abs(Number(x.foreignNet)),
+                                Math.abs(Number(x.institutionNet)),
+                              ]));
+                              const pct = (val) => Math.abs(val) / maxVal * 45;
+                              const date = d.date.slice(4, 6) + "/" + d.date.slice(6, 8);
+                              const p = Number(d.personalNet);
+                              const f = Number(d.foreignNet);
+                              const g = Number(d.institutionNet);
+                              return (
+                                <div key={i} className="ibc-row">
+                                  <span className="ibc-date">{date}</span>
+                                  <div className="ibc-bars">
+                                    <div className="ibc-bar-group">
+                                      <span className="ibc-label">개인</span>
+                                      <div className="ibc-bar-wrap">
+                                        <div className="ibc-bar-neg" style={{ width: p < 0 ? pct(p) + "%" : "0" }} />
+                                        <div className="ibc-center" />
+                                        <div className="ibc-bar-pos" style={{ width: p > 0 ? pct(p) + "%" : "0" }} />
+                                      </div>
+                                    </div>
+                                    <div className="ibc-bar-group">
+                                      <span className="ibc-label">외국인</span>
+                                      <div className="ibc-bar-wrap">
+                                        <div className="ibc-bar-neg" style={{ width: f < 0 ? pct(f) + "%" : "0" }} />
+                                        <div className="ibc-center" />
+                                        <div className="ibc-bar-pos" style={{ width: f > 0 ? pct(f) + "%" : "0" }} />
+                                      </div>
+                                    </div>
+                                    <div className="ibc-bar-group">
+                                      <span className="ibc-label">기관</span>
+                                      <div className="ibc-bar-wrap">
+                                        <div className="ibc-bar-neg" style={{ width: g < 0 ? pct(g) + "%" : "0" }} />
+                                        <div className="ibc-center" />
+                                        <div className="ibc-bar-pos" style={{ width: g > 0 ? pct(g) + "%" : "0" }} />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
 
                           <div className="info-trend-table">
                             <div className="info-trend-header">
