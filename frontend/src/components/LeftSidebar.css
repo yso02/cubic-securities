@@ -6,6 +6,7 @@
   top: 0;
   background: var(--c-surface);
   border-right: 1px solid var(--c-border);
+  box-shadow: 2px 0 12px rgba(0,0,0,0.06);
   display: flex;
   flex-direction: column;
   padding: 20px 12px;
@@ -32,10 +33,12 @@
 }
 
 .ls-asset {
-  background: var(--c-hover);
+  background: var(--c-surface);
   border-radius: 12px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   margin-bottom: 16px;
+  border: 1px solid var(--c-border);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.9) inset;
   display: flex;
   flex-direction: column;
   gap: 4px;
