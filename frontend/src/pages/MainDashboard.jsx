@@ -8,7 +8,7 @@ import {
   getMyInfo, getHoldings, getExchangeRate,
   isDomestic, fmt, fmtPrice, fmtChange, isUp,
   getLogoUrl, getExchangeCode, NGROK_URL,
-  DOMESTIC_STOCKS, OVERSEAS_STOCKS,
+  DOMESTIC_STOCKS, OVERSEAS_STOCKS, searchStocks,
 } from "../api/stockApi";
 import "./MainDashboard.css";
 
@@ -55,6 +55,34 @@ export default function MainDashboard({ user }) {
 
   // 확장 패널
   const [expandPanel, setExpandPanel] = useState(null); // "portfolio" | "watchlist" | null
+
+  // 검색
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState(null);
+  const [showSearchDrop, setShowSearchDrop] = useState(false);
+  const searchRef = useRef(null);
+  const searchTimer = useRef(null);
+
+  const handleSearch = (q) => {
+    setSearchQuery(q);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (!q.trim()) { setSearchResults(null); setShowSearchDrop(false); return; }
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const res = await searchStocks(q);
+        setSearchResults(res?.slice(0, 8) || []);
+        setShowSearchDrop(true);
+      } catch { setSearchResults([]); }
+    }, 300);
+  };
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) setShowSearchDrop(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   // WebSocket
   const wsClientRef = useRef(null);
@@ -205,6 +233,43 @@ export default function MainDashboard({ user }) {
           <p className="dash-welcome-sub">돌아오셨군요</p>
           <h1 className="dash-welcome-name">{user?.name || "게스트"}님 👋</h1>
         </div>
+        <div className="dash-welcome-right">
+          <div className="dash-search-wrap" ref={searchRef}>
+            <div className="dash-search-box">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input
+                type="text"
+                placeholder="종목명 / 코드 검색"
+                value={searchQuery}
+                onChange={e => handleSearch(e.target.value)}
+                onFocus={() => { if (searchResults?.length) setShowSearchDrop(true); }}
+              />
+              {searchQuery && <button onClick={() => { setSearchQuery(""); setSearchResults(null); setShowSearchDrop(false); }}>✕</button>}
+            </div>
+            {showSearchDrop && searchResults?.length > 0 && (
+              <div className="dash-search-dropdown">
+                {searchResults.map(s => {
+                  const logo = getLogoUrl(s.symbol, s.market);
+                  return (
+                    <div key={s.symbol} className="dash-search-result" onClick={() => { handleSelectStock(s); setSearchQuery(""); setSearchResults(null); setShowSearchDrop(false); }}>
+                      {logo
+                        ? <img src={logo} className="dsr-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
+                        : <div className="dsr-fallback">{s.name?.substring(0,2)}</div>}
+                      <div className="dsr-info">
+                        <span className="dsr-name">{s.name}</span>
+                        <span className="dsr-code">{s.symbol} · {s.market}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <button className="dash-ai-btn" onClick={() => navigate("/ai")}>
+            <span className="dash-ai-icon">✦</span>
+            AI 어시스턴트
+          </button>
+        </div>
       </div>
 
       {/* 메인 그리드 */}
@@ -340,11 +405,8 @@ export default function MainDashboard({ user }) {
           </div>
         </div>
 
-        {/* 종목 랭킹 + 뉴스 나란히 */}
-        <div className="dash-ranking-news-grid">
-
-          {/* 종목 랭킹 */}
-          <div className="dash-ranking-card">
+        {/* 종목 랭킹 */}
+        <div className="dash-ranking-card">
             <div className="market-tab-row">
               <div className={`market-tab ${market==="domestic"?"active":""}`} onClick={()=>setMarket("domestic")}>
                 <span className="market-flag">🇰🇷</span>
@@ -408,8 +470,8 @@ export default function MainDashboard({ user }) {
             </div>
           </div>
 
-          {/* 뉴스 */}
-          <div className="dash-news-card">
+        {/* 뉴스 */}
+        <div className="dash-news-card">
             <div className="news-header">
               <span className="news-title">
                 {market === "domestic" ? "🇰🇷 국내 시장 뉴스" : "🇺🇸 해외 시장 뉴스"}
@@ -480,7 +542,6 @@ export default function MainDashboard({ user }) {
                 )}
               </div>
             ) : null}
-          </div>
         </div>
       </div>
 

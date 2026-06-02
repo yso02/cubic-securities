@@ -1,5 +1,5 @@
 .topbar-wrapper {
-  display: flex;
+  display: none;
   flex-direction: column;
   position: sticky;
   top: 0;

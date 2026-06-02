@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import LeftSidebar from "./components/LeftSidebar";
-import TopBar from "./components/TopBar";
 import MainDashboard from "./pages/MainDashboard";
 import LoginPage from "./pages/LoginPage";
 import AccountPage from "./pages/AccountPage";
@@ -59,7 +58,6 @@ export default function App() {
       <div className="app-layout">
         <LeftSidebar user={user} onLogout={handleLogout} />
         <div className="app-main">
-          <TopBar user={user} />
           <div className="app-content">
             <Routes>
               <Route path="/" element={<MainDashboard user={user} />} />
@@ -72,6 +70,7 @@ export default function App() {
           </div>
         </div>
         <Sidebar user={user} onQuizOpen={() => setQuizOpen(true)} />
+
       </div>
       {quizOpen && <QuizModal onClose={() => setQuizOpen(false)} />}
     </BrowserRouter>

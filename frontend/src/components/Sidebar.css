@@ -1,7 +1,6 @@
 /* Sidebar.css */
 .sidebar {
-  display: flex; flex-shrink: 0;
-  height: calc(100vh - 72px); position: sticky; top: 72px;
+  display: none;
 }
 
 /* 아이콘 열 — 항상 표시 */

@@ -104,6 +104,12 @@ export default function LeftSidebar({ user, onLogout }) {
             로그인
           </button>
         )}
+        <div className="ls-build">
+          빌드 {new Date(__BUILD_TIME__).toLocaleString("ko-KR", {
+            timeZone: "Asia/Seoul", month: "numeric", day: "numeric",
+            hour: "numeric", minute: "numeric"
+          })}
+        </div>
       </div>
     </div>
   );

@@ -170,3 +170,11 @@
   border-color: var(--c-primary);
   color: var(--c-primary);
 }
+
+.ls-build {
+  font-size: 10px;
+  color: var(--c-text-muted);
+  opacity: 0.5;
+  text-align: center;
+  padding: 8px 0 0;
+}
