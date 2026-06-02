@@ -1,5 +1,5 @@
 .topbar-wrapper {
-  display: none;
+  display: flex;
   flex-direction: column;
   position: sticky;
   top: 0;
@@ -51,13 +51,7 @@
 .ticker-change.dn { color: #3b82f6; }
 
 .topbar {
-  height: 52px;
-  background: var(--c-surface);
-  border-bottom: 1px solid var(--c-border);
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  gap: 16px;
+  display: none;
 }
 
 .topbar-left {
