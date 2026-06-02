@@ -73,16 +73,6 @@ export default function LeftSidebar({ user, onLogout }) {
     } finally { setModalLoading(false); }
   };
 
-  if (collapsed) {
-    return (
-      <button className="sidebar-open-btn" onClick={() => setCollapsed(false)}>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-          <path d="M9 18l6-6-6-6"/>
-        </svg>
-      </button>
-    );
-  }
-
   return (
     <div className={`left-sidebar ${collapsed ? "collapsed" : ""}`} style={{position:"relative"}}>
       {/* 로고 */}
@@ -94,10 +84,11 @@ export default function LeftSidebar({ user, onLogout }) {
         </svg>
         <span>CUBIC 증권</span>
       </div>
-      <button className="ls-close-btn" onClick={() => setCollapsed(true)}>
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-          <path d="M15 18l-6-6 6-6"/>
-        </svg>
+      <button className="ls-toggle-btn" onClick={() => setCollapsed(v => !v)}>
+        {collapsed
+          ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
+          : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+        }
       </button>
 
       {/* 총 자산 */}
@@ -129,6 +120,7 @@ export default function LeftSidebar({ user, onLogout }) {
           >
             {m.icon}
             <span>{m.label}</span>
+            <span className="ls-tooltip">{m.label}</span>
           </button>
         ))}
       </div>
@@ -144,6 +136,7 @@ export default function LeftSidebar({ user, onLogout }) {
           >
             {m.icon}
             <span>{m.label}</span>
+            <span className="ls-tooltip">{m.label}</span>
           </button>
         ))}
       </div>

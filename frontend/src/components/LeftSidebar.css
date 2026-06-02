@@ -12,38 +12,42 @@
   padding: 20px 14px;
   gap: 4px;
   z-index: 100;
-  overflow-y: auto;
+  overflow: hidden;
   box-shadow: 2px 0 12px rgba(0,0,0,0.06);
-  transition: width 0.25s cubic-bezier(0.4,0,0.2,1),
-              min-width 0.25s cubic-bezier(0.4,0,0.2,1),
-              padding 0.25s cubic-bezier(0.4,0,0.2,1),
-              opacity 0.2s ease;
+  transition: width 0.3s cubic-bezier(0.4,0,0.2,1),
+              min-width 0.3s cubic-bezier(0.4,0,0.2,1),
+              padding 0.3s cubic-bezier(0.4,0,0.2,1);
 }
 
 .left-sidebar.collapsed {
-  width: 0;
-  min-width: 0;
-  padding: 0;
-  overflow: hidden;
-  opacity: 0;
-  border-right: none;
+  width: 60px;
+  min-width: 60px;
+  padding: 20px 10px;
 }
 
 .ls-logo {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
+  padding: 8px 8px;
   margin-bottom: 8px;
   cursor: pointer;
   border-radius: 10px;
   transition: background 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
 }
 .ls-logo:hover { background: var(--c-hover); }
 .ls-logo span {
   font-size: 15px;
   font-weight: 700;
   color: var(--c-text);
+  transition: opacity 0.2s, width 0.3s;
+  overflow: hidden;
+}
+.left-sidebar.collapsed .ls-logo span {
+  opacity: 0;
+  width: 0;
 }
 
 .ls-asset {
@@ -55,7 +59,15 @@
   flex-direction: column;
   gap: 4px;
   border: 1px solid var(--c-border);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.9) inset;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  transition: opacity 0.2s, height 0.3s, padding 0.3s, margin 0.3s;
+  overflow: hidden;
+}
+.left-sidebar.collapsed .ls-asset {
+  opacity: 0;
+  height: 0;
+  padding: 0;
+  margin: 0;
 }
 
 .ls-asset-header {
@@ -85,27 +97,34 @@
   transform: scale(1.1);
 }
 
-.ls-close-btn {
+.ls-toggle-btn {
   position: absolute;
-  top: 16px;
-  right: 14px;
-  width: 26px;
-  height: 26px;
+  top: 20px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
   border-radius: 8px;
-  background: none;
+  background: var(--c-hover);
   border: 1px solid var(--c-border);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   color: var(--c-text-muted);
-  font-size: 12px;
   transition: all 0.15s;
+  flex-shrink: 0;
+  z-index: 1;
 }
-.ls-close-btn:hover {
-  background: var(--c-hover);
+.ls-toggle-btn:hover {
+  background: var(--c-border);
   color: var(--c-text);
 }
+.left-sidebar.collapsed .ls-toggle-btn {
+  right: auto;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 .ls-asset-label {
   font-size: 11px;
   color: var(--c-text-muted);
@@ -128,15 +147,24 @@
   font-weight: 600;
   color: var(--c-text-muted);
   letter-spacing: 0.06em;
-  padding: 4px 12px;
+  padding: 4px 10px;
   margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 0.2s;
+}
+.left-sidebar.collapsed .ls-section-label {
+  opacity: 0;
+  height: 0;
+  padding: 0;
+  margin: 0;
 }
 
 .ls-menu-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 9px 12px;
+  padding: 9px 10px;
   border: none;
   border-radius: 10px;
   background: transparent;
@@ -148,6 +176,9 @@
   transition: all 0.15s;
   text-align: left;
   width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  position: relative;
 }
 .ls-menu-item:hover {
   background: var(--c-hover);
@@ -158,8 +189,40 @@
   color: var(--c-primary);
   font-weight: 600;
 }
-.ls-menu-item.active svg {
-  stroke: var(--c-primary);
+.ls-menu-item.active svg { stroke: var(--c-primary); }
+
+.ls-menu-item span {
+  transition: opacity 0.2s;
+  overflow: hidden;
+}
+.left-sidebar.collapsed .ls-menu-item span {
+  opacity: 0;
+  width: 0;
+}
+
+.ls-menu-item:hover .ls-tooltip {
+  opacity: 1;
+  pointer-events: auto;
+}
+.ls-tooltip {
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--c-text);
+  color: var(--c-surface);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  z-index: 200;
+}
+.left-sidebar:not(.collapsed) .ls-tooltip {
+  display: none;
 }
 
 .ls-bottom {
@@ -172,10 +235,11 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 10px 8px;
   border-radius: 10px;
   cursor: pointer;
   transition: background 0.15s;
+  overflow: hidden;
 }
 .ls-profile:hover { background: var(--c-hover); }
 
@@ -198,6 +262,12 @@
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  transition: opacity 0.2s;
+  overflow: hidden;
+}
+.left-sidebar.collapsed .ls-profile-info {
+  opacity: 0;
+  width: 0;
 }
 .ls-profile-name {
   font-size: 13px;
@@ -240,6 +310,14 @@
   opacity: 0.5;
   text-align: center;
   padding: 8px 0 0;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 0.2s;
+}
+.left-sidebar.collapsed .ls-build {
+  opacity: 0;
+  height: 0;
+  padding: 0;
 }
 
 /* 입금/출금 모달 */
