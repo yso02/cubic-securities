@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { Client } from "@stomp/stompjs";
 import {
   getWatchlist, addWatchlist, removeWatchlist,
   getMyInfo, getHoldings, getExchangeRate,
   isDomestic, fmt, fmtChange, isUp,
-  getLogoUrl, searchStocks,
+  getLogoUrl, searchStocks, getExchangeCode, NGROK_URL,
 } from "../api/stockApi";
 import "./MainDashboard.css";
 
@@ -26,6 +27,10 @@ export default function MainDashboard({ user }) {
   const [portfolioLoading, setPortfolioLoading] = useState(false);
   const [expandPanel, setExpandPanel] = useState(null);
   const [exRate, setExRate] = useState({ rate: 1380 });
+
+  const [currentPrices, setCurrentPrices] = useState({});
+  const wsClientRef = useRef(null);
+  const wsSubsRef = useRef([]);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
@@ -53,6 +58,60 @@ export default function MainDashboard({ user }) {
       if (h.status === "fulfilled") setHoldings(h.value || []);
     } finally { setPortfolioLoading(false); }
   };
+
+  // WebSocket 실시간 가격 구독
+  useEffect(() => {
+    if (!holdings.length) return;
+    const wsURL = NGROK_URL.replace("https://", "wss://").replace("http://", "ws://") + "/ws/websocket";
+
+    // 기존 클라이언트 정리
+    if (wsClientRef.current) {
+      wsSubsRef.current.forEach(s => { try { s.unsubscribe(); } catch {} });
+      wsSubsRef.current = [];
+      wsClientRef.current.deactivate();
+    }
+
+    const client = new Client({
+      brokerURL: wsURL,
+      connectHeaders: { "ngrok-skip-browser-warning": "true" },
+      reconnectDelay: 8000,
+      onConnect: () => {
+        holdings.forEach(h => {
+          const dom = isDomestic(h.market);
+          try {
+            if (dom) {
+              client.publish({ destination: "/app/subscribe/domestic/price", body: h.symbol });
+              const sub = client.subscribe(`/topic/domestic/${h.symbol}`, msg => {
+                try {
+                  const d = JSON.parse(msg.body);
+                  setCurrentPrices(prev => ({ ...prev, [h.symbol]: parseFloat(d.price) }));
+                } catch {}
+              });
+              wsSubsRef.current.push(sub);
+            } else {
+              const exc = h.exchange || getExchangeCode(h.market);
+              client.publish({ destination: "/app/subscribe/overseas", body: `${h.symbol},${exc}` });
+              const sub = client.subscribe(`/topic/overseas/${h.symbol}`, msg => {
+                try {
+                  const d = JSON.parse(msg.body);
+                  setCurrentPrices(prev => ({ ...prev, [h.symbol]: parseFloat(d.price) }));
+                } catch {}
+              });
+              wsSubsRef.current.push(sub);
+            }
+          } catch {}
+        });
+      },
+    });
+    client.activate();
+    wsClientRef.current = client;
+
+    return () => {
+      wsSubsRef.current.forEach(s => { try { s.unsubscribe(); } catch {} });
+      wsSubsRef.current = [];
+      client.deactivate();
+    };
+  }, [holdings.map(h => h.symbol).join(",")]);
 
   const isWatched = (symbol) => watchlist.some(w => w.symbol === symbol);
   const toggleWatch = async (stock, e) => {
@@ -94,15 +153,20 @@ export default function MainDashboard({ user }) {
   const getBg = (name) => ICON_COLORS[name] || "#64748b";
 
   const totalEval = holdings.reduce((s, h) => {
+    const price = currentPrices[h.symbol] || h.avgPrice;
+    const p = isDomestic(h.market) ? price : price * exRate.rate;
+    return s + p * h.quantity;
+  }, 0);
+  const totalCost = holdings.reduce((s, h) => {
     const p = isDomestic(h.market) ? h.avgPrice : h.avgPrice * exRate.rate;
     return s + p * h.quantity;
   }, 0);
-  const totalPL = 0;
-  const totalPLRate = "0.00";
+  const totalPL = totalEval - totalCost;
+  const totalPLRate = totalCost > 0 ? ((totalPL / totalCost) * 100).toFixed(2) : "0.00";
 
   const renderPortfolioRow = (h, onClickExtra) => {
     const isKr = isDomestic(h.market);
-    const currentPrice = h.avgPrice;
+    const currentPrice = currentPrices[h.symbol] || h.avgPrice;
     const priceKrw = isKr ? currentPrice : currentPrice * exRate.rate;
     const evalKrw = priceKrw * h.quantity;
     const costKrw = isKr ? h.avgPrice * h.quantity : h.avgPrice * exRate.rate * h.quantity;
