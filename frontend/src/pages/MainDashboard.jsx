@@ -530,20 +530,22 @@ export default function MainDashboard({ user }) {
             </div>
             {/* 정렬 탭 */}
             <div className="sub-tab-row">
-              {[
-                ["VOLUME", "거래대금"],
-                ["MARKET_CAP", "시가총액"],
-                ["RISE", "급상승"],
-                ["FALL", "급하락"],
-              ].map(([key, label]) => (
-                <div
-                  key={key}
-                  className={`sub-tab ${sortType === key ? "active" : ""}`}
-                  onClick={() => setSortType(key)}
-                >
-                  {label}
-                </div>
-              ))}
+              <div className="segment-control">
+                {[
+                  ["VOLUME", "거래대금"],
+                  ["MARKET_CAP", "시가총액"],
+                  ["RISE", "급상승"],
+                  ["FALL", "급하락"],
+                ].map(([key, label]) => (
+                  <div
+                    key={key}
+                    className={`sub-tab ${sortType === key ? "active" : ""}`}
+                    onClick={() => setSortType(key)}
+                  >
+                    {label}
+                  </div>
+                ))}
+              </div>
             </div>
             {/* 헤더 */}
             <div className="list-header">
