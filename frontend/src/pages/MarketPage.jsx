@@ -191,6 +191,12 @@ export default function MarketPage({ user }) {
 
   const getBg = (name) => ICON_COLORS[name] || "#64748b";
 
+  const filteredStocks = stocks.filter(s =>
+    !searchQuery ||
+    s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    s.symbol?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="market-page">
       <div className="market-header">
@@ -293,16 +299,9 @@ export default function MarketPage({ user }) {
           <span>신호</span>
         </div>
         <div className="market-list-body">
-          {(() => {
-            const filteredStocks = stocks.filter(s =>
-              !searchQuery ||
-              s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              s.symbol?.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-            return loading ? (
-              <div className="market-list-empty"><div className="loading-spinner"/></div>
-            ) : filteredStocks.map((s) => {
-            const logo = getLogoUrl(s.symbol, s.market);
+          {loading ? (
+            <div className="market-list-empty"><div className="loading-spinner"/></div>
+          ) : filteredStocks.map((s) => {
             const up = isUp(s.changePercent);
             const price = s.price
               ? isDomestic(s.market)
@@ -315,10 +314,10 @@ export default function MarketPage({ user }) {
                   <button className={`market-star ${isWatched(s.symbol)?"on":""}`} onClick={e=>toggleWatch(s,e)}>
                     {isWatched(s.symbol)?"★":"☆"}
                   </button>
-                  {logo
-                    ? <img src={logo} className="market-logo" alt="" onError={e=>{e.target.style.display="none";if(e.target.nextSibling)e.target.nextSibling.style.display="flex";}}/>
-                    : null}
-                  <div className="market-logo-fb" style={{background:getBg(s.name),display:logo?"none":"flex"}}>{s.name?.substring(0,2)}</div>
+                  {getLogoUrl(s.symbol, s.market)
+                    ? <img src={getLogoUrl(s.symbol, s.market)} className="market-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
+                    : <div className="market-logo-fb" style={{background:getBg(s.name)}}>{s.name?.substring(0,2)}</div>
+                  }
                   <div className="market-name-wrap">
                     <span className="market-name">{s.name}</span>
                     <span className="market-ticker">{s.symbol}</span>
@@ -337,7 +336,7 @@ export default function MarketPage({ user }) {
                 </div>
               </div>
             );
-          })()}
+          })}
         </div>
       </div>
 
