@@ -17,6 +17,12 @@ const ICON_COLORS = {
   Microsoft:"#00A4EF",Amazon:"#FF9900",Alphabet:"#4285F4",Meta:"#1877F2",
 };
 
+const TrendLine = () => (
+  <svg width="60" height="24" viewBox="0 0 60 24">
+    <polyline points="0,18 15,14 30,16 45,8 60,10" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round"/>
+  </svg>
+);
+
 export default function MainDashboard({ user }) {
   const navigate = useNavigate();
 
@@ -29,7 +35,7 @@ export default function MainDashboard({ user }) {
   const [portfolioLoading, setPortfolioLoading] = useState(false);
 
   // 확장 패널
-  const [expandPanel, setExpandPanel] = useState(null); // "portfolio" | "watchlist" | null
+  const [expandPanel, setExpandPanel] = useState(null);
 
   // 검색
   const [searchQuery, setSearchQuery] = useState("");
@@ -94,11 +100,71 @@ export default function MainDashboard({ user }) {
 
   const getBg = (name) => ICON_COLORS[name] || "#64748b";
 
-  // 포트폴리오 계산
   const totalEval = holdings.reduce((s, h) => s + h.avgPrice * h.quantity, 0);
   const totalBuy = holdings.reduce((s, h) => s + h.avgPrice * h.quantity, 0);
   const totalPL = totalEval - totalBuy;
   const totalPLRate = totalBuy > 0 ? ((totalPL / totalBuy) * 100).toFixed(2) : "0.00";
+
+  const TABLE_HEADER = (
+    <div className="section-table-header">
+      <span>종목</span>
+      <span>가격</span>
+      <span>등락률</span>
+      <span>거래대금</span>
+      <span>Trends</span>
+      <span>매수/매도</span>
+    </div>
+  );
+
+  const renderPortfolioRow = (h, onClickExtra) => (
+    <div key={h.id} className="section-row" onClick={() => { handleSelectStock(h); onClickExtra?.(); }}>
+      <div className="section-stock-info">
+        {(() => {
+          const logo = getLogoUrl(h.symbol, h.market);
+          return logo
+            ? <img src={logo} className="section-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
+            : <div className="section-logo-fb" style={{background:getBg(h.name)}}>{h.name?.substring(0,2)}</div>;
+        })()}
+        <div>
+          <div className="section-name">{h.name}</div>
+          <div className="section-code">{h.market}</div>
+        </div>
+      </div>
+      <span className="section-val">{fmt(Math.round(h.avgPrice))}{isDomestic(h.market) ? "원" : "$"}</span>
+      <span className="section-val" style={{color:"#94a3b8"}}>-</span>
+      <span className="section-val">{fmt(Math.round(h.avgPrice * h.quantity))}{isDomestic(h.market) ? "원" : "$"}</span>
+      <span className="section-val section-trends"><TrendLine /></span>
+      <span className="section-val">
+        <span className="section-signal pending">구현예정</span>
+      </span>
+    </div>
+  );
+
+  const renderWatchlistRow = (s, onClickExtra) => (
+    <div key={s.symbol} className="section-row" onClick={() => { handleSelectStock(s); onClickExtra?.(); }}>
+      <div className="section-stock-info">
+        {(() => {
+          const logo = getLogoUrl(s.symbol, s.market);
+          return logo
+            ? <img src={logo} className="section-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
+            : <div className="section-logo-fb" style={{background:getBg(s.name)}}>{s.name?.substring(0,2)}</div>;
+        })()}
+        <div>
+          <div className="section-name">{s.name}</div>
+          <div className="section-code">{s.symbol}</div>
+        </div>
+      </div>
+      <span className="section-val">-</span>
+      <span className={`section-val ${isUp(s.changePercent) ? "up" : "dn"}`}>
+        {s.changePercent ? fmtChange(s.changePercent) : "-"}
+      </span>
+      <span className="section-val" style={{color:"#94a3b8"}}>-</span>
+      <span className="section-val section-trends"><TrendLine /></span>
+      <span className="section-val">
+        <span className="section-signal pending">구현예정</span>
+      </span>
+    </div>
+  );
 
   return (
     <div className="dash-page">
@@ -200,12 +266,7 @@ export default function MainDashboard({ user }) {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
               </button>
             </div>
-            <div className="section-table-header">
-              <span>종목</span>
-              <span>평균단가</span>
-              <span>수량</span>
-              <span>평가금액</span>
-            </div>
+            {TABLE_HEADER}
             {!user ? (
               <div className="section-empty">로그인이 필요해요</div>
             ) : portfolioLoading ? (
@@ -214,25 +275,7 @@ export default function MainDashboard({ user }) {
               <div className="section-empty">보유 종목이 없어요</div>
             ) : (
               <div className="section-list">
-                {holdings.slice(0, 5).map(h => (
-                  <div key={h.id} className="section-row" onClick={() => handleSelectStock(h)}>
-                    <div className="section-stock-info">
-                      {(() => {
-                        const logo = getLogoUrl(h.symbol, h.market);
-                        return logo
-                          ? <img src={logo} className="section-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
-                          : <div className="section-logo-fb" style={{background:getBg(h.name)}}>{h.name?.substring(0,2)}</div>;
-                      })()}
-                      <div>
-                        <div className="section-name">{h.name}</div>
-                        <div className="section-code">{h.market}</div>
-                      </div>
-                    </div>
-                    <span className="section-val">{fmt(Math.round(h.avgPrice))}{isDomestic(h.market)?"원":"$"}</span>
-                    <span className="section-val">{h.quantity}주</span>
-                    <span className="section-val">{fmt(Math.round(h.avgPrice * h.quantity))}{isDomestic(h.market)?"원":"$"}</span>
-                  </div>
-                ))}
+                {holdings.slice(0, 5).map(h => renderPortfolioRow(h))}
               </div>
             )}
           </div>
@@ -245,37 +288,14 @@ export default function MainDashboard({ user }) {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
               </button>
             </div>
-            <div className="section-table-header">
-              <span>종목</span>
-              <span>현재가</span>
-              <span>등락률</span>
-            </div>
+            {TABLE_HEADER}
             {!user ? (
               <div className="section-empty">로그인이 필요해요</div>
             ) : watchlist.length === 0 ? (
               <div className="section-empty">관심 종목이 없어요</div>
             ) : (
               <div className="section-list">
-                {watchlist.slice(0, 5).map(s => (
-                  <div key={s.symbol} className="section-row" onClick={() => handleSelectStock(s)}>
-                    <div className="section-stock-info">
-                      {(() => {
-                        const logo = getLogoUrl(s.symbol, s.market);
-                        return logo
-                          ? <img src={logo} className="section-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
-                          : <div className="section-logo-fb" style={{background:getBg(s.name)}}>{s.name?.substring(0,2)}</div>;
-                      })()}
-                      <div>
-                        <div className="section-name">{s.name}</div>
-                        <div className="section-code">{s.symbol}</div>
-                      </div>
-                    </div>
-                    <span className="section-val">-</span>
-                    <span className={`section-val ${isUp(s.changePercent)?"up":"dn"}`}>
-                      {s.changePercent ? fmtChange(s.changePercent) : "-"}
-                    </span>
-                  </div>
-                ))}
+                {watchlist.slice(0, 5).map(s => renderWatchlistRow(s))}
               </div>
             )}
           </div>
@@ -293,30 +313,13 @@ export default function MainDashboard({ user }) {
               <button className="expand-close" onClick={() => setExpandPanel(null)}>✕</button>
             </div>
             <div className="expand-content">
+              {TABLE_HEADER}
               {expandPanel === "portfolio" ? (
                 holdings.length === 0 ? (
                   <div className="section-empty">보유 종목이 없어요</div>
                 ) : (
                   <div className="section-list">
-                    {holdings.map(h => (
-                      <div key={h.id} className="section-row" onClick={() => { handleSelectStock(h); setExpandPanel(null); }}>
-                        <div className="section-stock-info">
-                          {(() => {
-                            const logo = getLogoUrl(h.symbol, h.market);
-                            return logo
-                              ? <img src={logo} className="section-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
-                              : <div className="section-logo-fb" style={{background:getBg(h.name)}}>{h.name?.substring(0,2)}</div>;
-                          })()}
-                          <div>
-                            <div className="section-name">{h.name}</div>
-                            <div className="section-code">{h.market}</div>
-                          </div>
-                        </div>
-                        <span className="section-val">{fmt(Math.round(h.avgPrice))}{isDomestic(h.market)?"원":"$"}</span>
-                        <span className="section-val">{h.quantity}주</span>
-                        <span className="section-val">{fmt(Math.round(h.avgPrice * h.quantity))}{isDomestic(h.market)?"원":"$"}</span>
-                      </div>
-                    ))}
+                    {holdings.map(h => renderPortfolioRow(h, () => setExpandPanel(null)))}
                   </div>
                 )
               ) : (
@@ -324,26 +327,7 @@ export default function MainDashboard({ user }) {
                   <div className="section-empty">관심 종목이 없어요</div>
                 ) : (
                   <div className="section-list">
-                    {watchlist.map(s => (
-                      <div key={s.symbol} className="section-row" onClick={() => { handleSelectStock(s); setExpandPanel(null); }}>
-                        <div className="section-stock-info">
-                          {(() => {
-                            const logo = getLogoUrl(s.symbol, s.market);
-                            return logo
-                              ? <img src={logo} className="section-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
-                              : <div className="section-logo-fb" style={{background:getBg(s.name)}}>{s.name?.substring(0,2)}</div>;
-                          })()}
-                          <div>
-                            <div className="section-name">{s.name}</div>
-                            <div className="section-code">{s.symbol}</div>
-                          </div>
-                        </div>
-                        <span className="section-val">-</span>
-                        <span className={`section-val ${isUp(s.changePercent)?"up":"dn"}`}>
-                          {s.changePercent ? fmtChange(s.changePercent) : "-"}
-                        </span>
-                      </div>
-                    ))}
+                    {watchlist.map(s => renderWatchlistRow(s, () => setExpandPanel(null)))}
                   </div>
                 )
               )}
