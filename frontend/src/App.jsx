@@ -5,6 +5,7 @@ import Sidebar from "./components/Sidebar";
 import LeftSidebar from "./components/LeftSidebar";
 import TopBar from "./components/TopBar";
 import MainDashboard from "./pages/MainDashboard";
+import MarketPage from "./pages/MarketPage";
 import LoginPage from "./pages/LoginPage";
 import AccountPage from "./pages/AccountPage";
 import AiPage from "./pages/AiPage";
@@ -66,6 +67,7 @@ export default function App() {
               <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage onLogin={handleLogin} />} />
               <Route path="/ai" element={<AiPage user={user} />} />
               <Route path="/stock/:symbol" element={<StockDetailPage user={user} />} />
+              <Route path="/market" element={<MarketPage user={user} />} />
               <Route path="/account" element={user ? <AccountPage user={user} setUser={setUser} /> : <Navigate to="/login" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

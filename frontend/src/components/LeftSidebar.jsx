@@ -29,11 +29,11 @@ export default function LeftSidebar({ user, onLogout }) {
   ];
 
   const exploreMenus = [
-    { label: "시장", path: "/", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
+    { label: "시장", path: "/market", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
   ];
 
   const isActive = (path, label) => {
-    if (label === "대시보드" || label === "시장") return location.pathname === "/";
+    if (label === "대시보드") return location.pathname === "/";
     return location.pathname === path;
   };
 
