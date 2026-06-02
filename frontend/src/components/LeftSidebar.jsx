@@ -1,8 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
-import { getMyInfo, getHoldings, fmt, isDomestic, getExchangeCode, NGROK_URL } from "../api/stockApi";
+import { useEffect, useState } from "react";
+import { getMyInfo, getHoldings, fmt, isDomestic } from "../api/stockApi";
 import api from "../api/stockApi";
-import { Client } from "@stomp/stompjs";
 import "./LeftSidebar.css";
 
 export default function LeftSidebar({ user, onLogout }) {
@@ -15,83 +14,19 @@ export default function LeftSidebar({ user, onLogout }) {
   const [modalAmount, setModalAmount] = useState("");
   const [modalLoading, setModalLoading] = useState(false);
 
-  const [holdingData, setHoldingData] = useState({ balance: 0, holdings: [] });
-  const [currentPrices, setCurrentPrices] = useState({});
-  const wsRef = useRef(null);
-  const wsSubsRef = useRef([]);
-
   useEffect(() => {
     if (!user) return;
     (async () => {
       try {
-        const [me, h] = await Promise.allSettled([getMyInfo(), getHoldings()]);
+        const [me, holdings] = await Promise.allSettled([getMyInfo(), getHoldings()]);
         const balance = me.status === "fulfilled" ? me.value.balance || 0 : 0;
-        const holdings = h.status === "fulfilled" ? h.value || [] : [];
-        setHoldingData({ balance, holdings });
+        const holdingVal = holdings.status === "fulfilled"
+          ? holdings.value.reduce((s, h) => s + h.avgPrice * h.quantity, 0)
+          : 0;
+        setTotalAsset(balance + holdingVal);
       } catch {}
     })();
   }, [user]);
-
-  // 보유종목 WebSocket 실시간 가격
-  useEffect(() => {
-    const { holdings } = holdingData;
-    if (!holdings.length) return;
-    const wsURL = NGROK_URL.replace("https://", "wss://").replace("http://", "ws://") + "/ws/websocket";
-    if (wsRef.current) {
-      wsSubsRef.current.forEach(s => { try { s.unsubscribe(); } catch {} });
-      wsSubsRef.current = [];
-      wsRef.current.deactivate();
-    }
-    const client = new Client({
-      brokerURL: wsURL,
-      connectHeaders: { "ngrok-skip-browser-warning": "true" },
-      reconnectDelay: 8000,
-      onConnect: () => {
-        holdings.forEach(h => {
-          const dom = isDomestic(h.market);
-          try {
-            if (dom) {
-              client.publish({ destination: "/app/subscribe/domestic/price", body: h.symbol });
-              const sub = client.subscribe(`/topic/domestic/${h.symbol}`, msg => {
-                try {
-                  const d = JSON.parse(msg.body);
-                  setCurrentPrices(prev => ({ ...prev, [h.symbol]: parseFloat(d.price) }));
-                } catch {}
-              });
-              wsSubsRef.current.push(sub);
-            } else {
-              const exc = h.exchange || getExchangeCode(h.market);
-              client.publish({ destination: "/app/subscribe/overseas", body: `${h.symbol},${exc}` });
-              const sub = client.subscribe(`/topic/overseas/${h.symbol}`, msg => {
-                try {
-                  const d = JSON.parse(msg.body);
-                  setCurrentPrices(prev => ({ ...prev, [h.symbol]: parseFloat(d.price) }));
-                } catch {}
-              });
-              wsSubsRef.current.push(sub);
-            }
-          } catch {}
-        });
-      },
-    });
-    client.activate();
-    wsRef.current = client;
-    return () => {
-      wsSubsRef.current.forEach(s => { try { s.unsubscribe(); } catch {} });
-      wsSubsRef.current = [];
-      client.deactivate();
-    };
-  }, [holdingData.holdings.map(h => h.symbol).join(",")]);
-
-  // 총 자산 계산 (실시간 반영)
-  useEffect(() => {
-    const { balance, holdings } = holdingData;
-    const holdingVal = holdings.reduce((s, h) => {
-      const price = currentPrices[h.symbol] || h.avgPrice;
-      return s + price * h.quantity;
-    }, 0);
-    setTotalAsset(balance + holdingVal);
-  }, [holdingData, currentPrices]);
 
   const mainMenus = [
     { label: "대시보드", path: "/", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> },
@@ -110,10 +45,11 @@ export default function LeftSidebar({ user, onLogout }) {
 
   const refreshAsset = async () => {
     try {
-      const [me, h] = await Promise.allSettled([getMyInfo(), getHoldings()]);
+      const [me, holdings] = await Promise.allSettled([getMyInfo(), getHoldings()]);
       const balance = me.status === "fulfilled" ? me.value.balance || 0 : 0;
-      const holdings = h.status === "fulfilled" ? h.value || [] : [];
-      setHoldingData({ balance, holdings });
+      const holdingVal = holdings.status === "fulfilled"
+        ? holdings.value.reduce((s, h) => s + h.avgPrice * h.quantity, 0) : 0;
+      setTotalAsset(balance + holdingVal);
     } catch {}
   };
 
@@ -142,11 +78,7 @@ export default function LeftSidebar({ user, onLogout }) {
       {/* 로고 */}
       <div className="ls-logo">
         <div className="ls-logo-icon" onClick={() => setCollapsed(v => !v)} style={{cursor:"pointer"}}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <rect x="3" y="3" width="18" height="6" rx="1" fill="#14b8a6"/>
-            <rect x="3" y="15" width="18" height="6" rx="1" fill="#14b8a6"/>
-            <rect x="9" y="9" width="6" height="6" rx="1" fill="#0d9488"/>
-          </svg>
+          <img src="/cube-icon.svg" width="28" height="28" alt="CUBIC" />
         </div>
         <span className="ls-logo-text" onClick={() => navigate("/")}>CUBIC 증권</span>
       </div>
