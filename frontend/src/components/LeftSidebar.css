@@ -1,9 +1,10 @@
 .left-sidebar {
-  width: 264px;
-  min-width: 264px;
+  width: 280px;
+  min-width: 280px;
   height: 100vh;
   position: sticky;
   top: 0;
+  align-self: flex-start;
   background: var(--c-surface);
   border-right: 1px solid var(--c-border);
   display: flex;
@@ -13,6 +14,10 @@
   z-index: 100;
   overflow-y: auto;
   box-shadow: 2px 0 12px rgba(0,0,0,0.06);
+  transition: width 0.25s cubic-bezier(0.4,0,0.2,1),
+              min-width 0.25s cubic-bezier(0.4,0,0.2,1),
+              padding 0.25s cubic-bezier(0.4,0,0.2,1),
+              opacity 0.2s ease;
 }
 
 .left-sidebar.collapsed {
@@ -20,6 +25,8 @@
   min-width: 0;
   padding: 0;
   overflow: hidden;
+  opacity: 0;
+  border-right: none;
 }
 
 .ls-logo {
@@ -58,23 +65,24 @@
 }
 
 .ls-asset-plus {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  background: var(--c-border);
+  background: rgba(0,0,0,0.06);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 14px;
   color: var(--c-text-sub);
   transition: all 0.15s;
   flex-shrink: 0;
+  padding: 0;
 }
 .ls-asset-plus:hover {
   background: var(--c-primary);
   color: #fff;
+  transform: scale(1.1);
 }
 
 .ls-close-btn {

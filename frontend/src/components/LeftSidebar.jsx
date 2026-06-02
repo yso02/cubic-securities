@@ -95,7 +95,7 @@ export default function LeftSidebar({ user, onLogout }) {
         <span>CUBIC 증권</span>
       </div>
       <button className="ls-close-btn" onClick={() => setCollapsed(true)}>
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
           <path d="M15 18l-6-6 6-6"/>
         </svg>
       </button>
@@ -105,7 +105,12 @@ export default function LeftSidebar({ user, onLogout }) {
         <div className="ls-asset">
           <div className="ls-asset-header">
             <span className="ls-asset-label">총 자산</span>
-            <button className="ls-asset-plus" onClick={() => setShowModal(true)}>+</button>
+            <button className="ls-asset-plus" onClick={() => setShowModal(true)}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
           </div>
           <span className="ls-asset-value">
             {totalAsset !== null ? `${fmt(Math.round(totalAsset))}원` : "-"}
