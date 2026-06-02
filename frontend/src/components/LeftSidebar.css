@@ -12,7 +12,8 @@
   padding: 20px 14px;
   gap: 4px;
   z-index: 100;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   box-shadow: 2px 0 12px rgba(0,0,0,0.06);
   transition: width 0.3s cubic-bezier(0.4,0,0.2,1),
               min-width 0.3s cubic-bezier(0.4,0,0.2,1);

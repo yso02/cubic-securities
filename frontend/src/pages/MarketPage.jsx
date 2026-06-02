@@ -8,6 +8,10 @@ import {
   getExchangeRate, isDomestic, fmt, fmtChange, isUp,
   getLogoUrl, getExchangeCode, NGROK_URL,
 } from "../api/stockApi";
+import StockChart from "../components/StockChart";
+import OrderBook from "../components/OrderBook";
+import TradeModal from "../components/TradeModal";
+import { getDomesticPrice, getOverseasPrice, fmtPrice, fmtChange as fmtCh, isUp as isUpCheck } from "../api/stockApi";
 import "./MarketPage.css";
 
 const ICON_COLORS = {
@@ -88,6 +92,10 @@ export default function MarketPage({ user }) {
   const [wsConnected, setWsConnected] = useState(false);
   const [topStocks, setTopStocks] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [stockModal, setStockModal] = useState(null);
+  const [modalStock, setModalStock] = useState(null);
+  const [tradeModal, setTradeModal] = useState(null);
+  const modalWsRef = useRef(null);
 
   useEffect(() => { fetchStocks(); }, [market, sortType]);
   useEffect(() => { fetchTopStocks(); }, [market]);
@@ -184,9 +192,57 @@ export default function MarketPage({ user }) {
     finally { setLoading(false); }
   };
 
-  const handleSelectStock = (stock) => {
+  const handleSelectStock = async (stock) => {
     sessionStorage.setItem("cubic_detail_stock", JSON.stringify(stock));
-    navigate(`/stock/${stock.symbol}`);
+    try {
+      const recent = JSON.parse(sessionStorage.getItem("cubic_recent") || "[]");
+      const updated = [stock, ...recent.filter(s => s.symbol !== stock.symbol)].slice(0, 10);
+      sessionStorage.setItem("cubic_recent", JSON.stringify(updated));
+      window.dispatchEvent(new Event("cubic_recent_update"));
+    } catch {}
+
+    try {
+      const dom = isDomestic(stock.market);
+      const priceData = dom
+        ? await getDomesticPrice(stock.symbol)
+        : await getOverseasPrice(stock.symbol, stock.exchange || getExchangeCode(stock.market));
+      setModalStock({ ...stock, ...priceData });
+    } catch {
+      setModalStock(stock);
+    }
+    setStockModal(stock.symbol);
+
+    if (modalWsRef.current) modalWsRef.current.deactivate();
+    const wsURL = NGROK_URL.replace("https://", "wss://").replace("http://", "ws://") + "/ws/websocket";
+    const client = new Client({
+      brokerURL: wsURL,
+      connectHeaders: { "ngrok-skip-browser-warning": "true" },
+      reconnectDelay: 5000,
+      onConnect: () => {
+        const dom = isDomestic(stock.market);
+        if (dom) {
+          client.publish({ destination: "/app/subscribe/domestic/price", body: stock.symbol });
+          client.subscribe(`/topic/domestic/${stock.symbol}`, msg => {
+            try { const d = JSON.parse(msg.body); setModalStock(prev => prev ? { ...prev, ...d } : prev); } catch {}
+          });
+        } else {
+          const exc = stock.exchange || getExchangeCode(stock.market);
+          client.publish({ destination: "/app/subscribe/overseas", body: `${stock.symbol},${exc}` });
+          client.subscribe(`/topic/overseas/${stock.symbol}`, msg => {
+            try { const d = JSON.parse(msg.body); setModalStock(prev => prev ? { ...prev, ...d } : prev); } catch {}
+          });
+        }
+      },
+    });
+    client.activate();
+    modalWsRef.current = client;
+  };
+
+  const closeStockModal = () => {
+    setStockModal(null);
+    setModalStock(null);
+    setTradeModal(null);
+    if (modalWsRef.current) { modalWsRef.current.deactivate(); modalWsRef.current = null; }
   };
 
   const getBg = (name) => ICON_COLORS[name] || "#64748b";
@@ -339,6 +395,61 @@ export default function MarketPage({ user }) {
           })}
         </div>
       </div>
+
+      {/* 종목 상세 모달 */}
+      {stockModal && modalStock && (
+        <div className="stock-modal-overlay" onClick={closeStockModal}>
+          <div className="stock-modal" onClick={e => e.stopPropagation()}>
+            <div className="stock-modal-header">
+              <div className="stock-modal-info">
+                {(() => {
+                  const logo = getLogoUrl(modalStock.symbol, modalStock.market);
+                  return logo
+                    ? <img src={logo} className="stock-modal-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
+                    : <div className="stock-modal-logo-fb">{modalStock.name?.substring(0,2)}</div>;
+                })()}
+                <div>
+                  <div className="stock-modal-name">{modalStock.name}</div>
+                  <div className="stock-modal-code">{modalStock.symbol} · {modalStock.market}</div>
+                </div>
+              </div>
+              <div className="stock-modal-price-area">
+                <span className="stock-modal-price">{fmtPrice(modalStock.price, modalStock.market)}</span>
+                <span className={`stock-modal-change ${isUpCheck(modalStock.changePercent) ? "up" : "dn"}`}>
+                  {isUpCheck(modalStock.changePercent) ? "▲" : "▼"} {fmtCh(modalStock.changePercent)}
+                </span>
+              </div>
+              <div className="stock-modal-actions">
+                {user && (
+                  <>
+                    <button className="sma-buy" onClick={() => setTradeModal("buy")}>매수</button>
+                    <button className="sma-sell" onClick={() => setTradeModal("sell")}>매도</button>
+                  </>
+                )}
+                <button className="sma-detail" onClick={() => { closeStockModal(); navigate(`/stock/${modalStock.symbol}`); }}>상세보기</button>
+                <button className="sma-close" onClick={closeStockModal}>✕</button>
+              </div>
+            </div>
+            <div className="stock-modal-body">
+              <div className="stock-modal-chart">
+                <StockChart stock={modalStock} fullscreen={false} onToggleFullscreen={() => {}} />
+              </div>
+              <div className="stock-modal-ob">
+                <OrderBook stock={modalStock} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tradeModal && modalStock && (
+        <TradeModal
+          stock={modalStock}
+          initialMode={tradeModal}
+          onClose={() => setTradeModal(null)}
+          onSuccess={() => window.dispatchEvent(new Event("cubic_trade_complete"))}
+        />
+      )}
 
       <div className="dash-footer">
         <p>여기서 제공하는 투자 정보는 고객의 투자 판단을 위한 단순 참고용일 뿐,<br/>투자 제안 및 권유, 종목 추천을 위해 작성된 것이 아닙니다.</p>
