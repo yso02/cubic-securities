@@ -77,9 +77,13 @@
 }
 
 html,
-body,
-#root {
+body {
   height: 100%;
+  width: 100%;
+}
+
+#root {
+  min-height: 100%;
   width: 100%;
 }
 

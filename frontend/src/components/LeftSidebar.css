@@ -33,7 +33,6 @@
   border-radius: 10px;
   transition: background 0.15s;
   white-space: nowrap;
-  cursor: pointer;
 }
 .ls-logo:hover { background: var(--c-hover); }
 .ls-logo-icon {
@@ -468,3 +467,26 @@
   transition: opacity 0.15s;
 }
 .ls-modal-confirm:hover { opacity: 0.88; }
+
+/* 로그아웃 버튼 */
+.ls-profile-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ls-profile-wrap .ls-profile {
+  flex: 1;
+}
+.ls-logout-btn {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  background: none; border: none; border-radius: 8px;
+  color: var(--c-text-muted); cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.ls-logout-btn:hover {
+  background: rgba(239,68,68,0.1);
+  color: #ef4444;
+}
+.left-sidebar.collapsed .ls-logout-btn { display: none; }
