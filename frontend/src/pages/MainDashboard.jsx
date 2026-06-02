@@ -1,90 +1,63 @@
-// src/pages/MainDashboard.jsx
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Client } from "@stomp/stompjs";
 import {
-  searchStocks,
-  getDomesticPrice,
-  getOverseasPrice,
-  getDomesticRanking,
-  getOverseasRanking,
-  getMarketIndices,
-  getOverseasMarketNews,
-  getDomesticMarketNews,
-  getExchangeRate as fetchRate,
-  getExchangeCode,
-  isDomestic,
-  fmt,
-  fmtPrice,
-  fmtChange,
-  isUp,
-  getWatchlist,
-  addWatchlist,
-  removeWatchlist,
-  DOMESTIC_STOCKS,
-  OVERSEAS_STOCKS,
-  NGROK_URL,
-  getLogoUrl,
+  getWatchlist, addWatchlist, removeWatchlist,
+  getMyInfo, getHoldings, getExchangeRate,
+  isDomestic, fmt, fmtChange, isUp,
+  getLogoUrl, searchStocks,
 } from "../api/stockApi";
 import "./MainDashboard.css";
 
 const ICON_COLORS = {
-  삼성전자: "#1428A0",
-  SK하이닉스: "#EA002C",
-  현대차: "#002C5F",
-  LG화학: "#A50034",
-  카카오: "#FAE100",
-  NAVER: "#76B900",
-  셀트리온: "#00A6A0",
-  POSCO홀딩스: "#004B87",
-  기아: "#05141F",
-  삼성SDI: "#034EA2",
-  LG에너지솔루션: "#A50034",
-  신한지주: "#0046FF",
-  Apple: "#555",
-  NVIDIA: "#76B900",
-  Tesla: "#CC0000",
-  Microsoft: "#00A4EF",
-  Amazon: "#FF9900",
-  Alphabet: "#4285F4",
-  Meta: "#1877F2",
+  삼성전자:"#1428A0",SK하이닉스:"#EA002C",현대차:"#002C5F",
+  LG화학:"#A50034",카카오:"#FAE100",NAVER:"#76B900",
+  셀트리온:"#00A6A0",POSCO홀딩스:"#004B87",기아:"#05141F",
+  삼성SDI:"#034EA2",LG에너지솔루션:"#A50034",신한지주:"#0046FF",
+  Apple:"#555",NVIDIA:"#76B900",Tesla:"#CC0000",
+  Microsoft:"#00A4EF",Amazon:"#FF9900",Alphabet:"#4285F4",Meta:"#1877F2",
 };
-const ICON_TEXT = { 카카오: "#3C1E1E" };
 
 export default function MainDashboard({ user }) {
   const navigate = useNavigate();
-  const [market, setMarket] = useState("domestic");
-  const [sortType, setSortType] = useState("VOLUME");
-  const [stocks, setStocks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+
+  const [watchlist, setWatchlist] = useState([]);
+  const [holdings, setHoldings] = useState([]);
+  const [myBalance, setMyBalance] = useState(0);
+  const [portfolioLoading, setPortfolioLoading] = useState(false);
+  const [expandPanel, setExpandPanel] = useState(null);
   const [exRate, setExRate] = useState({ rate: 1380 });
-  const [indices, setIndices] = useState([]);
-  const [domesticNews, setDomesticNews] = useState(null);
-  const [overseasNews, setOverseasNews] = useState(null);
-  const [newsLoading, setNewsLoading] = useState(true);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
+  const [showSearchDrop, setShowSearchDrop] = useState(false);
+  const searchRef = useRef(null);
   const searchTimer = useRef(null);
 
-  // 관심종목
-  const [watchlist, setWatchlist] = useState([]);
   useEffect(() => {
-    if (user) loadWatchlist();
+    (async () => { try { setExRate(await getExchangeRate()); } catch {} })();
+  }, []);
+
+  useEffect(() => {
+    if (user) { loadWatchlist(); loadPortfolio(); }
   }, [user]);
+
   const loadWatchlist = async () => {
-    try {
-      setWatchlist((await getWatchlist()) || []);
-    } catch {}
+    try { setWatchlist(await getWatchlist() || []); } catch {}
   };
-  const isWatched = (symbol) => watchlist.some((w) => w.symbol === symbol);
+
+  const loadPortfolio = async () => {
+    setPortfolioLoading(true);
+    try {
+      const [me, h] = await Promise.allSettled([getMyInfo(), getHoldings()]);
+      if (me.status === "fulfilled") setMyBalance(me.value.balance || 0);
+      if (h.status === "fulfilled") setHoldings(h.value || []);
+    } finally { setPortfolioLoading(false); }
+  };
+
+  const isWatched = (symbol) => watchlist.some(w => w.symbol === symbol);
   const toggleWatch = async (stock, e) => {
     if (e) e.stopPropagation();
-    if (!user) {
-      alert("로그인 후 이용해 주세요.");
-      navigate("/login");
-      return;
-    }
+    if (!user) { alert("로그인 후 이용해 주세요."); navigate("/login"); return; }
     try {
       if (isWatched(stock.symbol)) await removeWatchlist(stock.symbol);
       else await addWatchlist(stock.symbol, stock.name, stock.market);
@@ -92,646 +65,346 @@ export default function MainDashboard({ user }) {
     } catch {}
   };
 
-  // ── WebSocket 실시간 가격 ──
-  const [wsConnected, setWsConnected] = useState(false);
-  const wsClientRef = useRef(null);
-  const wsSubsRef = useRef(new Map());
-  const stocksRef = useRef([]);
-
-  // WebSocket 클라이언트 초기화 (최초 1회)
-  useEffect(() => {
-    const wsUrl =
-      NGROK_URL.replace("https://", "wss://").replace("http://", "ws://") +
-      "/ws/websocket";
-    const client = new Client({
-      brokerURL: wsUrl,
-      reconnectDelay: 5000,
-      connectHeaders: { "ngrok-skip-browser-warning": "true" },
-      onConnect: () => {
-        console.log("✅ 홈 WebSocket 연결 성공");
-        setWsConnected(true);
-        subscribeStocks(client);
-      },
-      onDisconnect: () => setWsConnected(false),
-      onStompError: (frame) =>
-        console.error("STOMP 에러:", frame.headers?.message),
-    });
-    client.activate();
-    wsClientRef.current = client;
-    return () => {
-      wsSubsRef.current.forEach((sub) => {
-        try {
-          sub.unsubscribe();
-        } catch {}
-      });
-      wsSubsRef.current.clear();
-      client.deactivate();
-    };
-  }, []);
-
-  // stocks 변경 시 구독 업데이트
-  const subscribeStocks = useCallback((client) => {
-    const cl = client || wsClientRef.current;
-    if (!cl?.connected || !stocksRef.current.length) return;
-
-    wsSubsRef.current.forEach((sub) => {
-      try {
-        sub.unsubscribe();
-      } catch {}
-    });
-    wsSubsRef.current.clear();
-
-    stocksRef.current.forEach((stock) => {
-      const dom = isDomestic(stock.market);
-      const key = `${dom ? "d" : "o"}-${stock.symbol}`;
-      try {
-        if (dom) {
-          cl.publish({
-            destination: "/app/subscribe/domestic/price",
-            body: stock.symbol,
-          });
-          const sub = cl.subscribe(`/topic/domestic/${stock.symbol}`, (msg) => {
-            try {
-              const data = JSON.parse(msg.body);
-              setStocks((prev) =>
-                prev.map((s) =>
-                  s.symbol === data.symbol ? { ...s, ...data } : s,
-                ),
-              );
-            } catch {}
-          });
-          wsSubsRef.current.set(key, sub);
-        } else {
-          const exc = stock.exchange || getExchangeCode(stock.market);
-          cl.publish({
-            destination: "/app/subscribe/overseas",
-            body: `${stock.symbol},${exc}`,
-          });
-          const sub = cl.subscribe(`/topic/overseas/${stock.symbol}`, (msg) => {
-            try {
-              const data = JSON.parse(msg.body);
-              setStocks((prev) =>
-                prev.map((s) =>
-                  s.symbol === data.symbol ? { ...s, ...data } : s,
-                ),
-              );
-            } catch {}
-          });
-          wsSubsRef.current.set(key, sub);
-        }
-      } catch (e) {
-        console.warn(`구독 실패 [${stock.symbol}]:`, e);
-      }
-    });
-  }, []);
-
-  // stocks 변경 시 재구독
-  useEffect(() => {
-    stocksRef.current = stocks;
-    if (wsConnected) subscribeStocks();
-  }, [stocks, wsConnected]);
-
-  // 데이터 로드
-  useEffect(() => {
-    fetchStocks();
-  }, [market, sortType]);
-  useEffect(() => {
-    (async () => {
-      try {
-        setExRate(await fetchRate());
-      } catch {}
-    })();
-  }, []);
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await getMarketIndices();
-        setIndices(data || []);
-      } catch (e) {
-        console.error("지수 로드 실패:", e);
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const [domestic, overseas] = await Promise.allSettled([
-          getDomesticMarketNews(),
-          getOverseasMarketNews(),
-        ]);
-        if (domestic.status === "fulfilled") setDomesticNews(domestic.value || null);
-        if (overseas.status === "fulfilled") setOverseasNews(overseas.value || null);
-      } catch (e) {
-        console.error("뉴스 로드 실패:", e);
-      } finally {
-        setNewsLoading(false);
-      }
-    })();
-  }, []);
-
-  const fetchStocks = async () => {
-    setLoading(true);
-    setError(null);
-    setSearchResults(null);
-    try {
-      const data =
-        market === "domestic"
-          ? await getDomesticRanking(sortType)
-          : await getOverseasRanking(sortType);
-      setStocks(data || []);
-      if (!data?.length) setError("데이터가 없습니다.");
-    } catch (e) {
-      console.error("순위 로드 실패:", e);
-      try {
-        await fetchFallback();
-      } catch {
-        setError("서버에 연결할 수 없습니다.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchFallback = async () => {
-    const list = market === "domestic" ? DOMESTIC_STOCKS : OVERSEAS_STOCKS;
-    const results = await Promise.allSettled(
-      list.map(async (s) => {
-        const p = isDomestic(s.market)
-          ? await getDomesticPrice(s.symbol)
-          : await getOverseasPrice(s.symbol, s.exchange || "NAS");
-        return { ...s, ...p };
-      }),
-    );
-    setStocks(
-      results.filter((r) => r.status === "fulfilled").map((r) => r.value),
-    );
-  };
-
-  // 검색
   const handleSearch = (q) => {
     setSearchQuery(q);
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (!q.trim()) {
-      setSearchResults(null);
-      return;
-    }
+    if (!q.trim()) { setSearchResults(null); setShowSearchDrop(false); return; }
     searchTimer.current = setTimeout(async () => {
       try {
         const res = await searchStocks(q);
-        setSearchResults(res?.slice(0, 15) || []);
-      } catch {
-        setSearchResults([]);
-      }
+        setSearchResults(res?.slice(0, 8) || []);
+        setShowSearchDrop(true);
+      } catch { setSearchResults([]); }
     }, 300);
   };
 
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) setShowSearchDrop(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   const handleSelectStock = (stock) => {
     sessionStorage.setItem("cubic_detail_stock", JSON.stringify(stock));
-    // 최근 본 종목 저장
-    try {
-      const recent = JSON.parse(sessionStorage.getItem("cubic_recent") || "[]");
-      const updated = [
-        stock,
-        ...recent.filter((s) => s.symbol !== stock.symbol),
-      ].slice(0, 10);
-      sessionStorage.setItem("cubic_recent", JSON.stringify(updated));
-      window.dispatchEvent(new Event("cubic_recent_update"));
-    } catch {}
     navigate(`/stock/${stock.symbol}`);
-    setSearchResults(null);
-    setSearchQuery("");
   };
 
-  const getAbbr = (name) => name?.substring(0, 2) || "??";
   const getBg = (name) => ICON_COLORS[name] || "#64748b";
-  const getTc = (name) => ICON_TEXT[name] || "#fff";
 
-  const displayStocks = searchResults || stocks;
-  const lastColHeader =
-    sortType === "VOLUME"
-      ? market === "domestic"
-        ? "거래대금"
-        : "거래량"
-      : "거래대금";
+  const totalEval = holdings.reduce((s, h) => {
+    const p = isDomestic(h.market) ? h.avgPrice : h.avgPrice * exRate.rate;
+    return s + p * h.quantity;
+  }, 0);
+  const totalPL = 0;
+  const totalPLRate = "0.00";
+
+  const renderPortfolioRow = (h, onClickExtra) => {
+    const isKr = isDomestic(h.market);
+    const currentPrice = h.avgPrice;
+    const priceKrw = isKr ? currentPrice : currentPrice * exRate.rate;
+    const evalKrw = priceKrw * h.quantity;
+    const costKrw = isKr ? h.avgPrice * h.quantity : h.avgPrice * exRate.rate * h.quantity;
+    const pl = evalKrw - costKrw;
+    const plRate = costKrw > 0 ? ((pl / costKrw) * 100).toFixed(2) : "0.00";
+    const isProfit = pl >= 0;
+    return (
+      <div key={h.id} className="section-row" onClick={() => { handleSelectStock(h); onClickExtra?.(); }}>
+        <div className="section-stock-info">
+          {(() => {
+            const logo = getLogoUrl(h.symbol, h.market);
+            return logo
+              ? <img src={logo} className="section-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
+              : <div className="section-logo-fb" style={{background:getBg(h.name)}}>{h.name?.substring(0,2)}</div>;
+          })()}
+          <div><div className="section-name">{h.name}</div></div>
+        </div>
+        <span className="section-val">{fmt(Math.round(priceKrw))}원</span>
+        <span className="section-val">{h.quantity}주</span>
+        <span className={`section-val ${isProfit ? "up" : "dn"}`}>
+          <div>{isProfit ? "+" : ""}{fmt(Math.round(pl))}원</div>
+          <div style={{fontSize:"11px"}}>{isProfit?"+":""}{plRate}%</div>
+        </span>
+        <span className="section-val">{fmt(Math.round(evalKrw))}원</span>
+        <span className="section-val">
+          <span className="section-signal pending">구현예정</span>
+        </span>
+      </div>
+    );
+  };
+
+  const renderWatchlistRow = (s, onClickExtra) => (
+    <div key={s.symbol} className="watchlist-row" onClick={() => { handleSelectStock(s); onClickExtra?.(); }}>
+      <div className="section-stock-info">
+        {(() => {
+          const logo = getLogoUrl(s.symbol, s.market);
+          return logo
+            ? <img src={logo} className="section-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
+            : <div className="section-logo-fb" style={{background:getBg(s.name)}}>{s.name?.substring(0,2)}</div>;
+        })()}
+        <div><div className="section-name">{s.name}</div></div>
+      </div>
+      <span className="section-val">-</span>
+      <span className={`section-val ${isUp(s.changePercent) ? "up" : "dn"}`}>
+        {s.changePercent ? fmtChange(s.changePercent) : "-"}
+      </span>
+      <span className="section-val section-trends">
+        <svg width="60" height="24" viewBox="0 0 60 24">
+          <polyline points="0,18 15,14 30,16 45,8 60,10" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      </span>
+      <span className="section-val">
+        <span className="section-signal pending">구현예정</span>
+      </span>
+    </div>
+  );
 
   return (
     <div className="dash-page">
-      {/* 시장 지수 바 */}
-      <div className="market-indices">
-        <div className="market-indices-inner">
-          {/* 달러 환율 카드 - 기존 유지 */}
-          <div className="index-card">
-            <div className="idx-label">달러 환율</div>
-            <div className="idx-value">{fmt(Math.round(exRate.rate))}</div>
-            <div className="idx-chart-placeholder">
-              <svg viewBox="0 0 80 24">
-                <polyline
-                  points="0,18 10,16 20,14 30,15 40,12 50,10 60,8 70,6 80,4"
-                  fill="none"
-                  stroke="#ef4444"
-                  strokeWidth="1.5"
-                />
-              </svg>
+
+      {/* 환영 헤더 */}
+      <div className="dash-welcome">
+        <div className="dash-welcome-left">
+          <p className="dash-welcome-sub">돌아오셨군요</p>
+          <h1 className="dash-welcome-name">{user?.name || "게스트"}님 👋</h1>
+        </div>
+        <div className="dash-welcome-right">
+          <div className="dash-search-wrap" ref={searchRef}>
+            <div className="dash-search-box">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input
+                type="text"
+                placeholder="종목명 / 코드 검색"
+                value={searchQuery}
+                onChange={e => handleSearch(e.target.value)}
+                onFocus={() => { if (searchResults?.length) setShowSearchDrop(true); }}
+              />
+              {searchQuery && <button onClick={() => { setSearchQuery(""); setSearchResults(null); setShowSearchDrop(false); }}>✕</button>}
             </div>
+            {showSearchDrop && searchResults?.length > 0 && (
+              <div className="dash-search-dropdown">
+                {searchResults.map(s => {
+                  const logo = getLogoUrl(s.symbol, s.market);
+                  return (
+                    <div key={s.symbol} className="dash-search-result" onClick={() => { handleSelectStock(s); setSearchQuery(""); setSearchResults(null); setShowSearchDrop(false); }}>
+                      {logo
+                        ? <img src={logo} className="dsr-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
+                        : <div className="dsr-fallback">{s.name?.substring(0,2)}</div>}
+                      <div className="dsr-info">
+                        <span className="dsr-name">{s.name}</span>
+                        <span className="dsr-code">{s.symbol} · {s.market}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
-
-          {/* 코스피 */}
-          {(() => {
-            const idx = indices.find((i) => i.code === "KOSPI");
-            const up = idx ? isUp(idx.changePercent) : true;
-            return (
-              <div className={`index-card ${!idx ? "disabled" : ""}`}>
-                <div className="idx-label">
-                  코스피 {!idx && <span className="idx-pending">로딩중</span>}
-                </div>
-                <div
-                  className={`idx-value ${!idx ? "muted" : up ? "up" : "dn"}`}
-                >
-                  {idx ? fmt(Math.round(Number(idx.price))) : "-"}
-                </div>
-                {idx && (
-                  <div className={`idx-change ${up ? "up" : "dn"}`}>
-                    {fmtChange(idx.changePercent)}
-                  </div>
-                )}
-                <div className="idx-chart-placeholder">
-                  <svg viewBox="0 0 80 24">
-                    <polyline
-                      points="0,4 10,6 20,10 30,8 40,12 50,16 60,14 70,18 80,20"
-                      fill="none"
-                      stroke={up ? "#ef4444" : "#3b82f6"}
-                      strokeWidth="1.5"
-                      opacity={idx ? "1" : "0.3"}
-                    />
-                  </svg>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* 코스닥 */}
-          {(() => {
-            const idx = indices.find((i) => i.code === "KOSDAQ");
-            const up = idx ? isUp(idx.changePercent) : true;
-            return (
-              <div className={`index-card ${!idx ? "disabled" : ""}`}>
-                <div className="idx-label">
-                  코스닥 {!idx && <span className="idx-pending">로딩중</span>}
-                </div>
-                <div
-                  className={`idx-value ${!idx ? "muted" : up ? "up" : "dn"}`}
-                >
-                  {idx ? fmt(Math.round(Number(idx.price))) : "-"}
-                </div>
-                {idx && (
-                  <div className={`idx-change ${up ? "up" : "dn"}`}>
-                    {fmtChange(idx.changePercent)}
-                  </div>
-                )}
-                <div className="idx-chart-placeholder">
-                  <svg viewBox="0 0 80 24">
-                    <polyline
-                      points="0,6 10,8 20,12 30,10 40,14 50,18 60,16 70,20 80,22"
-                      fill="none"
-                      stroke={up ? "#ef4444" : "#3b82f6"}
-                      strokeWidth="1.5"
-                      opacity={idx ? "1" : "0.3"}
-                    />
-                  </svg>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* 나스닥 */}
-          {(() => {
-            const idx = indices.find((i) => i.code === "NASDAQ");
-            const up = idx ? isUp(idx.changePercent) : true;
-            return (
-              <div className={`index-card ${!idx ? "disabled" : ""}`}>
-                <div className="idx-label">
-                  나스닥 {!idx && <span className="idx-pending">로딩중</span>}
-                </div>
-                <div
-                  className={`idx-value ${!idx ? "muted" : up ? "up" : "dn"}`}
-                >
-                  {idx ? fmt(Math.round(Number(idx.price))) : "-"}
-                </div>
-                {idx && (
-                  <div className={`idx-change ${up ? "up" : "dn"}`}>
-                    {fmtChange(idx.changePercent)}
-                  </div>
-                )}
-                <div className="idx-chart-placeholder">
-                  <svg viewBox="0 0 80 24">
-                    <polyline
-                      points="0,12 10,10 20,8 30,10 40,6 50,8 60,4 70,6 80,2"
-                      fill="none"
-                      stroke={up ? "#ef4444" : "#3b82f6"}
-                      strokeWidth="1.5"
-                      opacity={idx ? "1" : "0.3"}
-                    />
-                  </svg>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* S&P 500 */}
-          {(() => {
-            const idx = indices.find((i) => i.code === "SP500");
-            const up = idx ? isUp(idx.changePercent) : true;
-            return (
-              <div className={`index-card ${!idx ? "disabled" : ""}`}>
-                <div className="idx-label">
-                  S&P 500 {!idx && <span className="idx-pending">로딩중</span>}
-                </div>
-                <div
-                  className={`idx-value ${!idx ? "muted" : up ? "up" : "dn"}`}
-                >
-                  {idx ? fmt(Math.round(Number(idx.price))) : "-"}
-                </div>
-                {idx && (
-                  <div className={`idx-change ${up ? "up" : "dn"}`}>
-                    {fmtChange(idx.changePercent)}
-                  </div>
-                )}
-                <div className="idx-chart-placeholder">
-                  <svg viewBox="0 0 80 24">
-                    <polyline
-                      points="0,14 10,12 20,10 30,12 40,8 50,6 60,8 70,4 80,6"
-                      fill="none"
-                      stroke={up ? "#ef4444" : "#3b82f6"}
-                      strokeWidth="1.5"
-                      opacity={idx ? "1" : "0.3"}
-                    />
-                  </svg>
-                </div>
-              </div>
-            );
-          })()}
+          <button className="dash-ai-btn" onClick={() => navigate("/ai")}>
+            <span className="dash-ai-icon">✦</span>
+            AI 어시스턴트
+          </button>
         </div>
       </div>
 
-      <div className="dash-body">
-        {/* 좌측: 종목 리스트 */}
-        <div className="dash-main">
-          {/* 검색 (모바일용) */}
-          <div className="mobile-search">
-            <input
-              type="text"
-              placeholder="종목명 / 코드 검색"
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.target.value)}
-            />
-          </div>
+      {/* 메인 그리드 */}
+      <div className="dash-grid">
 
-          <div className="dash-card">
-            {/* 시장 탭 */}
-            <div className="market-tab-row">
-              <div
-                className={`market-tab ${market === "domestic" ? "active" : ""}`}
-                onClick={() => setMarket("domestic")}
-              >
-                <span className="market-flag">🇰🇷</span>
-                <span className="market-tab-label">국내주식</span>
-              </div>
-              <div
-                className={`market-tab ${market === "overseas" ? "active" : ""}`}
-                onClick={() => setMarket("overseas")}
-              >
-                <span className="market-flag">🇺🇸</span>
-                <span className="market-tab-label">해외주식</span>
-              </div>
-            </div>
-            {/* 정렬 탭 */}
-            <div className="sub-tab-row">
-              {[
-                ["VOLUME", "거래대금"],
-                ["MARKET_CAP", "시가총액"],
-                ["RISE", "급상승"],
-                ["FALL", "급하락"],
-              ].map(([key, label]) => (
-                <div
-                  key={key}
-                  className={`sub-tab ${sortType === key ? "active" : ""}`}
-                  onClick={() => setSortType(key)}
-                >
-                  {label}
-                </div>
-              ))}
-            </div>
-            {/* 헤더 */}
-            <div className="list-header">
-              <span>순위</span>
-              <span style={{ textAlign: "left" }}>종목</span>
-              <span>현재가</span>
-              <span>등락률</span>
-              <span>{lastColHeader}</span>
-            </div>
-            {/* 종목 리스트 */}
-            <div className="stock-list">
-              {loading ? (
-                <div className="list-empty">
-                  <div className="loading-spinner" />
-                  <p>불러오는 중...</p>
-                </div>
-              ) : error ? (
-                <div className="list-empty">
-                  <p>{error}</p>
-                  <button onClick={fetchStocks}>다시 시도</button>
-                </div>
-              ) : displayStocks.length === 0 ? (
-                <div className="list-empty">
-                  <p>종목이 없습니다</p>
-                </div>
-              ) : (
-                displayStocks.map((s, i) => (
-                  <div
-                    key={s.symbol}
-                    className={`stock-row `}
-                    onClick={() => handleSelectStock(s)}
-                  >
-                    <div className="rank">{i + 1}</div>
-                    <div className="stock-info">
-                      <button
-                        className={`star-btn ${isWatched(s.symbol) ? "on" : ""}`}
-                        onClick={(e) => toggleWatch(s, e)}
-                      >
-                        {isWatched(s.symbol) ? "★" : "☆"}
-                      </button>
-                      {(() => {
-                        const logoUrl = getLogoUrl(s.symbol, s.market);
-                        return logoUrl ? (
-                          <img
-                            src={logoUrl}
-                            alt={s.name}
-                            className="stock-icon-img"
-                            onError={(e) => {
-                              e.target.style.display = "none";
-                              e.target.nextSibling.style.display = "flex";
-                            }}
-                          />
-                        ) : null;
-                      })()}
-                      <div
-                        className="stock-icon"
-                        style={{
-                          background: getBg(s.name),
-                          color: getTc(s.name),
-                          display: getLogoUrl(s.symbol, s.market)
-                            ? "none"
-                            : "flex",
-                        }}
-                      >
-                        {getAbbr(s.name)}
+        {/* 포트폴리오 퍼포먼스 카드 */}
+        <div className="dash-perf-card">
+          <div className="perf-header">
+            <span className="perf-title">포트폴리오 퍼포먼스</span>
+          </div>
+          <div className="perf-body">
+            <div className="perf-left">
+              {user ? (
+                <>
+                  <p className="perf-status">
+                    포트폴리오가 오늘{" "}
+                    {totalPL >= 0
+                      ? <span style={{color:"#22c55e",fontWeight:700}}>▲ {Math.abs(Number(totalPLRate))}% 상승</span>
+                      : <span style={{color:"#ef4444",fontWeight:700}}>▼ {Math.abs(Number(totalPLRate))}% 하락</span>
+                    }했습니다
+                  </p>
+                  <p className="perf-sub">오늘 투자 평가금액</p>
+                  <div className="perf-total">{fmt(Math.round(totalEval))}원</div>
+
+                  <div className="perf-bottom-boxes">
+                    <div className="perf-box">
+                      <span className="perf-box-label">오늘의 수익</span>
+                      <span className="perf-box-value pending">구현 예정</span>
+                    </div>
+                    <div className="perf-boxes-row">
+                      <div className="perf-box">
+                        <span className="perf-box-label">최저 평가금액</span>
+                        <span className="perf-box-value">{fmt(Math.round(totalEval * 0.98))}원</span>
                       </div>
-                      <div>
-                        <div className="stock-name">{s.name}</div>
-                        <div className="stock-code">
-                          {s.symbol} · {s.market}
-                        </div>
+                      <div className="perf-box">
+                        <span className="perf-box-label">최고 평가금액</span>
+                        <span className="perf-box-value">{fmt(Math.round(totalEval * 1.02))}원</span>
                       </div>
-                    </div>
-                    <div className="price">
-                      {s.price ? fmtPrice(s.price, s.market) : "-"}
-                    </div>
-                    <div
-                      className={`change ${isUp(s.changePercent) ? "up" : "dn"}`}
-                    >
-                      {s.changePercent ? fmtChange(s.changePercent) : "-"}
-                    </div>
-                    <div className="volume">
-                      {s.volume ? fmt(s.volume) : "-"}
                     </div>
                   </div>
-                ))
+                </>
+              ) : (
+                <div className="perf-login-hint">
+                  <p>로그인하면 포트폴리오를 확인할 수 있어요</p>
+                  <button onClick={() => navigate("/login")}>로그인</button>
+                </div>
               )}
+            </div>
+
+            <div className="perf-right">
+              <div className="perf-chart-area">
+                <svg width="100%" height="140" viewBox="0 0 400 140" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3"/>
+                      <stop offset="100%" stopColor="#22c55e" stopOpacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M0,110 C30,105 50,90 80,85 C110,80 130,95 160,70 C190,45 210,55 240,40 C270,25 290,35 320,20 C350,8 370,15 400,10"
+                    fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round"
+                  />
+                  <path
+                    d="M0,110 C30,105 50,90 80,85 C110,80 130,95 160,70 C190,45 210,55 240,40 C270,25 290,35 320,20 C350,8 370,15 400,10 L400,140 L0,140 Z"
+                    fill="url(#chartGrad)"
+                  />
+                  <circle cx="400" cy="10" r="4" fill="#22c55e"/>
+                  <rect x="340" y="0" width="58" height="20" rx="4" fill="#22c55e"/>
+                  <text x="369" y="14" textAnchor="middle" fill="white" fontSize="10" fontWeight="600">
+                    +{Math.abs(Number(totalPLRate))}%
+                  </text>
+                </svg>
+                <div className="perf-chart-labels">
+                  <span>09:00</span>
+                  <span>11:00</span>
+                  <span>13:00</span>
+                  <span>15:00</span>
+                  <span>현재</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* 우측: 뉴스 패널 */}
-        <div className="dash-detail dash-default">
-          <div className="news-section">
-            <div className="news-header">
-              <span className="news-title">
-                {market === "domestic" ? "🇰🇷 국내 시장 뉴스" : "🇺🇸 해외 시장 뉴스"}
-              </span>
-              {(market === "domestic" ? domesticNews : overseasNews) && (
-                <span className="news-updated">
-                  {(market === "domestic" ? domesticNews : overseasNews).updatedAt} 기준
-                </span>
-              )}
+        {/* 포트폴리오 + 관심종목 2컬럼 */}
+        <div className="dash-bottom-grid">
+
+          {/* 포트폴리오 테이블 */}
+          <div className="dash-section-card">
+            <div className="section-header">
+              <span className="section-title">내 포트폴리오</span>
+              <button className="section-expand-btn" onClick={() => setExpandPanel("portfolio")}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+              </button>
             </div>
+            <div className="section-table-header">
+              <span>종목</span>
+              <span style={{textAlign:"right"}}>현재가</span>
+              <span style={{textAlign:"right"}}>보유</span>
+              <span style={{textAlign:"right"}}>손익</span>
+              <span style={{textAlign:"right"}}>평가금액</span>
+              <span style={{textAlign:"right"}}>매수/매도</span>
+            </div>
+            {!user ? (
+              <div className="section-empty">로그인이 필요해요</div>
+            ) : portfolioLoading ? (
+              <div className="section-empty"><div className="loading-spinner-sm"/></div>
+            ) : holdings.length === 0 ? (
+              <div className="section-empty">보유 종목이 없어요</div>
+            ) : (
+              <div className="section-list">
+                {holdings.map(h => renderPortfolioRow(h))}
+              </div>
+            )}
+          </div>
 
-            {(() => {
-              const marketNews = market === "domestic" ? domesticNews : overseasNews;
+          {/* 관심종목 테이블 */}
+          <div className="dash-section-card">
+            <div className="section-header">
+              <span className="section-title">관심종목</span>
+              <button className="section-expand-btn" onClick={() => setExpandPanel("watchlist")}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+              </button>
+            </div>
+            <div className="watchlist-header">
+              <span>종목</span>
+              <span style={{textAlign:"right"}}>현재가</span>
+              <span style={{textAlign:"right"}}>등락률</span>
+              <span style={{textAlign:"right"}}>Trends</span>
+              <span style={{textAlign:"right"}}>매수/매도</span>
+            </div>
+            {!user ? (
+              <div className="section-empty">로그인이 필요해요</div>
+            ) : watchlist.length === 0 ? (
+              <div className="section-empty">관심 종목이 없어요</div>
+            ) : (
+              <div className="section-list">
+                {watchlist.map(s => renderWatchlistRow(s))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-              const weatherMap = {
-                SUNNY: { emoji: "☀️", label: "상승장", color: "#ef4444" },
-                CLOUDY: { emoji: "⛅", label: "혼조세", color: "#f59e0b" },
-                RAINY: { emoji: "🌧️", label: "하락장", color: "#3b82f6" },
-                STORM: { emoji: "⛈️", label: "급락", color: "#7c3aed" },
-              };
-              const weather = marketNews?.weather ? weatherMap[marketNews.weather] : null;
-
-              return (
+      {/* 확장 오버레이 */}
+      {expandPanel && (
+        <div className="expand-overlay" onClick={() => setExpandPanel(null)}>
+          <div className="expand-modal" onClick={e => e.stopPropagation()}>
+            <div className="expand-header">
+              <span className="expand-title">
+                {expandPanel === "portfolio" ? "내 포트폴리오" : "관심종목"}
+              </span>
+              <button className="expand-close" onClick={() => setExpandPanel(null)}>✕</button>
+            </div>
+            <div className="expand-content">
+              {expandPanel === "portfolio" ? (
                 <>
-                  {weather && (
-                    <div className="news-weather" style={{ borderColor: weather.color + "40", background: weather.color + "0a" }}>
-                      <span className="weather-emoji">{weather.emoji}</span>
-                      <div className="weather-info">
-                        <span className="weather-label" style={{ color: weather.color }}>{weather.label}</span>
-                        <span className="weather-desc">현재 시장 상황</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {newsLoading ? (
-                    <div className="news-placeholder">
-                      <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-                      <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-                      <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-                    </div>
-                  ) : !marketNews ? (
-                    <div className="news-placeholder">
-                      <p className="news-hint">뉴스 데이터를 불러올 수 없습니다.<br/>잠시 후 다시 시도해주세요.</p>
-                    </div>
+                  <div className="section-table-header">
+                    <span>종목</span>
+                    <span style={{textAlign:"right"}}>현재가</span>
+                    <span style={{textAlign:"right"}}>보유</span>
+                    <span style={{textAlign:"right"}}>손익</span>
+                    <span style={{textAlign:"right"}}>평가금액</span>
+                    <span style={{textAlign:"right"}}>매수/매도</span>
+                  </div>
+                  {holdings.length === 0 ? (
+                    <div className="section-empty">보유 종목이 없어요</div>
                   ) : (
-                    <div className="news-content">
-                      <div className="news-headlines">
-                        {marketNews.headlines?.map((h, i) => (
-                          <div key={i} className="news-headline-item">
-                            <span className="news-dot">•</span>
-                            <span>{h}</span>
-                          </div>
-                        ))}
-                      </div>
-
-                      {marketNews.positive && (
-                        <div className="news-sector positive">
-                          <div className="sector-label up">📈 {marketNews.positive.sector}</div>
-                          {marketNews.positive.reason && (
-                            <p className="sector-reason">{marketNews.positive.reason}</p>
-                          )}
-                          <div className="sector-stocks">
-                            {marketNews.positive.stocks?.map((s, i) => (
-                              <div key={i} className="sector-stock-row up">
-                                <div className="sector-stock-name">
-                                  <span className="sector-stock-symbol">{s.symbol}</span>
-                                  {s.name && <span className="sector-stock-fullname">{s.name}</span>}
-                                </div>
-                                <strong className="sector-stock-change">{s.changePercent}</strong>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {marketNews.negative && (
-                        <div className="news-sector negative">
-                          <div className="sector-label dn">📉 {marketNews.negative.sector}</div>
-                          {marketNews.negative.reason && (
-                            <p className="sector-reason">{marketNews.negative.reason}</p>
-                          )}
-                          <div className="sector-stocks">
-                            {marketNews.negative.stocks?.map((s, i) => (
-                              <div key={i} className="sector-stock-row dn">
-                                <div className="sector-stock-name">
-                                  <span className="sector-stock-symbol">{s.symbol}</span>
-                                  {s.name && <span className="sector-stock-fullname">{s.name}</span>}
-                                </div>
-                                <strong className="sector-stock-change">{s.changePercent}</strong>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {marketNews.summary && (
-                        <div className="news-summary">
-                          <span className="summary-label">💬 AI 요약</span>
-                          <p>{marketNews.summary}</p>
-                        </div>
-                      )}
+                    <div className="section-list">
+                      {holdings.map(h => renderPortfolioRow(h, () => setExpandPanel(null)))}
                     </div>
                   )}
                 </>
-              );
-            })()}
+              ) : (
+                <>
+                  <div className="watchlist-header">
+                    <span>종목</span>
+                    <span style={{textAlign:"right"}}>현재가</span>
+                    <span style={{textAlign:"right"}}>등락률</span>
+                    <span style={{textAlign:"right"}}>Trends</span>
+                    <span style={{textAlign:"right"}}>매수/매도</span>
+                  </div>
+                  {watchlist.length === 0 ? (
+                    <div className="section-empty">관심 종목이 없어요</div>
+                  ) : (
+                    <div className="section-list">
+                      {watchlist.map(s => renderWatchlistRow(s, () => setExpandPanel(null)))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 푸터 */}
       <div className="dash-footer">
-        <p>
-          여기서 제공하는 투자 정보는 고객의 투자 판단을 위한 단순 참고용일 뿐,
-          <br />
-          투자 제안 및 권유, 종목 추천을 위해 작성된 것이 아닙니다.
-        </p>
+        <p>여기서 제공하는 투자 정보는 고객의 투자 판단을 위한 단순 참고용일 뿐,<br/>투자 제안 및 권유, 종목 추천을 위해 작성된 것이 아닙니다.</p>
       </div>
     </div>
   );

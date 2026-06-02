@@ -2,17 +2,22 @@ import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
+import LeftSidebar from "./components/LeftSidebar";
+import TopBar from "./components/TopBar";
 import MainDashboard from "./pages/MainDashboard";
+import MarketPage from "./pages/MarketPage";
 import LoginPage from "./pages/LoginPage";
 import AccountPage from "./pages/AccountPage";
 import AiPage from "./pages/AiPage";
 import StockDetailPage from "./pages/StockDetailPage";
 import { getMyInfo, logout as apiLogout } from "./api/stockApi";
+import QuizModal from "./components/QuizModal";
 import "./App.css";
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
+  const [quizOpen, setQuizOpen] = useState(false);
 
   // JWT 토큰이 있으면 서버에서 내 정보 확인
   useEffect(() => {
@@ -52,20 +57,26 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <Navbar isLoggedIn={!!user} onLogout={handleLogout} user={user} />
-      <div style={{ display: "flex", alignItems: "flex-start" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Routes>
-            <Route path="/" element={<MainDashboard user={user} />} />
-            <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage onLogin={handleLogin} />} />
-            <Route path="/ai" element={<AiPage user={user} />} />
-            <Route path="/stock/:symbol" element={<StockDetailPage user={user} />} />
-            <Route path="/account" element={user ? <AccountPage user={user} setUser={setUser} /> : <Navigate to="/login" replace />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+      <div className="app-layout">
+        <LeftSidebar user={user} onLogout={handleLogout} />
+        <div className="app-main">
+          <TopBar user={user} />
+          <div className="app-content">
+            <Routes>
+              <Route path="/" element={<MainDashboard user={user} />} />
+              <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage onLogin={handleLogin} />} />
+              <Route path="/ai" element={<AiPage user={user} />} />
+              <Route path="/stock/:symbol" element={<StockDetailPage user={user} />} />
+              <Route path="/market" element={<MarketPage user={user} />} />
+              <Route path="/account" element={user ? <AccountPage user={user} setUser={setUser} /> : <Navigate to="/login" replace />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
         </div>
-        <Sidebar user={user} />
+        <Sidebar user={user} onQuizOpen={() => setQuizOpen(true)} />
+
       </div>
+      {quizOpen && <QuizModal onClose={() => setQuizOpen(false)} />}
     </BrowserRouter>
   );
 }

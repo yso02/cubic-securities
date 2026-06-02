@@ -5,7 +5,7 @@ import { Client } from "@stomp/stompjs";
 import {
   getDomesticPrice, getOverseasPrice,
   getExchangeCode, isDomestic, fmt, fmtPrice, fmtChange, isUp,
-  getLogoUrl, NGROK_URL,
+  getLogoUrl, NGROK_URL, getStockInfo, getInvestorTrend,
 } from "../api/stockApi";
 import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
@@ -20,6 +20,10 @@ export default function StockDetailPage({ user }) {
   const [tradeModal, setTradeModal] = useState(null);
   const [chartFullscreen, setChartFullscreen] = useState(false);
   const [activeTab, setActiveTab] = useState("chart"); // chart | info
+  const [stockInfo, setStockInfo] = useState(null);
+  const [infoLoading, setInfoLoading] = useState(false);
+  const [investorTrend, setInvestorTrend] = useState(null);
+  const [trendLoading, setTrendLoading] = useState(false);
   const wsRef = useRef(null);
 
   useEffect(() => {
@@ -60,7 +64,7 @@ export default function StockDetailPage({ user }) {
       onConnect: () => {
         const dom = isDomestic(stock.market);
         if (dom) {
-          client.publish({ destination: "/app/subscribe/domestic/price", body: stock.symbol });
+          client.publish({ destination: "/app/subscribe/domestic", body: stock.symbol });
           client.subscribe(`/topic/domestic/${stock.symbol}`, msg => {
             try { setStock(prev => prev ? { ...prev, ...JSON.parse(msg.body) } : prev); } catch {}
           });
@@ -74,7 +78,17 @@ export default function StockDetailPage({ user }) {
       },
     });
     client.activate(); wsRef.current = client;
-    return () => { if (client) client.deactivate(); };
+    return () => {
+      if (client.connected) {
+        if (isDomestic(stock.market)) {
+          client.publish({ destination: "/app/unsubscribe/domestic", body: stock.symbol });
+        } else {
+          const exc = stock.exchange || getExchangeCode(stock.market);
+          client.publish({ destination: "/app/unsubscribe/overseas", body: `${stock.symbol},${exc}` });
+        }
+      }
+      client.deactivate();
+    };
   }, [stock?.symbol]);
 
   // 탭 타이틀
@@ -153,7 +167,23 @@ export default function StockDetailPage({ user }) {
             </button>
             <button
               className={`detail-tab ${activeTab === "info" ? "active" : ""}`}
-              onClick={() => setActiveTab("info")}
+              onClick={() => {
+                setActiveTab("info");
+                if (!stockInfo && stock) {
+                  setInfoLoading(true);
+                  getStockInfo(stock.symbol, stock.market)
+                    .then(data => setStockInfo(data))
+                    .catch(() => {})
+                    .finally(() => setInfoLoading(false));
+                }
+                if (!investorTrend && stock && isDomestic(stock.market)) {
+                  setTrendLoading(true);
+                  getInvestorTrend(stock.symbol, stock.market)
+                    .then(data => setInvestorTrend(data))
+                    .catch(() => {})
+                    .finally(() => setTrendLoading(false));
+                }
+              }}
             >
               종목정보
             </button>
@@ -176,8 +206,133 @@ export default function StockDetailPage({ user }) {
           )}
 
           {activeTab === "info" && (
-            <div className="detail-info-empty">
-              <p>종목정보 준비 중입니다</p>
+            <div className="detail-info-wrap">
+              {infoLoading ? (
+                <div className="detail-info-loading">
+                  <div className="loading-spinner" />
+                  <p>분석 중...</p>
+                </div>
+              ) : stockInfo ? (
+                <>
+                  <div className="info-metrics">
+                    <div className="info-metric-card">
+                      <span className="info-metric-label">시가총액</span>
+                      <span className="info-metric-value">{stockInfo.marketCap}</span>
+                    </div>
+                    <div className="info-metric-card">
+                      <span className="info-metric-label">시총 순위</span>
+                      <span className="info-metric-value">{stockInfo.marketCapRank}</span>
+                    </div>
+                    <div className="info-metric-card">
+                      <span className="info-metric-label">PER</span>
+                      <span className="info-metric-value">{stockInfo.per ? `${stockInfo.per}배` : "-"}</span>
+                    </div>
+                    <div className="info-metric-card">
+                      <span className="info-metric-label">PBR</span>
+                      <span className="info-metric-value">{stockInfo.pbr ? `${stockInfo.pbr}배` : "-"}</span>
+                    </div>
+                  </div>
+
+                  <div className="info-ai-section">
+                    <div className="info-ai-header">
+                      <span className="info-ai-badge">AI 분석</span>
+                      <span className="info-ai-sub">투자 참고용 정보입니다</span>
+                    </div>
+                    <div className="info-ai-content">
+                      {stockInfo.aiAnalysis?.split("\n").filter(s => s.trim()).map((line, i) => (
+                        <p key={i} className="info-ai-line">{line}</p>
+                      ))}
+                    </div>
+                  </div>
+
+                  {isDomestic(stock.market) && (
+                    <div className="info-investor-section">
+                      <div className="info-section-title">
+                        <span>투자자별 매매동향</span>
+                        <span className="info-section-sub">최근 10거래일 순매수 (단위: 주)</span>
+                      </div>
+                      {trendLoading ? (
+                        <div className="detail-info-loading">
+                          <div className="loading-spinner" />
+                        </div>
+                      ) : investorTrend && investorTrend.length > 0 ? (
+                        <>
+                          <div className="info-bar-chart">
+                            {investorTrend.map((d, i) => {
+                              const maxVal = Math.max(...investorTrend.flatMap(x => [
+                                Math.abs(Number(x.personalNet)),
+                                Math.abs(Number(x.foreignNet)),
+                                Math.abs(Number(x.institutionNet)),
+                              ]));
+                              const pct = (val) => Math.abs(val) / maxVal * 45;
+                              const date = d.date.slice(4, 6) + "/" + d.date.slice(6, 8);
+                              const p = Number(d.personalNet);
+                              const f = Number(d.foreignNet);
+                              const g = Number(d.institutionNet);
+                              return (
+                                <div key={i} className="ibc-row">
+                                  <span className="ibc-date">{date}</span>
+                                  <div className="ibc-bars">
+                                    <div className="ibc-bar-group">
+                                      <span className="ibc-label">개인</span>
+                                      <div className="ibc-bar-wrap">
+                                        <div className="ibc-bar-neg" style={{ width: p < 0 ? pct(p) + "%" : "0" }} />
+                                        <div className="ibc-center" />
+                                        <div className="ibc-bar-pos" style={{ width: p > 0 ? pct(p) + "%" : "0" }} />
+                                      </div>
+                                    </div>
+                                    <div className="ibc-bar-group">
+                                      <span className="ibc-label">외국인</span>
+                                      <div className="ibc-bar-wrap">
+                                        <div className="ibc-bar-neg" style={{ width: f < 0 ? pct(f) + "%" : "0" }} />
+                                        <div className="ibc-center" />
+                                        <div className="ibc-bar-pos" style={{ width: f > 0 ? pct(f) + "%" : "0" }} />
+                                      </div>
+                                    </div>
+                                    <div className="ibc-bar-group">
+                                      <span className="ibc-label">기관</span>
+                                      <div className="ibc-bar-wrap">
+                                        <div className="ibc-bar-neg" style={{ width: g < 0 ? pct(g) + "%" : "0" }} />
+                                        <div className="ibc-center" />
+                                        <div className="ibc-bar-pos" style={{ width: g > 0 ? pct(g) + "%" : "0" }} />
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div className="info-trend-table">
+                            <div className="info-trend-header">
+                              <span>날짜</span>
+                              <span>종가</span>
+                              <span>개인</span>
+                              <span>외국인</span>
+                              <span>기관</span>
+                            </div>
+                            {[...investorTrend].reverse().map((d, i) => (
+                              <div key={i} className="info-trend-row">
+                                <span>{d.date.slice(0,4)+"."+d.date.slice(4,6)+"."+d.date.slice(6,8)}</span>
+                                <span>{Number(d.closePrice).toLocaleString()}원</span>
+                                <span className={Number(d.personalNet) >= 0 ? "up" : "dn"}>
+                                  {Number(d.personalNet) >= 0 ? "+" : ""}{Number(d.personalNet).toLocaleString()}
+                                </span>
+                                <span className={Number(d.foreignNet) >= 0 ? "up" : "dn"}>
+                                  {Number(d.foreignNet) >= 0 ? "+" : ""}{Number(d.foreignNet).toLocaleString()}
+                                </span>
+                                <span className={Number(d.institutionNet) >= 0 ? "up" : "dn"}>
+                                  {Number(d.institutionNet) >= 0 ? "+" : ""}{Number(d.institutionNet).toLocaleString()}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      ) : null}
+                    </div>
+                  )}
+                </>
+              ) : null}
             </div>
           )}
         </div>

@@ -1,1 +1,45 @@
 /* App.css */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.sidebar-open-btn {
+  position: fixed;
+  top: 50vh;
+  left: 0;
+  width: 18px;
+  height: 52px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-left: none;
+  border-radius: 0 10px 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--c-text-muted);
+  z-index: 99;
+  transition: all 0.2s;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.08);
+}
+.sidebar-open-btn:hover {
+  width: 24px;
+  color: var(--c-text);
+  background: var(--c-hover);
+}

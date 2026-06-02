@@ -49,7 +49,6 @@ export default function OrderBook({ stock }) {
 
   // WebSocket 실시간 호가 + 체결
   useEffect(() => {
-    // ✅ /ws/websocket (raw WebSocket) — ngrok CORS 우회
     const wsURL =
       NGROK_URL.replace("https://", "wss://").replace("http://", "ws://") +
       "/ws/websocket";
@@ -121,15 +120,21 @@ export default function OrderBook({ stock }) {
     return () => {
       subsRef.current.forEach((s) => { try { s.unsubscribe(); } catch {} });
       subsRef.current = [];
-      if (client.connected) {
-        if (domestic) {
-          client.publish({ destination: "/app/unsubscribe/domestic", body: stock.symbol });
+      try {
+        if (client.connected) {
+          if (domestic) {
+            client.publish({ destination: "/app/unsubscribe/domestic", body: stock.symbol });
+          } else {
+            client.publish({ destination: "/app/unsubscribe/overseas", body: `${stock.symbol},${exchange}` });
+            client.publish({ destination: "/app/unsubscribe/overseas/orderbook", body: `${stock.symbol},${exchange}` });
+          }
+          client.deactivate();
         } else {
-          client.publish({ destination: "/app/unsubscribe/overseas", body: `${stock.symbol},${exchange}` });
-          client.publish({ destination: "/app/unsubscribe/overseas/orderbook", body: `${stock.symbol},${exchange}` });
+          client.deactivate();
         }
+      } catch {
+        client.deactivate();
       }
-      client.deactivate();
     };
   }, [stock.symbol]);
 
