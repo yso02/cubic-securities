@@ -223,34 +223,25 @@ export default function MainDashboard({ user }) {
                   <p className="perf-status">
                     포트폴리오가 오늘{" "}
                     {totalPL >= 0
-                      ? <span style={{color:"#22c55e", fontWeight:700}}>▲ {Math.abs(Number(totalPLRate))}% 상승</span>
-                      : <span style={{color:"#ef4444", fontWeight:700}}>▼ {Math.abs(Number(totalPLRate))}% 하락</span>
+                      ? <span style={{color:"#22c55e",fontWeight:700}}>▲ {Math.abs(Number(totalPLRate))}% 상승</span>
+                      : <span style={{color:"#ef4444",fontWeight:700}}>▼ {Math.abs(Number(totalPLRate))}% 하락</span>
                     }했습니다
                   </p>
-
                   <p className="perf-sub">오늘 투자 평가금액</p>
                   <div className="perf-total">{fmt(Math.round(totalEval))}원</div>
-                  <div className="perf-gain">
-                    <span className={totalPL >= 0 ? "up" : "dn"}>
-                      {totalPL >= 0 ? "▲" : "▼"} {fmt(Math.round(Math.abs(totalPL)))}원 ({totalPLRate}%)
-                    </span>
-                  </div>
 
-                  <div className="perf-meta">
-                    <div className="perf-meta-item">
-                      <span className="perf-meta-label">오늘의 수익</span>
-                      <span className="perf-meta-value" style={{color:"#94a3b8"}}>구현 예정</span>
+                  <div className="perf-bottom-boxes">
+                    <div className="perf-box">
+                      <span className="perf-box-label">오늘의 수익</span>
+                      <span className="perf-box-value pending">구현 예정</span>
                     </div>
-                    <div className="perf-meta-divider"/>
-                    <div className="perf-meta-row">
-                      <div className="perf-meta-item">
-                        <span className="perf-meta-label">최저 평가금액</span>
-                        <span className="perf-meta-value">{fmt(Math.round(totalEval * 0.98))}원</span>
-                      </div>
-                      <div className="perf-meta-item">
-                        <span className="perf-meta-label">최고 평가금액</span>
-                        <span className="perf-meta-value">{fmt(Math.round(totalEval * 1.02))}원</span>
-                      </div>
+                    <div className="perf-box">
+                      <span className="perf-box-label">최저 평가금액</span>
+                      <span className="perf-box-value">{fmt(Math.round(totalEval * 0.98))}원</span>
+                    </div>
+                    <div className="perf-box">
+                      <span className="perf-box-label">최고 평가금액</span>
+                      <span className="perf-box-value">{fmt(Math.round(totalEval * 1.02))}원</span>
                     </div>
                   </div>
                 </>
