@@ -3,8 +3,11 @@
 
 /* ═══════════ Light theme (기본) ═══════════ */
 :root {
-  --c-bg: #f4f6f8;
-  --c-surface: #ffffff;
+  --c-bg: linear-gradient(135deg, #e8eaf6 0%, #e0f2f1 50%, #e8eaf6 100%);
+  --c-surface: rgba(255,255,255,0.62);
+  --c-surface-blur: blur(14px);
+  --shadow-card: 0 6px 28px rgba(100,120,160,0.1), 0 1px 0 rgba(255,255,255,0.9) inset;
+  --border-glass: 1px solid rgba(255,255,255,0.85);
   --c-surface-alt: #f9fafb;
   --c-primary: #14b8a6;
   --c-primary-deep: #0f766e;
@@ -82,7 +85,8 @@ body,
 
 body {
   font-family: var(--font);
-  background: var(--c-bg);
+  background: linear-gradient(135deg, #e8eaf6 0%, #e0f2f1 50%, #e8eaf6 100%);
+  min-height: 100vh;
   color: var(--c-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

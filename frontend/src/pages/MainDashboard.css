@@ -1,10 +1,13 @@
 /* MainDashboard.css */
-.dash-page { min-height: calc(100vh - 72px); background: var(--c-bg); transition: background 0.3s; }
+.dash-page { min-height: calc(100vh - 72px); background: transparent; transition: background 0.3s; }
 
 /* 시장 지수 바 */
 .market-indices {
   display: flex; gap: 0; padding: 0;
-  background: var(--c-surface); border-bottom: 1px solid var(--c-border);
+  background: rgba(255,255,255,0.62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255,255,255,0.85);
   overflow-x: auto; transition: background 0.3s;
 }
 .market-indices-inner {
@@ -13,7 +16,7 @@
 .market-indices::-webkit-scrollbar { display: none; }
 .index-card {
   flex: 1; min-width: 180px; padding: 14px 20px;
-  border-right: 1px solid var(--c-border);
+  border-right: 1px solid rgba(200,210,220,0.45);
   display: flex; flex-direction: column; gap: 4px;
 }
 .index-card:last-child { border-right: none; }
@@ -42,8 +45,13 @@
 
 /* 카드 */
 .dash-card {
-  background: var(--c-surface); border: 1px solid var(--c-border);
-  border-radius: 12px; overflow: hidden; transition: background 0.3s;
+  background: rgba(255,255,255,0.62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 18px;
+  box-shadow: 0 6px 28px rgba(100,120,160,0.1), 0 1px 0 rgba(255,255,255,0.9) inset;
+  overflow: hidden; transition: background 0.3s;
 }
 
 /* 시장 탭 */
@@ -54,7 +62,7 @@
   margin-bottom: -1px; transition: color 0.15s; font-family: inherit;
 }
 .tab:hover { color: var(--c-text-sub); }
-.tab.active { color: var(--c-text); font-weight: 700; border-bottom-color: var(--c-text); }
+.tab.active { color: #1e293b; font-weight: 700; border-bottom-color: #14b8a6; }
 
 /* 시장 탭 (국기) */
 .market-tab-row {
@@ -65,13 +73,13 @@
   gap: 10px; padding: 16px 20px; cursor: pointer;
   border-bottom: 3px solid transparent; margin-bottom: -1px;
   transition: all 0.15s; font-family: inherit;
-  color: var(--c-text-muted);
+  color: #94a3b8;
 }
 .market-tab:hover { background: var(--c-hover); }
 .market-tab.active {
-  color: var(--c-text); font-weight: 700;
+  color: #1e293b; font-weight: 700;
   border-bottom-color: #14b8a6;
-  background: var(--c-hover);
+  background: rgba(255,255,255,0.3);
 }
 .market-flag { font-size: 24px; line-height: 1; }
 .market-tab-label { font-size: 15px; font-weight: 600; }
@@ -91,12 +99,21 @@
 .sub-tab-row { display: flex; gap: 6px; padding: 12px 16px 8px; border-bottom: 1px solid var(--c-border); }
 .sub-tab {
   font-size: 13px; padding: 5px 14px; border-radius: 20px;
-  cursor: pointer; border: 1px solid var(--c-border);
-  color: var(--c-text-sub); background: var(--c-surface);
+  cursor: pointer;
+  background: rgba(255,255,255,0.75);
+  border: 1px solid rgba(200,210,220,0.6);
+  box-shadow: 0 3px 8px rgba(100,120,150,0.1), 0 1px 0 rgba(255,255,255,1) inset, 0 -1px 0 rgba(180,195,210,0.3) inset;
+  color: #64748b;
   transition: all 0.12s; font-family: inherit;
 }
 .sub-tab:hover { background: var(--c-hover); }
-.sub-tab.active { background: var(--c-text); color: var(--c-surface); border-color: var(--c-text); font-weight: 700; }
+.sub-tab.active {
+  background: linear-gradient(180deg, #2d3748 0%, #1e293b 100%);
+  color: #fff;
+  border-color: #1e293b;
+  box-shadow: 0 4px 12px rgba(30,41,59,0.28), 0 1px 0 rgba(255,255,255,0.12) inset, 0 -2px 0 rgba(0,0,0,0.2) inset;
+  font-weight: 700;
+}
 
 /* 리스트 헤더 */
 .list-header {
@@ -110,11 +127,11 @@
 .stock-list { }
 .stock-row {
   display: grid; grid-template-columns: 36px 1fr 110px 90px 110px;
-  padding: 10px 16px; border-bottom: 1px solid var(--c-border);
+  padding: 10px 16px; border-bottom: 1px solid rgba(200,215,225,0.3);
   align-items: center; cursor: pointer; transition: background 0.1s;
 }
 .stock-row:last-child { border-bottom: none; }
-.stock-row:hover { background: var(--c-hover); }
+.stock-row:hover { background: rgba(255,255,255,0.45); }
 .stock-row.selected { background: var(--c-primary-muted); }
 
 .rank { font-size: 13px; color: var(--c-text-muted); font-weight: 500; }
@@ -126,6 +143,7 @@
   width: 32px; height: 32px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 700; flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18), 0 1px 0 rgba(255,255,255,0.2) inset;
 }
 .stock-name { font-size: 14px; font-weight: 600; color: var(--c-text); }
 .stock-code { font-size: 11px; color: var(--c-text-muted); margin-top: 1px; }
@@ -151,8 +169,13 @@
 /* 상세 패널 */
 .dash-detail {
   flex: 3; min-width: 280px; max-width: 500px;
-  background: var(--c-surface); border: 1px solid var(--c-border);
-  border-radius: 12px; padding: 16px;
+  background: rgba(255,255,255,0.62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 18px;
+  box-shadow: 0 6px 28px rgba(100,120,160,0.1), 0 1px 0 rgba(255,255,255,0.9) inset;
+  padding: 16px;
   display: flex; flex-direction: column; gap: 12px;
   transition: background 0.3s;
   align-self: flex-start;
@@ -174,18 +197,42 @@
 
 .detail-trade-btns { display: flex; gap: 8px; }
 .dt-buy, .dt-sell {
-  flex: 1; padding: 12px; border: none; border-radius: 10px;
+  flex: 1; padding: 12px; border-radius: 12px;
   font-size: 15px; font-weight: 700; color: #fff;
-  cursor: pointer; font-family: inherit; transition: opacity 0.15s;
+  cursor: pointer; font-family: inherit;
 }
-.dt-buy { background: #ef4444; }
-.dt-buy:hover { opacity: 0.9; }
-.dt-sell { background: #3b82f6; }
-.dt-sell:hover { opacity: 0.9; }
+.dt-buy {
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+  border: 1px solid rgba(220,38,38,0.7);
+  box-shadow: 0 4px 14px rgba(239,68,68,0.38), 0 1px 0 rgba(255,180,180,0.4) inset, 0 -2px 0 rgba(0,0,0,0.15) inset;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.dt-buy:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(239,68,68,0.42), 0 1px 0 rgba(255,180,180,0.4) inset;
+}
+.dt-buy:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(239,68,68,0.25);
+}
+.dt-sell {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  border: 1px solid rgba(37,99,235,0.7);
+  box-shadow: 0 4px 14px rgba(59,130,246,0.38), 0 1px 0 rgba(150,200,255,0.4) inset, 0 -2px 0 rgba(0,0,0,0.15) inset;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.dt-sell:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(59,130,246,0.42), 0 1px 0 rgba(150,200,255,0.4) inset;
+}
+.dt-sell:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 6px rgba(59,130,246,0.25);
+}
 
 /* 뉴스 영역 */
 .news-section {
-  background: var(--c-hover); border-radius: 10px;
+  background: rgba(255,255,255,0.4); border-radius: 12px;
   overflow: hidden;
 }
 .news-header {
@@ -217,7 +264,7 @@
 .sector-stocks { display: flex; flex-direction: column; gap: 6px; }
 .sector-stock-row {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 6px 10px; border-radius: 8px; background: var(--c-surface);
+  padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,0.6);
 }
 .sector-stock-name {
   display: flex; flex-direction: column; gap: 2px;
