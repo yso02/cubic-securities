@@ -225,7 +225,7 @@
 
 .market-list-header {
   display: grid;
-  grid-template-columns: 2.5fr 100px 90px 110px 90px 90px;
+  grid-template-columns: 3fr 1fr 1fr 1fr 1fr 1fr;
   gap: 8px;
   padding: 10px 20px;
   font-size: 12px;
@@ -233,12 +233,13 @@
   font-weight: 500;
   border-bottom: 1px solid var(--c-border);
   background: var(--c-hover);
+  align-items: center;
 }
 .market-list-header span:not(:first-child) { text-align: right; }
 
 .market-list-row {
   display: grid;
-  grid-template-columns: 2.5fr 100px 90px 110px 90px 90px;
+  grid-template-columns: 3fr 1fr 1fr 1fr 1fr 1fr;
   gap: 8px;
   padding: 12px 20px;
   border-bottom: 1px solid var(--c-border);
