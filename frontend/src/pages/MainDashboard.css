@@ -187,6 +187,11 @@
 .perf-box-value.up { color: #22c55e; }
 .perf-box-value.dn { color: #ef4444; }
 .perf-box-value.pending { color: var(--c-text-muted); font-size: 12px; font-weight: 500; }
+.perf-boxes-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
 .perf-right {
   flex: 1;
   display: flex;

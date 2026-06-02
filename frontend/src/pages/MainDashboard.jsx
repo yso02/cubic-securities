@@ -235,13 +235,15 @@ export default function MainDashboard({ user }) {
                       <span className="perf-box-label">오늘의 수익</span>
                       <span className="perf-box-value pending">구현 예정</span>
                     </div>
-                    <div className="perf-box">
-                      <span className="perf-box-label">최저 평가금액</span>
-                      <span className="perf-box-value">{fmt(Math.round(totalEval * 0.98))}원</span>
-                    </div>
-                    <div className="perf-box">
-                      <span className="perf-box-label">최고 평가금액</span>
-                      <span className="perf-box-value">{fmt(Math.round(totalEval * 1.02))}원</span>
+                    <div className="perf-boxes-row">
+                      <div className="perf-box">
+                        <span className="perf-box-label">최저 평가금액</span>
+                        <span className="perf-box-value">{fmt(Math.round(totalEval * 0.98))}원</span>
+                      </div>
+                      <div className="perf-box">
+                        <span className="perf-box-label">최고 평가금액</span>
+                        <span className="perf-box-value">{fmt(Math.round(totalEval * 1.02))}원</span>
+                      </div>
                     </div>
                   </div>
                 </>
