@@ -76,38 +76,48 @@ export default function LeftSidebar({ user, onLogout }) {
   return (
     <div className={`left-sidebar ${collapsed ? "collapsed" : ""}`} style={{position:"relative"}}>
       {/* 로고 */}
-      <div className="ls-logo" onClick={() => navigate("/")}>
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <rect x="3" y="3" width="18" height="6" rx="1" fill="#14b8a6"/>
-          <rect x="3" y="15" width="18" height="6" rx="1" fill="#14b8a6"/>
-          <rect x="9" y="9" width="6" height="6" rx="1" fill="#0d9488"/>
-        </svg>
-        <span>CUBIC 증권</span>
+      <div className="ls-logo">
+        <div className="ls-logo-icon" onClick={() => setCollapsed(v => !v)} style={{cursor:"pointer"}}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="3" width="18" height="6" rx="1" fill="#14b8a6"/>
+            <rect x="3" y="15" width="18" height="6" rx="1" fill="#14b8a6"/>
+            <rect x="9" y="9" width="6" height="6" rx="1" fill="#0d9488"/>
+          </svg>
+        </div>
+        <span className="ls-logo-text" onClick={() => navigate("/")}>CUBIC 증권</span>
       </div>
-      <button className="ls-toggle-btn" onClick={() => setCollapsed(v => !v)}>
-        {collapsed
-          ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 18l6-6-6-6"/></svg>
-          : <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 18l-6-6 6-6"/></svg>
-        }
+      <button className="ls-close-btn" onClick={() => setCollapsed(true)}>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
       </button>
 
       {/* 총 자산 */}
-      {user && (
-        <div className="ls-asset">
+      <div className="ls-asset">
+        <div className="ls-asset-collapsed-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
+            <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
+            <path d="M18 12a2 2 0 0 0 0 4h4v-4z"/>
+          </svg>
+        </div>
+        <div className="ls-asset-content">
           <div className="ls-asset-header">
             <span className="ls-asset-label">총 자산</span>
-            <button className="ls-asset-plus" onClick={() => setShowModal(true)}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <line x1="12" y1="5" x2="12" y2="19"/>
-                <line x1="5" y1="12" x2="19" y2="12"/>
-              </svg>
-            </button>
+            {user && (
+              <button className="ls-asset-plus" onClick={() => setShowModal(true)}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"/>
+                  <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>
+            )}
           </div>
           <span className="ls-asset-value">
             {totalAsset !== null ? `${fmt(Math.round(totalAsset))}원` : "-"}
           </span>
         </div>
-      )}
+      </div>
 
       {/* MAIN 메뉴 */}
       <div className="ls-section">
@@ -119,7 +129,7 @@ export default function LeftSidebar({ user, onLogout }) {
             onClick={() => navigate(m.path)}
           >
             {m.icon}
-            <span>{m.label}</span>
+            <span className="ls-menu-text">{m.label}</span>
             <span className="ls-tooltip">{m.label}</span>
           </button>
         ))}
@@ -135,7 +145,7 @@ export default function LeftSidebar({ user, onLogout }) {
             onClick={() => navigate(m.path)}
           >
             {m.icon}
-            <span>{m.label}</span>
+            <span className="ls-menu-text">{m.label}</span>
             <span className="ls-tooltip">{m.label}</span>
           </button>
         ))}
