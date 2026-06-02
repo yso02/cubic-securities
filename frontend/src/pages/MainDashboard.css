@@ -100,7 +100,6 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  min-height: calc(100vh - 120px);
 }
 
 /* 퍼포먼스 카드 */
@@ -164,6 +163,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 16px;
   flex: 1;
+  min-height: 0;
 }
 
 /* 섹션 카드 공통 */
@@ -175,7 +175,8 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 400px;
+  height: calc(100vh - 320px);
+  min-height: 300px;
 }
 .section-header {
   display: flex;
@@ -218,6 +219,7 @@
   overflow-y: auto;
   flex: 1;
   padding: 4px 0;
+  min-height: 0;
 }
 .section-list::-webkit-scrollbar { width: 4px; }
 .section-list::-webkit-scrollbar-thumb {
