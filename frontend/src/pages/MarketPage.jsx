@@ -87,6 +87,7 @@ export default function MarketPage({ user }) {
   const stocksRef = useRef([]);
   const [wsConnected, setWsConnected] = useState(false);
   const [topStocks, setTopStocks] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => { fetchStocks(); }, [market, sortType]);
   useEffect(() => { fetchTopStocks(); }, [market]);
@@ -193,8 +194,21 @@ export default function MarketPage({ user }) {
   return (
     <div className="market-page">
       <div className="market-header">
-        <h1 className="market-title">시장</h1>
-        <p className="market-subtitle">실시간 시장 현황을 확인하세요</p>
+        <div className="market-header-left">
+          <h1 className="market-title">주식 시장</h1>
+          <p className="market-subtitle">실시간 시장 현황을 확인하세요</p>
+        </div>
+        <div className="market-header-right">
+          <div className="market-search-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input
+              type="text"
+              placeholder="종목 검색..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
       </div>
 
       {/* TOP4 카드 */}
@@ -215,9 +229,9 @@ export default function MarketPage({ user }) {
                     ? <img src={logo} className="top4-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
                     : <div className="top4-logo-fb" style={{background:getBg(s.name)}}>{s.name?.substring(0,2)}</div>
                   }
-                  <div>
-                    <div className="top4-name">{s.name}</div>
-                    <div className="top4-code">{s.symbol}</div>
+                  <div className="top4-name-wrap">
+                    <span className="top4-name">{s.name}</span>
+                    <span className="top4-ticker">{s.symbol}</span>
                   </div>
                 </div>
                 <button
@@ -276,12 +290,18 @@ export default function MarketPage({ user }) {
           <span>등락률</span>
           <span>현재가</span>
           <span>거래대금</span>
-          <span>매수/매도</span>
+          <span>신호</span>
         </div>
         <div className="market-list-body">
-          {loading ? (
-            <div className="market-list-empty"><div className="loading-spinner"/></div>
-          ) : stocks.map((s) => {
+          {(() => {
+            const filteredStocks = stocks.filter(s =>
+              !searchQuery ||
+              s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              s.symbol?.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+            return loading ? (
+              <div className="market-list-empty"><div className="loading-spinner"/></div>
+            ) : filteredStocks.map((s) => {
             const logo = getLogoUrl(s.symbol, s.market);
             const up = isUp(s.changePercent);
             const price = s.price
@@ -299,9 +319,9 @@ export default function MarketPage({ user }) {
                     ? <img src={logo} className="market-logo" alt="" onError={e=>{e.target.style.display="none";if(e.target.nextSibling)e.target.nextSibling.style.display="flex";}}/>
                     : null}
                   <div className="market-logo-fb" style={{background:getBg(s.name),display:logo?"none":"flex"}}>{s.name?.substring(0,2)}</div>
-                  <div>
-                    <div className="market-name">{s.name}</div>
-                    <div className="market-code">{s.symbol}</div>
+                  <div className="market-name-wrap">
+                    <span className="market-name">{s.name}</span>
+                    <span className="market-ticker">{s.symbol}</span>
                   </div>
                 </div>
                 <div className="market-sparkline">
@@ -312,13 +332,12 @@ export default function MarketPage({ user }) {
                 </div>
                 <div className="market-price">{price}</div>
                 <div className="market-volume">{fmtVolume(s.volume)}</div>
-                <div className="market-actions" onClick={e=>e.stopPropagation()}>
-                  <button className="market-buy-btn" onClick={() => handleSelectStock(s)}>매수</button>
-                  <button className="market-sell-btn" onClick={() => handleSelectStock(s)}>매도</button>
+                <div className="market-signal">
+                  <span className="market-signal-badge pending">-</span>
                 </div>
               </div>
             );
-          })}
+          })()}
         </div>
       </div>
 
