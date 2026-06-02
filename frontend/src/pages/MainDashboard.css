@@ -9,37 +9,39 @@
   background: var(--c-surface);
   border-bottom: 1px solid var(--c-border);
   overflow-x: auto;
+  transition: background 0.3s;
 }
 .market-indices-inner {
   display: flex;
   width: 100%;
+  margin: 0 auto;
   padding: 0 24px;
 }
 .market-indices::-webkit-scrollbar { display: none; }
 .index-card {
   flex: 1;
-  min-width: 160px;
-  padding: 14px 20px;
-  border-right: 1px solid var(--c-border);
-  border-top: none;
-  border-left: none;
-  border-bottom: none;
+  min-width: 140px;
+  padding: 8px 16px;
+  border-right: none;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  display: flex; flex-direction: column; gap: 4px;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .index-card:last-child { border-right: none; }
 .index-card.disabled { opacity: 0.5; }
 .idx-label { font-size: 12px; color: var(--c-text-muted); display: flex; align-items: center; gap: 6px; }
 .idx-pending { font-size: 9px; color: var(--c-text-muted); background: var(--c-hover); padding: 1px 5px; border-radius: 3px; }
-.idx-value { font-size: 16px; font-weight: 700; color: var(--c-text); }
+.idx-value { font-size: 15px; font-weight: 700; color: var(--c-text); }
 .idx-value.muted { color: var(--c-text-muted); }
 .idx-change { font-size: 11px; font-weight: 500; margin-top: 2px; }
 .idx-change.up { color: #ef4444; }
 .idx-change.dn { color: #3b82f6; }
-.idx-chart-placeholder { height: 24px; }
-.idx-chart-placeholder svg { width: 80px; height: 24px; }
+.idx-chart-placeholder { height: 20px; }
+.idx-chart-placeholder svg { width: 80px; height: 20px; }
 
 /* 본문 */
 .dash-body { display: flex; max-width: none; margin: 0 auto; padding: 20px 24px; gap: 20px; }
