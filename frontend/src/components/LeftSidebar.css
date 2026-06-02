@@ -251,6 +251,16 @@
   border-top: 1px solid var(--c-border);
 }
 
+.left-sidebar.collapsed .ls-bottom {
+  display: flex;
+  justify-content: center;
+}
+
+.left-sidebar.collapsed .ls-profile {
+  justify-content: center;
+  padding: 10px;
+}
+
 .ls-profile {
   display: flex;
   align-items: center;
