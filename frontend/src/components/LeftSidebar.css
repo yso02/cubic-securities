@@ -1,18 +1,25 @@
 .left-sidebar {
-  width: 220px;
-  min-width: 220px;
+  width: 264px;
+  min-width: 264px;
   height: 100vh;
   position: sticky;
   top: 0;
   background: var(--c-surface);
   border-right: 1px solid var(--c-border);
-  box-shadow: 2px 0 12px rgba(0,0,0,0.06);
   display: flex;
   flex-direction: column;
-  padding: 20px 12px;
+  padding: 20px 14px;
   gap: 4px;
   z-index: 100;
   overflow-y: auto;
+  box-shadow: 2px 0 12px rgba(0,0,0,0.06);
+}
+
+.left-sidebar.collapsed {
+  width: 0;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 .ls-logo {
@@ -33,15 +40,63 @@
 }
 
 .ls-asset {
-  background: var(--c-surface);
+  background: var(--c-hover);
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   margin-bottom: 16px;
-  border: 1px solid var(--c-border);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.9) inset;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  border: 1px solid var(--c-border);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.9) inset;
+}
+
+.ls-asset-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ls-asset-plus {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--c-border);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--c-text-sub);
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.ls-asset-plus:hover {
+  background: var(--c-primary);
+  color: #fff;
+}
+
+.ls-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 14px;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: none;
+  border: 1px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--c-text-muted);
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.ls-close-btn:hover {
+  background: var(--c-hover);
+  color: var(--c-text);
 }
 .ls-asset-label {
   font-size: 11px;
@@ -178,3 +233,123 @@
   text-align: center;
   padding: 8px 0 0;
 }
+
+/* 입금/출금 모달 */
+.ls-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ls-modal {
+  background: var(--c-surface);
+  border-radius: 16px;
+  padding: 24px;
+  width: 320px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  border: 1px solid var(--c-border);
+}
+
+.ls-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--c-text);
+  margin-bottom: 16px;
+}
+
+.ls-modal-tabs {
+  display: flex;
+  background: var(--c-hover);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 16px;
+  gap: 0;
+}
+
+.ls-modal-tab {
+  flex: 1;
+  padding: 7px;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  background: transparent;
+  color: var(--c-text-muted);
+  transition: all 0.15s;
+}
+
+.ls-modal-tab.active {
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.ls-modal-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.ls-modal-label {
+  font-size: 12px;
+  color: var(--c-text-muted);
+}
+
+.ls-modal-input {
+  padding: 10px 14px;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--c-text);
+  background: var(--c-hover);
+  outline: none;
+  font-family: inherit;
+  width: 100%;
+}
+.ls-modal-input:focus {
+  border-color: var(--c-primary);
+  background: var(--c-surface);
+}
+
+.ls-modal-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.ls-modal-cancel {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--c-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.ls-modal-cancel:hover { background: var(--c-hover); }
+
+.ls-modal-confirm {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  background: var(--c-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+.ls-modal-confirm:hover { opacity: 0.88; }

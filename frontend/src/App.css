@@ -16,3 +16,26 @@
   flex: 1;
   min-width: 0;
 }
+
+.sidebar-open-btn {
+  position: fixed;
+  top: 50px;
+  left: 0;
+  width: 20px;
+  height: 48px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--c-text-muted);
+  z-index: 99;
+  transition: all 0.15s;
+}
+.sidebar-open-btn:hover {
+  background: var(--c-hover);
+  width: 24px;
+}
