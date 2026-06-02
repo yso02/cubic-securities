@@ -220,15 +220,37 @@ export default function MainDashboard({ user }) {
             <div className="perf-left">
               {user ? (
                 <>
+                  <p className="perf-status">
+                    포트폴리오가 오늘{" "}
+                    {totalPL >= 0
+                      ? <span style={{color:"#22c55e", fontWeight:700}}>▲ {Math.abs(Number(totalPLRate))}% 상승</span>
+                      : <span style={{color:"#ef4444", fontWeight:700}}>▼ {Math.abs(Number(totalPLRate))}% 하락</span>
+                    }했습니다
+                  </p>
+
                   <p className="perf-sub">오늘 투자 평가금액</p>
                   <div className="perf-total">{fmt(Math.round(totalEval))}원</div>
                   <div className="perf-gain">
-                    <span style={{color:"#94a3b8"}}>수익률 구현 예정</span>
+                    <span className={totalPL >= 0 ? "up" : "dn"}>
+                      {totalPL >= 0 ? "▲" : "▼"} {fmt(Math.round(Math.abs(totalPL)))}원 ({totalPLRate}%)
+                    </span>
                   </div>
+
                   <div className="perf-meta">
                     <div className="perf-meta-item">
                       <span className="perf-meta-label">오늘의 수익</span>
                       <span className="perf-meta-value" style={{color:"#94a3b8"}}>구현 예정</span>
+                    </div>
+                    <div className="perf-meta-divider"/>
+                    <div className="perf-meta-row">
+                      <div className="perf-meta-item">
+                        <span className="perf-meta-label">최저 평가금액</span>
+                        <span className="perf-meta-value">{fmt(Math.round(totalEval * 0.98))}원</span>
+                      </div>
+                      <div className="perf-meta-item">
+                        <span className="perf-meta-label">최고 평가금액</span>
+                        <span className="perf-meta-value">{fmt(Math.round(totalEval * 1.02))}원</span>
+                      </div>
                     </div>
                   </div>
                 </>
@@ -239,9 +261,37 @@ export default function MainDashboard({ user }) {
                 </div>
               )}
             </div>
+
             <div className="perf-right">
-              <div className="perf-chart-placeholder">
-                <span>차트 구현 예정</span>
+              <div className="perf-chart-area">
+                <svg width="100%" height="140" viewBox="0 0 400 140" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3"/>
+                      <stop offset="100%" stopColor="#22c55e" stopOpacity="0"/>
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M0,110 C30,105 50,90 80,85 C110,80 130,95 160,70 C190,45 210,55 240,40 C270,25 290,35 320,20 C350,8 370,15 400,10"
+                    fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round"
+                  />
+                  <path
+                    d="M0,110 C30,105 50,90 80,85 C110,80 130,95 160,70 C190,45 210,55 240,40 C270,25 290,35 320,20 C350,8 370,15 400,10 L400,140 L0,140 Z"
+                    fill="url(#chartGrad)"
+                  />
+                  <circle cx="400" cy="10" r="4" fill="#22c55e"/>
+                  <rect x="340" y="0" width="58" height="20" rx="4" fill="#22c55e"/>
+                  <text x="369" y="14" textAnchor="middle" fill="white" fontSize="10" fontWeight="600">
+                    +{Math.abs(Number(totalPLRate))}%
+                  </text>
+                </svg>
+                <div className="perf-chart-labels">
+                  <span>09:00</span>
+                  <span>11:00</span>
+                  <span>13:00</span>
+                  <span>15:00</span>
+                  <span>현재</span>
+                </div>
               </div>
             </div>
           </div>
