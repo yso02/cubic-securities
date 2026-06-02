@@ -123,7 +123,7 @@
 }
 .perf-body {
   display: grid;
-  grid-template-columns: 360px 1fr;
+  grid-template-columns: 420px 1fr;
   gap: 24px;
   padding: 12px 20px 20px;
   align-items: start;
@@ -175,12 +175,14 @@
   justify-content: space-between;
   align-items: center;
   white-space: nowrap;
+  width: 100%;
 }
 .perf-box-label {
   font-size: 12px;
   color: var(--c-text-muted);
   white-space: nowrap;
   margin-right: 12px;
+  flex-shrink: 0;
 }
 .perf-box-value {
   font-size: 14px;
@@ -195,6 +197,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
+  width: 100%;
 }
 .perf-right {
   flex: 1;
