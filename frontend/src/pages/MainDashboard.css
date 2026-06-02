@@ -100,6 +100,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-height: calc(100vh - 120px);
 }
 
 /* 퍼포먼스 카드 */
@@ -162,6 +163,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  flex: 1;
 }
 
 /* 섹션 카드 공통 */
@@ -171,12 +173,16 @@
   border: 1px solid var(--c-border);
   box-shadow: 0 2px 12px rgba(0,0,0,0.05);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
 }
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px 0;
+  padding: 14px 16px 10px;
+  flex-shrink: 0;
 }
 .section-title {
   font-size: 14px;
@@ -200,12 +206,25 @@
   font-weight: 600;
   color: var(--c-text-muted);
   border-bottom: 1px solid var(--c-border);
-  margin-top: 0;
+  position: sticky;
+  top: 0;
+  background: var(--c-surface);
+  z-index: 1;
   align-items: center;
 }
 .section-table-header span:not(:first-child) { text-align: right; }
 
-.section-list { padding: 0; }
+.section-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 0;
+}
+.section-list::-webkit-scrollbar { width: 4px; }
+.section-list::-webkit-scrollbar-thumb {
+  background: var(--c-border);
+  border-radius: 2px;
+}
+.section-list::-webkit-scrollbar-track { background: transparent; }
 .section-row {
   display: grid;
   grid-template-columns: 2fr 1fr 0.6fr 1.1fr 1.1fr 0.9fr;
@@ -229,6 +248,10 @@
   font-weight: 600;
   color: var(--c-text-muted);
   border-bottom: 1px solid var(--c-border);
+  position: sticky;
+  top: 0;
+  background: var(--c-surface);
+  z-index: 1;
   align-items: center;
 }
 .watchlist-header span:not(:first-child) { text-align: right; }

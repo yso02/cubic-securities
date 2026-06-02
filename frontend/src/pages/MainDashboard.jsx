@@ -274,7 +274,7 @@ export default function MainDashboard({ user }) {
               <div className="section-empty">보유 종목이 없어요</div>
             ) : (
               <div className="section-list">
-                {holdings.slice(0, 5).map(h => renderPortfolioRow(h))}
+                {holdings.map(h => renderPortfolioRow(h))}
               </div>
             )}
           </div>
@@ -300,7 +300,7 @@ export default function MainDashboard({ user }) {
               <div className="section-empty">관심 종목이 없어요</div>
             ) : (
               <div className="section-list">
-                {watchlist.slice(0, 5).map(s => renderWatchlistRow(s))}
+                {watchlist.map(s => renderWatchlistRow(s))}
               </div>
             )}
           </div>
