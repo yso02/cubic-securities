@@ -5,11 +5,65 @@ import {
   getDomesticRanking, getOverseasRanking,
   getDomesticMarketNews, getOverseasMarketNews,
   getWatchlist, addWatchlist, removeWatchlist,
-  getExchangeRate, isDomestic, fmt, fmtPrice,
-  fmtChange, isUp, getLogoUrl, getExchangeCode,
-  NGROK_URL, DOMESTIC_STOCKS, OVERSEAS_STOCKS,
+  getExchangeRate, isDomestic, fmt, fmtChange, isUp,
+  getLogoUrl, getExchangeCode, NGROK_URL,
 } from "../api/stockApi";
 import "./MarketPage.css";
+
+const ICON_COLORS = {
+  삼성전자:"#1428A0", SK하이닉스:"#EA002C", 현대차:"#002C5F",
+  LG화학:"#A50034", 카카오:"#FAE100", NAVER:"#76B900",
+  Apple:"#555", NVIDIA:"#76B900", Tesla:"#CC0000",
+  Microsoft:"#00A4EF", Amazon:"#FF9900", Alphabet:"#4285F4", Meta:"#1877F2",
+};
+
+function Sparkline({ changePercent, width = 80, height = 32, color }) {
+  const up = isUp(changePercent);
+  const c = color || (up ? "#22c55e" : "#ef4444");
+  const pct = Math.min(Math.abs(Number(changePercent) || 0), 10) / 10;
+
+  const points = up
+    ? [
+        [0, height * 0.7],
+        [width * 0.15, height * 0.65],
+        [width * 0.3, height * 0.75],
+        [width * 0.45, height * 0.55],
+        [width * 0.6, height * 0.45],
+        [width * 0.75, height * (0.4 - pct * 0.2)],
+        [width, height * (0.2 - pct * 0.1)],
+      ]
+    : [
+        [0, height * 0.3],
+        [width * 0.15, height * 0.35],
+        [width * 0.3, height * 0.25],
+        [width * 0.45, height * 0.45],
+        [width * 0.6, height * 0.55],
+        [width * 0.75, height * (0.6 + pct * 0.2)],
+        [width, height * (0.75 + pct * 0.1)],
+      ];
+
+  const d = points.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
+  const fill = [...points, [width, height], [0, height]].map((p, i) =>
+    i === 0 ? `M${p[0].toFixed(1)},${p[1].toFixed(1)}` : `L${p[0].toFixed(1)},${p[1].toFixed(1)}`
+  ).join(" ") + " Z";
+
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+      <defs>
+        <linearGradient id={`sg-${up?'up':'dn'}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={c} stopOpacity="0.3"/>
+          <stop offset="100%" stopColor={c} stopOpacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d={fill} fill={`url(#sg-${up?'up':'dn'})`}/>
+      <path d={d} fill="none" stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function SparklineCard({ changePercent, width = 100, height = 40 }) {
+  return <Sparkline changePercent={changePercent} width={width} height={height} />;
+}
 
 const fmtVolume = (val) => {
   if (!val) return "-";
@@ -20,15 +74,6 @@ const fmtVolume = (val) => {
   return fmt(Math.round(num));
 };
 
-const ICON_COLORS = {
-  삼성전자:"#1428A0", SK하이닉스:"#EA002C", 현대차:"#002C5F",
-  LG화학:"#A50034", 카카오:"#FAE100", NAVER:"#76B900",
-  셀트리온:"#00A6A0", POSCO홀딩스:"#004B87", 기아:"#05141F",
-  삼성SDI:"#034EA2", LG에너지솔루션:"#A50034", 신한지주:"#0046FF",
-  Apple:"#555", NVIDIA:"#76B900", Tesla:"#CC0000",
-  Microsoft:"#00A4EF", Amazon:"#FF9900", Alphabet:"#4285F4", Meta:"#1877F2",
-};
-
 export default function MarketPage({ user }) {
   const navigate = useNavigate();
   const [market, setMarket] = useState("domestic");
@@ -36,39 +81,31 @@ export default function MarketPage({ user }) {
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [exRate, setExRate] = useState({ rate: 1380 });
-  const [domesticNews, setDomesticNews] = useState(null);
-  const [overseasNews, setOverseasNews] = useState(null);
-  const [newsLoading, setNewsLoading] = useState(true);
   const [watchlist, setWatchlist] = useState([]);
   const wsClientRef = useRef(null);
   const wsSubsRef = useRef(new Map());
   const stocksRef = useRef([]);
   const [wsConnected, setWsConnected] = useState(false);
+  const [topStocks, setTopStocks] = useState([]);
 
   useEffect(() => { fetchStocks(); }, [market, sortType]);
-
+  useEffect(() => { fetchTopStocks(); }, [market]);
   useEffect(() => {
     (async () => { try { setExRate(await getExchangeRate()); } catch {} })();
   }, []);
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const [domestic, overseas] = await Promise.allSettled([
-          getDomesticMarketNews(), getOverseasMarketNews()
-        ]);
-        if (domestic.status === "fulfilled") setDomesticNews(domestic.value);
-        if (overseas.status === "fulfilled") setOverseasNews(overseas.value);
-      } finally { setNewsLoading(false); }
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (user) loadWatchlist();
-  }, [user]);
+  useEffect(() => { if (user) loadWatchlist(); }, [user]);
 
   const loadWatchlist = async () => {
     try { setWatchlist(await getWatchlist() || []); } catch {}
+  };
+
+  const fetchTopStocks = async () => {
+    try {
+      const data = market === "domestic"
+        ? await getDomesticRanking("VOLUME")
+        : await getOverseasRanking("VOLUME");
+      setTopStocks((data || []).slice(0, 4));
+    } catch {}
   };
 
   const isWatched = (symbol) => watchlist.some(w => w.symbol === symbol);
@@ -110,6 +147,7 @@ export default function MarketPage({ user }) {
             try {
               const data = JSON.parse(msg.body);
               setStocks(prev => prev.map(s => s.symbol === data.symbol ? {...s,...data} : s));
+              setTopStocks(prev => prev.map(s => s.symbol === data.symbol ? {...s,...data} : s));
             } catch {}
           });
           wsSubsRef.current.set(key, sub);
@@ -120,6 +158,7 @@ export default function MarketPage({ user }) {
             try {
               const data = JSON.parse(msg.body);
               setStocks(prev => prev.map(s => s.symbol === data.symbol ? {...s,...data} : s));
+              setTopStocks(prev => prev.map(s => s.symbol === data.symbol ? {...s,...data} : s));
             } catch {}
           });
           wsSubsRef.current.set(key, sub);
@@ -150,160 +189,136 @@ export default function MarketPage({ user }) {
   };
 
   const getBg = (name) => ICON_COLORS[name] || "#64748b";
-  const currentNews = market === "domestic" ? domesticNews : overseasNews;
-  const weatherMap = {
-    SUNNY: { emoji: "☀️", label: "상승장", color: "#ef4444" },
-    CLOUDY: { emoji: "⛅", label: "혼조세", color: "#f59e0b" },
-    RAINY: { emoji: "🌧️", label: "하락장", color: "#3b82f6" },
-    STORM: { emoji: "⛈️", label: "급락", color: "#7c3aed" },
-  };
-  const weather = currentNews?.weather ? weatherMap[currentNews.weather] : null;
 
   return (
     <div className="market-page">
       <div className="market-header">
         <h1 className="market-title">시장</h1>
+        <p className="market-subtitle">실시간 시장 현황을 확인하세요</p>
       </div>
 
-      <div className="market-body">
-        {/* 종목 랭킹 */}
-        <div className="market-ranking-card">
-          <div className="market-tab-row">
-            <div className={`market-tab ${market==="domestic"?"active":""}`} onClick={()=>setMarket("domestic")}>
-              <span className="market-flag">🇰🇷</span>
-              <span className="market-tab-label">국내주식</span>
+      {/* TOP4 카드 */}
+      <div className="market-top4">
+        {topStocks.map(s => {
+          const logo = getLogoUrl(s.symbol, s.market);
+          const up = isUp(s.changePercent);
+          const price = s.price
+            ? isDomestic(s.market)
+              ? `${fmt(Math.round(Number(s.price)))}원`
+              : `$${Number(s.price).toFixed(2)}`
+            : "-";
+          return (
+            <div key={s.symbol} className={`top4-card ${up?"up":"dn"}`} onClick={() => handleSelectStock(s)}>
+              <div className="top4-card-header">
+                <div className="top4-stock-info">
+                  {logo
+                    ? <img src={logo} className="top4-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
+                    : <div className="top4-logo-fb" style={{background:getBg(s.name)}}>{s.name?.substring(0,2)}</div>
+                  }
+                  <div>
+                    <div className="top4-name">{s.name}</div>
+                    <div className="top4-code">{s.symbol}</div>
+                  </div>
+                </div>
+                <button
+                  className={`top4-star ${isWatched(s.symbol)?"on":""}`}
+                  onClick={e => toggleWatch(s, e)}
+                >
+                  {isWatched(s.symbol) ? "★" : "☆"}
+                </button>
+              </div>
+              <div className="top4-price">{price}</div>
+              <div className="top4-bottom">
+                <div className={`top4-change ${up?"up":"dn"}`}>
+                  {up ? "▲" : "▼"} {s.changePercent ? fmtChange(s.changePercent) : "-"}
+                </div>
+                <SparklineCard changePercent={s.changePercent} />
+              </div>
             </div>
-            <div className={`market-tab ${market==="overseas"?"active":""}`} onClick={()=>setMarket("overseas")}>
-              <span className="market-flag">🇺🇸</span>
-              <span className="market-tab-label">해외주식</span>
-            </div>
-          </div>
-          <div className="sub-tab-row">
-            <div className="segment-control">
-              {[["VOLUME","거래대금"],["MARKET_CAP","시가총액"],["RISE","급상승"],["FALL","급하락"]].map(([key,label])=>(
-                <div key={key} className={`sub-tab ${sortType===key?"active":""}`} onClick={()=>setSortType(key)}>{label}</div>
-              ))}
-            </div>
-          </div>
-          <div className="list-header">
-            <span>순위</span>
-            <span style={{textAlign:"left"}}>종목</span>
-            <span>현재가</span>
-            <span>등락률</span>
-            <span>거래대금</span>
-          </div>
-          <div className="stock-list">
-            {loading ? (
-              <div className="list-empty"><div className="loading-spinner"/></div>
-            ) : stocks.map((s, i) => (
-              <div key={s.symbol} className="stock-row" onClick={() => handleSelectStock(s)}>
-                <div className="rank">{i+1}</div>
-                <div className="stock-info">
-                  <button className={`star-btn ${isWatched(s.symbol)?"on":""}`} onClick={e=>toggleWatch(s,e)}>
+          );
+        })}
+      </div>
+
+      {/* 시장 탭 */}
+      <div className="market-tabs-wrap">
+        <div className="market-main-tabs">
+          <button
+            className={`market-main-tab ${market==="domestic"?"active":""}`}
+            onClick={() => setMarket("domestic")}
+          >
+            🇰🇷 국내주식
+          </button>
+          <button
+            className={`market-main-tab ${market==="overseas"?"active":""}`}
+            onClick={() => setMarket("overseas")}
+          >
+            🇺🇸 미국주식
+          </button>
+        </div>
+        <div className="market-sort-tabs">
+          {[["VOLUME","거래대금"],["MARKET_CAP","시가총액"],["RISE","급상승"],["FALL","급하락"]].map(([key,label]) => (
+            <button
+              key={key}
+              className={`market-sort-tab ${sortType===key?"active":""}`}
+              onClick={() => setSortType(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* 종목 리스트 */}
+      <div className="market-list-card">
+        <div className="market-list-header">
+          <span>종목</span>
+          <span>그래프</span>
+          <span>등락률</span>
+          <span>현재가</span>
+          <span>거래대금</span>
+          <span>매수/매도</span>
+        </div>
+        <div className="market-list-body">
+          {loading ? (
+            <div className="market-list-empty"><div className="loading-spinner"/></div>
+          ) : stocks.map((s) => {
+            const logo = getLogoUrl(s.symbol, s.market);
+            const up = isUp(s.changePercent);
+            const price = s.price
+              ? isDomestic(s.market)
+                ? `${fmt(Math.round(Number(s.price)))}원`
+                : `${fmt(Math.round(Number(s.price)*exRate.rate))}원`
+              : "-";
+            return (
+              <div key={s.symbol} className="market-list-row" onClick={() => handleSelectStock(s)}>
+                <div className="market-stock-info">
+                  <button className={`market-star ${isWatched(s.symbol)?"on":""}`} onClick={e=>toggleWatch(s,e)}>
                     {isWatched(s.symbol)?"★":"☆"}
                   </button>
-                  {(() => {
-                    const logo = getLogoUrl(s.symbol, s.market);
-                    return logo
-                      ? <img src={logo} className="stock-icon-img" alt="" onError={e=>{e.target.style.display="none";if(e.target.nextSibling)e.target.nextSibling.style.display="flex";}}/>
-                      : null;
-                  })()}
-                  <div className="stock-icon" style={{background:getBg(s.name),display:getLogoUrl(s.symbol,s.market)?"none":"flex"}}>
-                    {s.name?.substring(0,2)}
-                  </div>
+                  {logo
+                    ? <img src={logo} className="market-logo" alt="" onError={e=>{e.target.style.display="none";if(e.target.nextSibling)e.target.nextSibling.style.display="flex";}}/>
+                    : null}
+                  <div className="market-logo-fb" style={{background:getBg(s.name),display:logo?"none":"flex"}}>{s.name?.substring(0,2)}</div>
                   <div>
-                    <div className="stock-name">{s.name}</div>
-                    <div className="stock-code">{s.symbol} · {s.market}</div>
+                    <div className="market-name">{s.name}</div>
+                    <div className="market-code">{s.symbol}</div>
                   </div>
                 </div>
-                <div className="price">
-                  {s.price ? isDomestic(s.market)
-                    ? `${fmt(Math.round(Number(s.price)))}원`
-                    : `${fmt(Math.round(Number(s.price)*exRate.rate))}원`
-                  : "-"}
+                <div className="market-sparkline">
+                  <Sparkline changePercent={s.changePercent} width={80} height={32}/>
                 </div>
-                <div className={`change ${isUp(s.changePercent)?"up":"dn"}`}>
+                <div className={`market-change ${up?"up":"dn"}`}>
                   {s.changePercent ? fmtChange(s.changePercent) : "-"}
                 </div>
-                <div className="volume">{fmtVolume(s.volume)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 뉴스 */}
-        <div className="market-news-card">
-          <div className="news-header">
-            <span className="news-title">
-              {market === "domestic" ? "🇰🇷 국내 시장 뉴스" : "🇺🇸 해외 시장 뉴스"}
-            </span>
-            {currentNews && <span className="news-updated">{currentNews.updatedAt} 기준</span>}
-          </div>
-          {weather && (
-            <div className="news-weather" style={{borderColor:weather.color+"40",background:weather.color+"0a"}}>
-              <span className="weather-emoji">{weather.emoji}</span>
-              <div className="weather-info">
-                <span className="weather-label" style={{color:weather.color}}>{weather.label}</span>
-                <span className="weather-desc">현재 시장 상황</span>
-              </div>
-            </div>
-          )}
-          {newsLoading ? (
-            <div className="news-placeholder">
-              <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-              <div className="news-skeleton"><div className="sk-line long"/><div className="sk-line short"/></div>
-            </div>
-          ) : currentNews ? (
-            <div className="news-content">
-              <div className="news-headlines">
-                {currentNews.headlines?.map((h,i) => (
-                  <div key={i} className="news-headline-item">
-                    <span className="news-dot">•</span><span>{h}</span>
-                  </div>
-                ))}
-              </div>
-              {currentNews.positive && (
-                <div className="news-sector positive">
-                  <div className="sector-label up">📈 {currentNews.positive.sector}</div>
-                  {currentNews.positive.reason && <p className="sector-reason">{currentNews.positive.reason}</p>}
-                  <div className="sector-stocks">
-                    {currentNews.positive.stocks?.map((s,i) => (
-                      <div key={i} className="sector-stock-row up">
-                        <div className="sector-stock-name">
-                          <span className="sector-stock-symbol">{s.symbol}</span>
-                          {s.name && <span className="sector-stock-fullname">{s.name}</span>}
-                        </div>
-                        <strong className="sector-stock-change">{s.changePercent}</strong>
-                      </div>
-                    ))}
-                  </div>
+                <div className="market-price">{price}</div>
+                <div className="market-volume">{fmtVolume(s.volume)}</div>
+                <div className="market-actions" onClick={e=>e.stopPropagation()}>
+                  <button className="market-buy-btn" onClick={() => handleSelectStock(s)}>매수</button>
+                  <button className="market-sell-btn" onClick={() => handleSelectStock(s)}>매도</button>
                 </div>
-              )}
-              {currentNews.negative && (
-                <div className="news-sector negative">
-                  <div className="sector-label dn">📉 {currentNews.negative.sector}</div>
-                  {currentNews.negative.reason && <p className="sector-reason">{currentNews.negative.reason}</p>}
-                  <div className="sector-stocks">
-                    {currentNews.negative.stocks?.map((s,i) => (
-                      <div key={i} className="sector-stock-row dn">
-                        <div className="sector-stock-name">
-                          <span className="sector-stock-symbol">{s.symbol}</span>
-                          {s.name && <span className="sector-stock-fullname">{s.name}</span>}
-                        </div>
-                        <strong className="sector-stock-change">{s.changePercent}</strong>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {currentNews.summary && (
-                <div className="news-summary">
-                  <span className="summary-label">💬 AI 요약</span>
-                  <p>{currentNews.summary}</p>
-                </div>
-              )}
-            </div>
-          ) : null}
+              </div>
+            );
+          })}
         </div>
       </div>
 
