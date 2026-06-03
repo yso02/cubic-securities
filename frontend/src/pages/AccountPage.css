@@ -111,6 +111,7 @@
   overflow: hidden;
   margin-bottom: 28px;
   transition: background 0.3s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
 }
 .asset-list-title {
   padding: 14px 20px 10px;
@@ -149,6 +150,7 @@
   border: 1px solid var(--c-border);
   border-radius: 12px; overflow: hidden;
   transition: background 0.3s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
 }
 .acc-table-head {
   display: grid; padding: 11px 18px;
@@ -332,3 +334,124 @@
 .asset-invest-pl-sm { font-size: 11px; font-weight: 600; }
 .asset-invest-pl-sm.up { color: #ef4444; }
 .asset-invest-pl-sm.dn { color: #3b82f6; }
+
+/* ── 자산 요약 카드 3개 ── */
+.asset-summary-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.5fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.asset-sum-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: background 0.3s;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+}
+.asset-sum-card.primary {
+  background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
+  border-color: #99f6e4;
+}
+[data-theme="dark"] .asset-sum-card.primary {
+  background: linear-gradient(135deg, #042f2e, #0f3d3c);
+  border-color: rgba(94,234,212,0.2);
+}
+.asset-sum-flag { font-size: 28px; flex-shrink: 0; }
+.asset-sum-label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--c-text-muted); margin-bottom: 4px;
+}
+.asset-sum-value {
+  display: block; font-size: 20px; font-weight: 800;
+  color: var(--c-text); letter-spacing: -0.3px;
+}
+.asset-sum-sub {
+  display: block; font-size: 12px; color: var(--c-text-muted); margin-top: 2px;
+}
+.asset-sum-pl { display: block; font-size: 13px; font-weight: 600; margin-top: 2px; }
+.asset-sum-pl.up { color: #ef4444; }
+.asset-sum-pl.dn { color: #3b82f6; }
+.asset-sum-card-top {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; width: 100%;
+}
+
+/* ── 보유종목 필터 탭 ── */
+.acc-section-header {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 12px;
+}
+.acc-section-header .acc-section-title { margin-bottom: 0; }
+.holdings-filter-tabs {
+  display: flex;
+  background: var(--c-hover);
+  border-radius: 8px;
+  padding: 3px; gap: 2px;
+}
+.holdings-filter-tab {
+  padding: 5px 12px; border: none; border-radius: 6px;
+  font-size: 12px; font-weight: 600;
+  color: var(--c-text-muted);
+  background: transparent; cursor: pointer; font-family: inherit;
+  transition: all 0.15s;
+}
+.holdings-filter-tab:hover { color: var(--c-text); }
+.holdings-filter-tab.active {
+  background: var(--c-surface); color: var(--c-text);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+@media (max-width: 900px) {
+  .asset-summary-cards { grid-template-columns: 1fr 1fr; }
+  .asset-sum-card.primary { grid-column: 1 / -1; }
+}
+
+/* ── 보유종목 헤더 개편 ── */
+.acc-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+.holdings-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.holdings-header-left .acc-section-title { margin-bottom: 0; }
+
+.holdings-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 6px 12px;
+  min-width: 180px;
+  max-width: 240px;
+}
+.holdings-search-wrap svg { color: var(--c-text-muted); flex-shrink: 0; }
+.holdings-search-wrap input {
+  flex: 1; border: none; background: none;
+  font-size: 13px; color: var(--c-text); outline: none; font-family: inherit;
+}
+.holdings-search-wrap input::placeholder { color: var(--c-text-muted); }
+.holdings-search-wrap button {
+  background: none; border: none; color: var(--c-text-muted);
+  cursor: pointer; font-size: 12px; padding: 0; line-height: 1;
+}
+.holdings-search-wrap button:hover { color: var(--c-text); }
+
+[data-theme="dark"] .asset-sum-card,
+[data-theme="dark"] .asset-list,
+[data-theme="dark"] .acc-table {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2);
+}
