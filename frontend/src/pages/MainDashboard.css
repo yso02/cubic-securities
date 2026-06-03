@@ -668,62 +668,291 @@
 }
 /* ── 종목 상세 모달 ── */
 .stock-modal-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 1000;
-  display: flex; align-items: center; justify-content: center;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 20px;
-  animation: fadeIn 0.15s ease;
 }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
 .stock-modal {
-  background: var(--c-bg);
-  border-radius: 16px;
-  width: min(1100px, 96vw);
+  background: var(--c-surface);
+  border-radius: 20px;
+  width: 1000px;
+  max-width: 95vw;
   max-height: 90vh;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  display: flex; flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-  animation: slideUp 0.2s ease;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+  border: 1px solid var(--c-border);
+  animation: modalIn 0.2s cubic-bezier(0.34,1.56,0.64,1);
 }
-@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
 
+/* 모달 헤더 */
 .stock-modal-header {
-  display: flex; align-items: center; gap: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 16px 20px;
   border-bottom: 1px solid var(--c-border);
-  background: var(--c-surface);
   flex-shrink: 0;
 }
-.stock-modal-info { display: flex; align-items: center; gap: 10px; flex: 1; }
-.stock-modal-logo { width: 36px; height: 36px; border-radius: 50%; object-fit: contain; background: #fff; border: 1px solid var(--c-border); }
-.stock-modal-logo-fb { width: 36px; height: 36px; border-radius: 50%; background: #64748b; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+.stock-modal-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.stock-modal-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: contain;
+  border: 1px solid var(--c-border);
+}
+.stock-modal-logo-fb {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #64748b;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
 .stock-modal-name { font-size: 16px; font-weight: 700; color: var(--c-text); }
 .stock-modal-code { font-size: 12px; color: var(--c-text-muted); }
+.stock-modal-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sma-watch {
+  background: none;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--c-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.sma-watch:hover { background: var(--c-hover); }
+.sma-detail {
+  padding: 7px 14px;
+  background: var(--c-hover);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.sma-detail:hover { background: var(--c-border); }
+.sma-close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.sma-close:hover { background: var(--c-hover); }
 
-.stock-modal-price-area { display: flex; align-items: baseline; gap: 8px; }
-.stock-modal-price { font-size: 22px; font-weight: 800; color: var(--c-text); }
-.stock-modal-change { font-size: 13px; font-weight: 600; }
+/* 모달 그리드 */
+.stock-modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  flex: 1;
+  overflow: hidden;
+}
+.stock-modal-left-col {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--c-border);
+}
+.stock-modal-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 12px 16px 8px;
+  flex-shrink: 0;
+}
+.stock-modal-price { font-size: 24px; font-weight: 800; color: var(--c-text); letter-spacing: -0.5px; }
+.stock-modal-change { font-size: 14px; font-weight: 600; }
 .stock-modal-change.up { color: #ef4444; }
 .stock-modal-change.dn { color: #3b82f6; }
-
-.stock-modal-actions { display: flex; gap: 8px; align-items: center; }
-.sma-buy { padding: 7px 16px; background: #ef4444; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
-.sma-sell { padding: 7px 16px; background: #3b82f6; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; }
-.sma-detail { padding: 7px 14px; background: var(--c-hover); color: var(--c-text-sub); border: 1px solid var(--c-border); border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
-.sma-close { width: 32px; height: 32px; background: var(--c-hover); border: none; border-radius: 8px; font-size: 16px; cursor: pointer; color: var(--c-text-muted); display: flex; align-items: center; justify-content: center; }
-.sma-close:hover { background: var(--c-border); color: var(--c-text); }
-
-.stock-modal-body {
-  display: flex; gap: 0;
-  flex: 1; overflow: hidden;
-  min-height: 0;
+.stock-modal-chart { flex: 1; min-height: 0; overflow: hidden; }
+.stock-modal-ob {
+  flex-shrink: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  border-top: 1px solid var(--c-border);
 }
-.stock-modal-chart { flex: 1; min-width: 0; overflow-y: auto; padding: 16px; }
-.stock-modal-ob { width: 340px; flex-shrink: 0; border-left: 1px solid var(--c-border); overflow-y: auto; }
 
-@media (max-width: 768px) {
-  .stock-modal-body { flex-direction: column; }
-  .stock-modal-ob { width: 100%; border-left: none; border-top: 1px solid var(--c-border); }
+/* 우측 주문창 */
+.stock-modal-right-col {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
 }
+.stock-modal-trade { display: flex; flex-direction: column; height: 100%; }
+.smt-tabs { display: flex; flex-shrink: 0; }
+.smt-tab {
+  flex: 1;
+  padding: 13px;
+  border: none;
+  background: var(--c-hover);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--c-text-muted);
+  transition: all 0.15s;
+}
+.smt-tab.buy.active { background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%); color: #fff; }
+.smt-tab.sell.active { background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%); color: #fff; }
+.smt-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  flex: 1;
+}
+.smt-login-hint {
+  padding: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.smt-login-hint p { font-size: 13px; color: var(--c-text-muted); }
+.smt-login-hint button {
+  padding: 8px;
+  background: var(--c-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.smt-info-row { display: flex; justify-content: space-between; font-size: 13px; }
+.smt-info-row span { color: var(--c-text-muted); }
+.smt-info-row strong { color: var(--c-text); font-weight: 600; }
+.smt-info-row.dim { opacity: 0.7; }
+.smt-input-group { display: flex; flex-direction: column; gap: 5px; }
+.smt-input-group label { font-size: 12px; color: var(--c-text-muted); }
+.smt-input-group input {
+  padding: 8px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--c-text);
+  background: var(--c-hover);
+  outline: none;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+.smt-input-group input:focus { border-color: var(--c-primary); background: var(--c-surface); }
+.smt-qty-row { display: flex; gap: 6px; }
+.smt-qty-row button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-hover);
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--c-text);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.smt-qty-row input { flex: 1; text-align: center; }
+.smt-qty-shortcuts { display: flex; gap: 4px; margin-top: 4px; }
+.smt-qty-shortcuts button {
+  flex: 1;
+  padding: 4px;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  background: var(--c-hover);
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--c-text-muted);
+}
+.smt-qty-shortcuts button:hover { background: var(--c-primary-muted); color: var(--c-primary); }
+.smt-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 9px 12px;
+  background: var(--c-hover);
+  border-radius: 10px;
+  font-size: 13px;
+}
+.smt-total span { color: var(--c-text-muted); }
+.smt-total strong { font-size: 14px; font-weight: 700; color: var(--c-text); }
+.smt-estimate {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px 12px;
+  background: var(--c-hover);
+  border-radius: 10px;
+}
+.smt-est-row { display: flex; justify-content: space-between; font-size: 12px; }
+.smt-est-row span { color: var(--c-text-muted); }
+.smt-est-row strong { color: var(--c-text); font-weight: 600; }
+.smt-est-row.highlight.profit strong { color: #ef4444; }
+.smt-est-row.highlight.loss strong { color: #3b82f6; }
+.smt-message {
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+.smt-message.success { background: rgba(34,197,94,0.1); color: #16a34a; }
+.smt-message.error { background: rgba(239,68,68,0.1); color: #dc2626; }
+.smt-submit {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.1s, opacity 0.15s;
+  margin-top: auto;
+}
+.smt-submit.buy { background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%); color: #fff; box-shadow: 0 4px 12px rgba(239,68,68,0.3); }
+.smt-submit.sell { background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%); color: #fff; box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+.smt-submit:hover:not(:disabled) { transform: translateY(-1px); opacity: 0.92; }
+.smt-submit:disabled { opacity: 0.4; cursor: not-allowed; }
