@@ -288,6 +288,9 @@
 }
 
 .ls-profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   overflow: hidden;
   transition: opacity 0.2s, max-width 0.3s;
   max-width: 200px;

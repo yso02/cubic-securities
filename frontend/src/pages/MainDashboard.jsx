@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Client } from "@stomp/stompjs";
 import {
   getWatchlist, addWatchlist, removeWatchlist,
@@ -444,7 +444,7 @@ export default function MainDashboard({ user }) {
                         d.value !== null ? i : last, -1);
                       return (
                         <ResponsiveContainer width="100%" height={260}>
-                          <LineChart data={paddedChartData} margin={{top: 10, right: 24, left: 60, bottom: 0}}>
+                          <AreaChart data={paddedChartData} margin={{top: 10, right: 24, left: 60, bottom: 0}}>
                             <defs>
                               <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#0d9488" stopOpacity={0.15}/>
@@ -491,11 +491,12 @@ export default function MainDashboard({ user }) {
                               formatter={(value) => value != null ? [`${fmt(Math.round(value))}원`, "평가금액"] : ["-", "평가금액"]}
                               labelFormatter={(label) => label}
                             />
-                            <Line
+                            <Area
                               type="monotone"
                               dataKey="value"
                               stroke="#0d9488"
                               strokeWidth={2}
+                              fill="url(#chartGradient)"
                               connectNulls={false}
                               dot={(props) => {
                                 const { cx, cy, index } = props;
@@ -512,7 +513,7 @@ export default function MainDashboard({ user }) {
                               }}
                               activeDot={{ r: 5, fill: "#0d9488", strokeWidth: 0 }}
                             />
-                          </LineChart>
+                          </AreaChart>
                         </ResponsiveContainer>
                       );
                     })()}
