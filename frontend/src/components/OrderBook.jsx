@@ -186,14 +186,12 @@ export default function OrderBook({ stock }) {
               <div className="ob-section asks">
                 {[...(orderbook.asks || [])].sort((a, b) => Number(b.price) - Number(a.price)).slice(0, 5).map((a, i) => (
                   <div key={`ask-${i}`} className="ob-row ask">
-                    <div className="ob-bar-wrap">
-                      <div
-                        className="ob-bar ask-bar"
-                        style={{ width: `${(Number(a.quantity) / maxQty) * 100}%` }}
-                      />
+                    <div className="ob-bar-wrap ask-wrap">
+                      <div className="ob-bar ask-bar" style={{ width: `${(Number(a.quantity) / maxQty) * 100}%` }}/>
+                      <span className="ob-qty ask-qty">{fmt(a.quantity)}</span>
                     </div>
-                    <span className="ob-qty">{fmt(a.quantity)}</span>
                     <span className="ob-price ask-price">{formatPrice(a.price)}</span>
+                    <div className="ob-empty-col"/>
                   </div>
                 ))}
               </div>
@@ -210,13 +208,11 @@ export default function OrderBook({ stock }) {
               <div className="ob-section bids">
                 {(orderbook.bids || []).slice(0, 5).map((b, i) => (
                   <div key={`bid-${i}`} className="ob-row bid">
+                    <div className="ob-empty-col"/>
                     <span className="ob-price bid-price">{formatPrice(b.price)}</span>
-                    <span className="ob-qty">{fmt(b.quantity)}</span>
-                    <div className="ob-bar-wrap">
-                      <div
-                        className="ob-bar bid-bar"
-                        style={{ width: `${(Number(b.quantity) / maxQty) * 100}%` }}
-                      />
+                    <div className="ob-bar-wrap bid-wrap">
+                      <div className="ob-bar bid-bar" style={{ width: `${(Number(b.quantity) / maxQty) * 100}%` }}/>
+                      <span className="ob-qty bid-qty">{fmt(b.quantity)}</span>
                     </div>
                   </div>
                 ))}

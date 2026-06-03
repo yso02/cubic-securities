@@ -682,7 +682,8 @@
   border-radius: 20px;
   width: 1000px;
   max-width: 95vw;
-  max-height: 94vh;
+  max-height: 96vh;
+  height: 96vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -813,7 +814,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   flex-shrink: 0;
-  height: 260px;
+  height: 320px;
   padding: 0;
 }
 .sml-ob-col {
