@@ -6,7 +6,12 @@
       "Bash(git push *)",
       "Bash(Get-Content \"C:\\\\Users\\\\User\\\\Desktop\\\\Programming\\\\AI_Trading_Support_System\\\\capstone25-AI-Trading-Support-System\\\\frontend\\\\src\\\\api\\\\stockApi.js\")",
       "Bash(Measure-Object -Line)",
-      "PowerShell(Get-Content *)"
+      "PowerShell(Get-Content *)",
+      "Bash(npm install *)",
+      "Bash(npm list *)",
+      "Bash(npm run *)",
+      "Bash(dir /s /b src)",
+      "Bash(git checkout *)"
     ]
   }
 }

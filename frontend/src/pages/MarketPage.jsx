@@ -6,12 +6,8 @@ import {
   getDomesticMarketNews, getOverseasMarketNews,
   getWatchlist, addWatchlist, removeWatchlist,
   getExchangeRate, isDomestic, fmt, fmtChange, isUp,
-<<<<<<< HEAD
-  getLogoUrl, getExchangeCode, NGROK_URL,
-  buyStock, sellStock, getBalance, getHoldings,
-=======
   getLogoUrl, getExchangeCode, NGROK_URL, getCubicBatch,
->>>>>>> cbaa4cf27a63f42e1989d59059cfbee76597ad6a
+  buyStock, sellStock, getBalance, getHoldings,
 } from "../api/stockApi";
 import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
