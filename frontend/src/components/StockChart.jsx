@@ -75,7 +75,7 @@ export default function StockChart({ stock, fullscreen, onToggleFullscreen }) {
     if(chartRef.current){chartRef.current.remove();chartRef.current=null;}
     const c=containerRef.current;if(!c)return;
     const dk=document.documentElement.getAttribute("data-theme")==="dark";
-    const h=fullscreen?Math.max(500,window.innerHeight-240):360;
+    const h=fullscreen?Math.max(500,window.innerHeight-240):280;
 
     const chart=createChart(c,{
       width:c.clientWidth,height:h,
@@ -103,20 +103,28 @@ export default function StockChart({ stock, fullscreen, onToggleFullscreen }) {
 
   return(
     <div className={`stock-chart-wrap ${fullscreen?"fullscreen":""}`}>
-      <div className="chart-header">
-        <div className="chart-header-right">
-          <button className="fullscreen-btn" onClick={onToggleFullscreen} title={fullscreen?"축소":"전체화면"}>
-            {fullscreen?(
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-            ):(
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
-            )}
-          </button>
+      <div className="chart-top-bar">
+        <div className="chart-top-price">
+          {stock.price && (
+            <>
+              <span className="chart-inline-price">{fmtPrice(stock.price, stock.market)}</span>
+              <span className={`chart-inline-change ${Number(stock.changePercent) >= 0 ? "up" : "down"}`}>
+                {Number(stock.changePercent) >= 0 ? "▲" : "▼"} {Math.abs(Number(stock.changePercent)).toFixed(2)}%
+              </span>
+            </>
+          )}
         </div>
-      </div>
-
-      <div className="chart-period-tabs">
-        {periods.map(p=><button key={p.label} className={`period-btn ${period?.label===p.label?"active":""}`} onClick={()=>setPeriod(p)}>{p.label}</button>)}
+        <div className="chart-period-tabs">
+          {periods.map(p => (
+            <button
+              key={p.label}
+              className={`period-btn ${period?.label === p.label ? "active" : ""}`}
+              onClick={() => setPeriod(p)}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="chart-canvas-wrap" style={fullscreen?{minHeight:Math.max(500,window.innerHeight-240)}:{}}>

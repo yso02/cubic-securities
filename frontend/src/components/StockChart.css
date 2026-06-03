@@ -47,10 +47,34 @@
 [data-theme="dark"] .chart-header .market-badge.kosdaq { background: rgba(167,139,250,0.1); color: #a78bfa; }
 [data-theme="dark"] .chart-header .market-badge.nasdaq { background: rgba(96,165,250,0.1); color: #60a5fa; }
 
+.chart-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px 4px;
+}
+.chart-top-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.chart-inline-price {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--c-text);
+  letter-spacing: -0.5px;
+}
+.chart-inline-change {
+  font-size: 13px;
+  font-weight: 600;
+}
+.chart-inline-change.up { color: #ef4444; }
+.chart-inline-change.down { color: #3b82f6; }
+
 .chart-period-tabs {
   display: flex;
   gap: 4px;
-  padding: 8px 12px 4px;
+  padding: 0;
 }
 .period-tab { padding: 5px 12px; border-radius: var(--r-sm); border: 1px solid var(--c-border); background: var(--c-surface); font-size: 12px; font-weight: 500; color: var(--c-text-sub); cursor: pointer; transition: all 0.12s; white-space: nowrap; font-family: inherit; }
 .period-tab:hover { background: var(--c-primary-muted); color: var(--c-primary-deep); }
@@ -86,8 +110,8 @@
 .ind-chip.on { border-color: var(--ind-color); color: var(--ind-color); background: color-mix(in srgb, var(--ind-color) 8%, transparent); }
 .ind-chip:hover { opacity: 0.85; }
 
-.chart-canvas-wrap { position: relative; min-height: 360px; }
-.chart-canvas { width: 100%; height: 360px; }
+.chart-canvas-wrap { position: relative; min-height: 280px; }
+.chart-canvas { width: 100%; height: 280px; }
 .chart-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.7); z-index: 5; font-size: 13px; color: var(--c-text-sub); }
 [data-theme="dark"] .chart-overlay { background: rgba(26,29,39,0.7); }
 

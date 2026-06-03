@@ -699,11 +699,6 @@ export default function MainDashboard({ user }) {
                 <div className="stock-modal-ob">
                   <OrderBook stock={modalStock}/>
                 </div>
-              </div>
-
-              {/* 우측: AI 분석 + 매수/매도 주문창 */}
-              <div className="stock-modal-right-col">
-                {/* AI 분석 섹션 */}
                 <div className="sml-ai-section">
                   <div className="sml-ai-header">
                     <span className="sml-ai-title">✦ AI 분석</span>
@@ -712,6 +707,10 @@ export default function MainDashboard({ user }) {
                     <span className="sml-ai-pending">구현 예정</span>
                   </div>
                 </div>
+              </div>
+
+              {/* 우측: 매수/매도 주문창 */}
+              <div className="stock-modal-right-col">
                 <div className="stock-modal-trade">
                   <div className="smt-tabs">
                     <button
