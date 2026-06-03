@@ -5,10 +5,13 @@ import { Client } from "@stomp/stompjs";
 import {
   getMyInfo, getBalance, getHoldings, getOrders, getProfit,
   getDomesticPrice, getOverseasPrice, getExchangeRate,
-  exchangeKrwToUsd, exchangeUsdToKrw,
+  exchangeKrwToUsd, exchangeUsdToKrw, addWatchlist, removeWatchlist, getWatchlist,
+  buyStock, sellStock,
   isDomestic, fmt, fmtPrice, getExchangeCode, getLogoUrl, NGROK_URL,
 } from "../api/stockApi";
 import Twemoji from "../components/Twemoji";
+import StockChart from "../components/StockChart";
+import OrderBook from "../components/OrderBook";
 import "./AccountPage.css";
 
 const TABS = [
@@ -39,6 +42,13 @@ export default function AccountPage({ user, setUser }) {
   // 보유종목 필터
   const [holdingFilter, setHoldingFilter] = useState("all");
   const [holdingSearch, setHoldingSearch] = useState("");
+
+  // 종목 모달
+  const [stockModal, setStockModal] = useState(null);
+  const [modalStock, setModalStock] = useState(null);
+  const [tradeModal, setTradeModal] = useState(null);
+  const [watchlist, setWatchlist] = useState([]);
+  const modalWsRef = useRef(null);
 
   // 환전
   const [exAmount, setExAmount] = useState("");
@@ -157,12 +167,59 @@ export default function AccountPage({ user, setUser }) {
     ? (Number(exAmount) > 0 ? `≈ $${(Number(exAmount) / exRate).toFixed(2)}` : "")
     : (Number(exAmount) > 0 ? `≈ ${fmt(Math.round(Number(exAmount) * exRate))}원` : "");
 
-  const handleStockClick = (h) => {
-    sessionStorage.setItem("cubic_detail_stock", JSON.stringify({
+  const loadWatchlist = async () => {
+    try { setWatchlist(await getWatchlist() || []); } catch {}
+  };
+
+  useEffect(() => { loadWatchlist(); }, []);
+
+  const isWatched = (symbol) => watchlist.some(w => w.symbol === symbol);
+
+  const handleSelectStock = async (h) => {
+    const stock = {
       symbol: h.symbol, name: h.name, market: h.market, exchange: h.exchange,
       price: currentPrices[h.symbol]?.price || h.avgPrice,
-    }));
-    navigate(`/stock/${h.symbol}`);
+    };
+    try {
+      const dom = isDomestic(stock.market);
+      const priceData = dom
+        ? await getDomesticPrice(stock.symbol)
+        : await getOverseasPrice(stock.symbol, stock.exchange || getExchangeCode(stock.market));
+      setModalStock({ ...stock, ...priceData });
+    } catch {
+      setModalStock(stock);
+    }
+    setStockModal(stock.symbol);
+
+    if (modalWsRef.current) modalWsRef.current.deactivate();
+    const wsURL = NGROK_URL.replace("https://", "wss://").replace("http://", "ws://") + "/ws/websocket";
+    const client = new Client({
+      brokerURL: wsURL,
+      connectHeaders: { "ngrok-skip-browser-warning": "true" },
+      reconnectDelay: 5000,
+      onConnect: () => {
+        const dom = isDomestic(stock.market);
+        if (dom) {
+          client.publish({ destination: "/app/subscribe/domestic/price", body: stock.symbol });
+          client.subscribe(`/topic/domestic/${stock.symbol}`, msg => {
+            try { const d = JSON.parse(msg.body); setModalStock(prev => prev ? { ...prev, ...d } : prev); } catch {}
+          });
+        } else {
+          const exc = stock.exchange || getExchangeCode(stock.market);
+          client.publish({ destination: "/app/subscribe/overseas", body: `${stock.symbol},${exc}` });
+          client.subscribe(`/topic/overseas/${stock.symbol}`, msg => {
+            try { const d = JSON.parse(msg.body); setModalStock(prev => prev ? { ...prev, ...d } : prev); } catch {}
+          });
+        }
+      },
+    });
+    client.activate();
+    modalWsRef.current = client;
+  };
+
+  const closeStockModal = () => {
+    setStockModal(null); setModalStock(null); setTradeModal(null);
+    if (modalWsRef.current) { modalWsRef.current.deactivate(); modalWsRef.current = null; }
   };
 
   const getPrice = h => currentPrices[h.symbol]?.price || h.avgPrice;
@@ -296,7 +353,7 @@ export default function AccountPage({ user, setUser }) {
                     {holdings.filter(h => (holdingFilter === "all" ? true : holdingFilter === "domestic" ? isDomestic(h.market) : !isDomestic(h.market)) && (!holdingSearch || h.name?.includes(holdingSearch) || h.symbol?.toLowerCase().includes(holdingSearch.toLowerCase()))).map(h => {
                       const pl = getPL(h); const up = pl >= 0;
                       return (
-                        <div key={h.id} className="acc-table-row holdings-grid clickable" onClick={() => handleStockClick(h)}>
+                        <div key={h.id} className="acc-table-row holdings-grid clickable" onClick={() => handleSelectStock(h)}>
                           <span className="acc-name">
                             {(() => {
                               const logo = getLogoUrl(h.symbol, h.market);
@@ -391,6 +448,174 @@ export default function AccountPage({ user, setUser }) {
         )}
 
       </div>
+
+      {/* 종목 상세 모달 */}
+      {stockModal && modalStock && (
+        <div className="stock-modal-overlay" onClick={closeStockModal}>
+          <div className="stock-modal" onClick={e => e.stopPropagation()}>
+            <div className="stock-modal-header">
+              <div className="stock-modal-left">
+                {(() => {
+                  const logo = getLogoUrl(modalStock.symbol, modalStock.market);
+                  return logo
+                    ? <img src={logo} className="stock-modal-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
+                    : <div className="stock-modal-logo-fb">{modalStock.name?.substring(0,2)}</div>;
+                })()}
+                <div><div className="stock-modal-name">{modalStock.name}</div></div>
+              </div>
+              <div className="stock-modal-right">
+                <button className="sma-watch" onClick={async (e) => {
+                  e.stopPropagation();
+                  try {
+                    if (isWatched(modalStock.symbol)) await removeWatchlist(modalStock.symbol);
+                    else await addWatchlist(modalStock.symbol, modalStock.name, modalStock.market);
+                    await loadWatchlist();
+                  } catch {}
+                }}>{isWatched(modalStock.symbol) ? "★" : "☆"}</button>
+                <button className="sma-detail" onClick={() => { closeStockModal(); navigate(`/stock/${modalStock.symbol}`); }}>상세보기</button>
+                <button className="sma-close" onClick={closeStockModal}>✕</button>
+              </div>
+            </div>
+            <div className="stock-modal-grid">
+              <div className="stock-modal-left-col">
+                <div className="sml-chart-box">
+                  <div className="stock-modal-chart">
+                    <StockChart stock={modalStock} fullscreen={false} onToggleFullscreen={() => {}}/>
+                  </div>
+                </div>
+                <div className="sml-bottom-row">
+                  <div className="sml-ob-col"><OrderBook stock={modalStock}/></div>
+                  <div className="sml-ai-col">
+                    <div className="sml-ai-header"><span className="sml-ai-title">✦ AI 분석</span></div>
+                    <div className="sml-ai-body"><span className="sml-ai-pending">구현 예정</span></div>
+                  </div>
+                </div>
+              </div>
+              <div className="stock-modal-right-col">
+                <div className="stock-modal-trade">
+                  <div className="smt-tabs">
+                    <button className={`smt-tab buy ${tradeModal === "buy" || !tradeModal ? "active" : ""}`} onClick={() => setTradeModal("buy")}>매수</button>
+                    <button className={`smt-tab sell ${tradeModal === "sell" ? "active" : ""}`} onClick={() => setTradeModal("sell")}>매도</button>
+                  </div>
+                  <TradeModalInline
+                    stock={modalStock}
+                    mode={tradeModal || "buy"}
+                    onSuccess={() => { fetchAll(); window.dispatchEvent(new Event("cubic_trade_complete")); }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TradeModalInline({ stock, mode, onSuccess }) {
+  const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState("");
+  const [balance, setBalance] = useState(0);
+  const [holding, setHolding] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState(null);
+
+  useEffect(() => {
+    if (stock?.price) setPrice(String(stock.price).replace(/[+]/g, ""));
+    setQuantity(1); setMessage(null);
+    fetchData();
+  }, [stock?.symbol, mode]);
+
+  const fetchData = async () => {
+    try {
+      const [bal, holdings] = await Promise.all([getBalance(), getHoldings()]);
+      setBalance(bal);
+      setHolding(holdings.find(x => x.symbol === stock.symbol) || null);
+    } catch {}
+  };
+
+  const numPrice = Number(price) || 0;
+  const numQty = Number(quantity) || 0;
+  const total = numPrice * numQty;
+  const dom = isDomestic(stock?.market);
+  const unit = dom ? "원" : "$";
+  const currentAvgPrice = holding?.avgPrice || 0;
+  const currentQty = holding?.quantity || 0;
+  const newTotalQty = currentQty + numQty;
+  const expectedAvgPrice = newTotalQty > 0 ? ((currentAvgPrice * currentQty) + total) / newTotalQty : numPrice;
+  const sellRevenue = total;
+  const sellCost = currentAvgPrice * numQty;
+  const expectedProfit = sellRevenue - sellCost;
+  const expectedProfitRate = sellCost > 0 ? ((expectedProfit / sellCost) * 100).toFixed(2) : "0.00";
+  const canBuy = total > 0 && total <= balance && numQty > 0;
+  const canSell = holding && numQty <= holding.quantity && numQty > 0 && numPrice > 0;
+
+  const handleSubmit = async () => {
+    setLoading(true); setMessage(null);
+    try {
+      const payload = { symbol: stock.symbol, name: stock.name, market: stock.market, type: mode === "buy" ? "BUY" : "SELL", quantity: numQty, price: numPrice };
+      if (mode === "buy") await buyStock(payload);
+      else await sellStock(payload);
+      setMessage({ type: "success", text: mode === "buy" ? "매수 완료!" : "매도 완료!" });
+      await fetchData();
+      onSuccess?.();
+    } catch (e) {
+      setMessage({ type: "error", text: typeof e.response?.data === "string" ? e.response.data : "주문 실패" });
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="smt-body">
+      <div className="smt-info-row"><span>현재가</span><strong>{fmtPrice(stock.price, stock.market)}</strong></div>
+      {mode === "buy"
+        ? <div className="smt-info-row"><span>주문 가능</span><strong>{fmt(Math.round(balance))}{unit}</strong></div>
+        : <div className="smt-info-row"><span>보유 수량</span><strong>{holding ? `${fmt(holding.quantity)}주` : "0주"}</strong></div>
+      }
+      {holding && mode === "buy" && (
+        <div className="smt-info-row dim"><span>현재 보유</span><strong>{fmt(currentQty)}주 (평단 {fmtPrice(currentAvgPrice, stock.market)})</strong></div>
+      )}
+      <div className="smt-input-group">
+        <label>가격</label>
+        <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="가격 입력"/>
+      </div>
+      <div className="smt-input-group">
+        <label>수량</label>
+        <div className="smt-qty-row">
+          <button onClick={() => setQuantity(q => Math.max(1, Number(q)-1))}>−</button>
+          <input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value)||0)}/>
+          <button onClick={() => setQuantity(q => Number(q)+1)}>+</button>
+        </div>
+        {mode === "sell" && holding && (
+          <div className="smt-qty-shortcuts">
+            {[25,50,75,100].map(pct => (
+              <button key={pct} onClick={() => setQuantity(Math.floor(holding.quantity*pct/100))}>{pct}%</button>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="smt-total"><span>총 {mode==="buy"?"매수":"매도"} 금액</span><strong>{fmt(Math.round(total))}{unit}</strong></div>
+      {mode === "buy" && numQty > 0 && numPrice > 0 && (
+        <div className="smt-estimate">
+          <div className="smt-est-row"><span>예상 평단가</span><strong>{dom?`${fmt(Math.round(expectedAvgPrice))}원`:`$${expectedAvgPrice.toFixed(2)}`}</strong></div>
+          <div className="smt-est-row"><span>구매 후 총 보유</span><strong>{fmt(newTotalQty)}주</strong></div>
+        </div>
+      )}
+      {mode === "sell" && holding && numQty > 0 && numPrice > 0 && (
+        <div className="smt-estimate">
+          <div className={`smt-est-row highlight ${expectedProfit>=0?"profit":"loss"}`}>
+            <span>예상 수익</span>
+            <strong>{expectedProfit>=0?"+":""}{fmt(Math.round(expectedProfit))}{unit} ({expectedProfitRate}%)</strong>
+          </div>
+        </div>
+      )}
+      {message && <div className={`smt-message ${message.type}`}>{message.text}</div>}
+      <button
+        className={`smt-submit ${mode}`}
+        onClick={handleSubmit}
+        disabled={loading || (mode==="buy" ? !canBuy : !canSell)}
+      >
+        {loading ? "처리 중..." : mode==="buy" ? "매수하기" : "매도하기"}
+      </button>
     </div>
   );
 }
