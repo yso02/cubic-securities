@@ -1,10 +1,10 @@
 /* StockChart.css */
 .stock-chart-wrap {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-lg);
+  background: transparent;
+  border: none;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   transition: background 0.3s, border-color 0.3s;
 }
 .chart-header { padding: 16px 18px 12px; border-bottom: 1px solid var(--c-border-light); display: flex; justify-content: space-between; align-items: flex-start; }

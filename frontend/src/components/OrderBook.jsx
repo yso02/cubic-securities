@@ -184,7 +184,7 @@ export default function OrderBook({ stock }) {
             <>
               {/* 매도호가 — 역순 */}
               <div className="ob-section asks">
-                {[...(orderbook.asks || [])].sort((a, b) => Number(b.price) - Number(a.price)).map((a, i) => (
+                {[...(orderbook.asks || [])].sort((a, b) => Number(b.price) - Number(a.price)).slice(0, 5).map((a, i) => (
                   <div key={`ask-${i}`} className="ob-row ask">
                     <div className="ob-bar-wrap">
                       <div
@@ -208,7 +208,7 @@ export default function OrderBook({ stock }) {
 
               {/* 매수호가 */}
               <div className="ob-section bids">
-                {(orderbook.bids || []).map((b, i) => (
+                {(orderbook.bids || []).slice(0, 5).map((b, i) => (
                   <div key={`bid-${i}`} className="ob-row bid">
                     <span className="ob-price bid-price">{formatPrice(b.price)}</span>
                     <span className="ob-qty">{fmt(b.quantity)}</span>
