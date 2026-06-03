@@ -19,6 +19,11 @@ export default function AiPage({ user }) {
   const [chatInput, setChatInput] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
   const [loading, setLoading] = useState(false);
+  // 탭별 캐시 저장 (portfolio, recommend)
+  const [analysisCache, setAnalysisCache] = useState({
+    portfolio: null,
+    recommend: null,
+  });
   const [analysisResult, setAnalysisResult] = useState("");
   const chatEndRef = useRef(null);
 
@@ -30,7 +35,7 @@ export default function AiPage({ user }) {
     if (!tab || tab === "chat") {
       setActiveTab("chat");
     } else if (["holdings", "portfolio", "recommend"].includes(tab)) {
-      handleAnalysis(tab);
+      handleAnalysis(tab, false);
     }
   }, [searchParams]);
 
@@ -66,17 +71,36 @@ export default function AiPage({ user }) {
 
   const handleKeyDown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendChat(); } };
 
-  const handleAnalysis = async (type) => {
-    setActiveTab(type); setAnalysisResult(""); setLoading(true);
+  const handleAnalysis = async (type, forceRefresh = false) => {
+    setActiveTab(type);
+
+    // 채팅 탭은 캐시 없음
+    if (type === "chat") return;
+
+    // 캐시된 결과가 있고 강제 새로고침이 아니면 캐시 사용
+    if (!forceRefresh && analysisCache[type]) {
+      setAnalysisResult(analysisCache[type]);
+      return;
+    }
+
+    setAnalysisResult("");
+    setLoading(true);
     try {
       let res;
       if (type === "holdings") res = await aiAnalyzeHoldings();
       else if (type === "portfolio") res = await aiAnalyzePortfolio();
       else if (type === "recommend") res = await aiRecommend();
-      setAnalysisResult(res?.message || "분석 결과가 없습니다.");
+      const result = res?.message || "분석 결과가 없습니다.";
+      setAnalysisResult(result);
+      // portfolio, recommend만 캐시
+      if (type === "portfolio" || type === "recommend") {
+        setAnalysisCache(prev => ({ ...prev, [type]: result }));
+      }
     } catch (e) {
       setAnalysisResult(`⚠️ ${typeof e.response?.data === "string" ? e.response.data : "분석 실패"}`);
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -126,7 +150,13 @@ export default function AiPage({ user }) {
             <div className="ai-analysis-area">
               <div className="ai-analysis-header">
                 <h3>{TABS.find(t => t.id === activeTab)?.label}</h3>
-                <button className="ai-retry-btn" onClick={() => handleAnalysis(activeTab)} disabled={loading}>{loading ? "분석 중..." : "다시 분석"}</button>
+                <button
+                  className="ai-retry-btn"
+                  onClick={() => handleAnalysis(activeTab, true)}
+                  disabled={loading}
+                >
+                  {loading ? "분석 중..." : "재분석"}
+                </button>
               </div>
               {loading ? (
                 <div className="ai-analysis-loading"><div className="loading-spinner"/><p>AI가 분석 중이에요... 잠시만 기다려주세요.</p></div>
