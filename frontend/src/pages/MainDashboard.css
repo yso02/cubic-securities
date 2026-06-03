@@ -782,14 +782,14 @@
 /* 모달 그리드 */
 .stock-modal-grid {
   display: grid;
-  grid-template-columns: 1fr 280px;
+  grid-template-columns: 1fr 300px;
   flex: 1;
   overflow: hidden;
 }
 .stock-modal-left-col {
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   border-right: 1px solid var(--c-border);
 }
 .stock-modal-price-row {
@@ -804,11 +804,28 @@
 .stock-modal-change.up { color: #ef4444; }
 .stock-modal-change.dn { color: #3b82f6; }
 .stock-modal-chart { flex: 1; min-height: 0; overflow: hidden; }
-.stock-modal-ob {
-  flex-shrink: 0;
-  max-height: 200px;
-  overflow-y: auto;
+/* 하단 2컬럼 */
+.sml-bottom-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   border-top: 1px solid var(--c-border);
+  flex-shrink: 0;
+  height: 240px;
+  overflow: hidden;
+}
+.sml-ob-col {
+  overflow-y: auto;
+  border-right: 1px solid var(--c-border);
+  height: 100%;
+}
+.sml-ob-col::-webkit-scrollbar { width: 3px; }
+.sml-ob-col::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 2px; }
+
+/* AI 분석 컬럼 */
+.sml-ai-col {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 /* 우측 주문창 */
@@ -966,34 +983,41 @@
   overflow: hidden;
 }
 .sml-price-row {
+  padding: 10px 14px 6px;
+  flex-shrink: 0;
+}
+.sml-price-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sml-stock-market {
+  font-size: 11px;
+  color: var(--c-text-muted);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.sml-price-main {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  padding: 12px 16px 4px;
-  flex-shrink: 0;
+  gap: 8px;
 }
 
-/* AI 분석 섹션 */
-.sml-ai-section {
-  border-top: 1px solid var(--c-border);
-  flex-shrink: 0;
-}
 .sml-ai-header {
-  padding: 8px 14px 6px;
+  padding: 10px 14px 8px;
   border-bottom: 1px solid var(--c-border);
+  flex-shrink: 0;
 }
 .sml-ai-title {
   font-size: 12px;
   font-weight: 700;
   color: var(--c-text-muted);
-  letter-spacing: 0.03em;
 }
 .sml-ai-body {
-  padding: 12px 14px;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 60px;
 }
 .sml-ai-pending {
   font-size: 12px;

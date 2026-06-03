@@ -104,16 +104,6 @@ export default function StockChart({ stock, fullscreen, onToggleFullscreen }) {
   return(
     <div className={`stock-chart-wrap ${fullscreen?"fullscreen":""}`}>
       <div className="chart-top-bar">
-        <div className="chart-top-price">
-          {stock.price && (
-            <>
-              <span className="chart-inline-price">{fmtPrice(stock.price, stock.market)}</span>
-              <span className={`chart-inline-change ${Number(stock.changePercent) >= 0 ? "up" : "down"}`}>
-                {Number(stock.changePercent) >= 0 ? "▲" : "▼"} {Math.abs(Number(stock.changePercent)).toFixed(2)}%
-              </span>
-            </>
-          )}
-        </div>
         <div className="chart-period-tabs">
           {periods.map(p => (
             <button

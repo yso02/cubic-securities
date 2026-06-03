@@ -683,28 +683,38 @@ export default function MainDashboard({ user }) {
             {/* 메인 그리드 */}
             <div className="stock-modal-grid">
 
-              {/* 좌측: 차트박스(주가+차트) + 호가 */}
+              {/* 좌측: 차트박스 + 하단 2컬럼(호가|AI분석) */}
               <div className="stock-modal-left-col">
+                {/* 차트 박스: 심볼+시장 + 주가 + 차트 */}
                 <div className="sml-chart-box">
                   <div className="sml-price-row">
-                    <span className="stock-modal-price">{fmtPrice(modalStock.price, modalStock.market)}</span>
-                    <span className={`stock-modal-change ${isUpCheck(modalStock.changePercent) ? "up" : "dn"}`}>
-                      {isUpCheck(modalStock.changePercent) ? "▲" : "▼"} {fmtCh(modalStock.changePercent)}
-                    </span>
+                    <div className="sml-price-meta">
+                      <span className="sml-stock-market">{modalStock.market} · {modalStock.symbol}</span>
+                      <div className="sml-price-main">
+                        <span className="stock-modal-price">{fmtPrice(modalStock.price, modalStock.market)}</span>
+                        <span className={`stock-modal-change ${isUpCheck(modalStock.changePercent) ? "up" : "dn"}`}>
+                          {isUpCheck(modalStock.changePercent) ? "▲" : "▼"} {fmtCh(modalStock.changePercent)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div className="stock-modal-chart">
                     <StockChart stock={modalStock} fullscreen={false} onToggleFullscreen={() => {}}/>
                   </div>
                 </div>
-                <div className="stock-modal-ob">
-                  <OrderBook stock={modalStock}/>
-                </div>
-                <div className="sml-ai-section">
-                  <div className="sml-ai-header">
-                    <span className="sml-ai-title">✦ AI 분석</span>
+
+                {/* 하단 2컬럼: 호가 | AI분석 */}
+                <div className="sml-bottom-row">
+                  <div className="sml-ob-col">
+                    <OrderBook stock={modalStock}/>
                   </div>
-                  <div className="sml-ai-body">
-                    <span className="sml-ai-pending">구현 예정</span>
+                  <div className="sml-ai-col">
+                    <div className="sml-ai-header">
+                      <span className="sml-ai-title">✦ AI 분석</span>
+                    </div>
+                    <div className="sml-ai-body">
+                      <span className="sml-ai-pending">구현 예정</span>
+                    </div>
                   </div>
                 </div>
               </div>

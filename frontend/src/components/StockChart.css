@@ -50,8 +50,8 @@
 .chart-top-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px 4px;
+  justify-content: flex-end;
+  padding: 8px 12px 4px;
 }
 .chart-top-price {
   display: flex;
