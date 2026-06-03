@@ -7,10 +7,10 @@ import {
   getWatchlist, addWatchlist, removeWatchlist,
   getExchangeRate, isDomestic, fmt, fmtChange, isUp,
   getLogoUrl, getExchangeCode, NGROK_URL,
+  buyStock, sellStock, getBalance, getHoldings,
 } from "../api/stockApi";
 import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
-import TradeModal from "../components/TradeModal";
 import { getDomesticPrice, getOverseasPrice, fmtPrice, fmtChange as fmtCh, isUp as isUpCheck } from "../api/stockApi";
 import Twemoji from "../components/Twemoji";
 import "./MarketPage.css";
@@ -403,60 +403,185 @@ export default function MarketPage({ user }) {
       {stockModal && modalStock && (
         <div className="stock-modal-overlay" onClick={closeStockModal}>
           <div className="stock-modal" onClick={e => e.stopPropagation()}>
+
+            {/* 헤더 */}
             <div className="stock-modal-header">
-              <div className="stock-modal-info">
+              <div className="stock-modal-left">
                 {(() => {
                   const logo = getLogoUrl(modalStock.symbol, modalStock.market);
                   return logo
                     ? <img src={logo} className="stock-modal-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
                     : <div className="stock-modal-logo-fb">{modalStock.name?.substring(0,2)}</div>;
                 })()}
-                <div>
-                  <div className="stock-modal-name">{modalStock.name}</div>
-                  <div className="stock-modal-code">{modalStock.symbol} · {modalStock.market}</div>
-                </div>
+                <div><div className="stock-modal-name">{modalStock.name}</div></div>
               </div>
-              <div className="stock-modal-price-area">
-                <span className="stock-modal-price">{fmtPrice(modalStock.price, modalStock.market)}</span>
-                <span className={`stock-modal-change ${isUpCheck(modalStock.changePercent) ? "up" : "dn"}`}>
-                  {isUpCheck(modalStock.changePercent) ? "▲" : "▼"} {fmtCh(modalStock.changePercent)}
-                </span>
-              </div>
-              <div className="stock-modal-actions">
-                {user && (
-                  <>
-                    <button className="sma-buy" onClick={() => setTradeModal("buy")}>매수</button>
-                    <button className="sma-sell" onClick={() => setTradeModal("sell")}>매도</button>
-                  </>
-                )}
+              <div className="stock-modal-right">
+                <button className="sma-watch" onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!user) { alert("로그인 후 이용해 주세요."); return; }
+                  try {
+                    if (isWatched(modalStock.symbol)) await removeWatchlist(modalStock.symbol);
+                    else await addWatchlist(modalStock.symbol, modalStock.name, modalStock.market);
+                    await loadWatchlist();
+                  } catch {}
+                }}>{isWatched(modalStock.symbol) ? "★" : "☆"}</button>
                 <button className="sma-detail" onClick={() => { closeStockModal(); navigate(`/stock/${modalStock.symbol}`); }}>상세보기</button>
                 <button className="sma-close" onClick={closeStockModal}>✕</button>
               </div>
             </div>
-            <div className="stock-modal-body">
-              <div className="stock-modal-chart">
-                <StockChart stock={modalStock} fullscreen={false} onToggleFullscreen={() => {}} />
+
+            {/* 메인 그리드 */}
+            <div className="stock-modal-grid">
+              <div className="stock-modal-left-col">
+                <div className="sml-chart-box">
+                  <div className="stock-modal-chart">
+                    <StockChart stock={modalStock} fullscreen={false} onToggleFullscreen={() => {}}/>
+                  </div>
+                </div>
+                <div className="sml-bottom-row">
+                  <div className="sml-ob-col"><OrderBook stock={modalStock}/></div>
+                  <div className="sml-ai-col">
+                    <div className="sml-ai-header"><span className="sml-ai-title">✦ AI 분석</span></div>
+                    <div className="sml-ai-body"><span className="sml-ai-pending">구현 예정</span></div>
+                  </div>
+                </div>
               </div>
-              <div className="stock-modal-ob">
-                <OrderBook stock={modalStock} />
+              <div className="stock-modal-right-col">
+                <div className="stock-modal-trade">
+                  <div className="smt-tabs">
+                    <button className={`smt-tab buy ${tradeModal === "buy" || !tradeModal ? "active" : ""}`} onClick={() => setTradeModal("buy")}>매수</button>
+                    <button className={`smt-tab sell ${tradeModal === "sell" ? "active" : ""}`} onClick={() => setTradeModal("sell")}>매도</button>
+                  </div>
+                  {user ? (
+                    <TradeModalInline
+                      stock={modalStock}
+                      mode={tradeModal || "buy"}
+                      onSuccess={() => window.dispatchEvent(new Event("cubic_trade_complete"))}
+                    />
+                  ) : (
+                    <div className="smt-login-hint">
+                      <p>로그인 후 거래할 수 있어요</p>
+                      <button onClick={() => { closeStockModal(); navigate("/login"); }}>로그인</button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {tradeModal && modalStock && (
-        <TradeModal
-          stock={modalStock}
-          initialMode={tradeModal}
-          onClose={() => setTradeModal(null)}
-          onSuccess={() => window.dispatchEvent(new Event("cubic_trade_complete"))}
-        />
-      )}
-
       <div className="dash-footer">
         <p>여기서 제공하는 투자 정보는 고객의 투자 판단을 위한 단순 참고용일 뿐,<br/>투자 제안 및 권유, 종목 추천을 위해 작성된 것이 아닙니다.</p>
       </div>
+    </div>
+  );
+}
+
+function TradeModalInline({ stock, mode, onSuccess }) {
+  const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState("");
+  const [balance, setBalance] = useState(0);
+  const [holding, setHolding] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState(null);
+
+  useEffect(() => {
+    if (stock?.price) setPrice(String(stock.price).replace(/[+]/g, ""));
+    setQuantity(1); setMessage(null);
+    fetchData();
+  }, [stock?.symbol, mode]);
+
+  const fetchData = async () => {
+    try {
+      const [bal, holdings] = await Promise.all([getBalance(), getHoldings()]);
+      setBalance(bal);
+      setHolding(holdings.find(x => x.symbol === stock.symbol) || null);
+    } catch {}
+  };
+
+  const numPrice = Number(price) || 0;
+  const numQty = Number(quantity) || 0;
+  const total = numPrice * numQty;
+  const dom = isDomestic(stock?.market);
+  const unit = dom ? "원" : "$";
+  const currentAvgPrice = holding?.avgPrice || 0;
+  const currentQty = holding?.quantity || 0;
+  const newTotalQty = currentQty + numQty;
+  const expectedAvgPrice = newTotalQty > 0 ? ((currentAvgPrice * currentQty) + total) / newTotalQty : numPrice;
+  const sellRevenue = total;
+  const sellCost = currentAvgPrice * numQty;
+  const expectedProfit = sellRevenue - sellCost;
+  const expectedProfitRate = sellCost > 0 ? ((expectedProfit / sellCost) * 100).toFixed(2) : "0.00";
+  const canBuy = total > 0 && total <= balance && numQty > 0;
+  const canSell = holding && numQty <= holding.quantity && numQty > 0 && numPrice > 0;
+
+  const handleSubmit = async () => {
+    setLoading(true); setMessage(null);
+    try {
+      const payload = { symbol: stock.symbol, name: stock.name, market: stock.market, type: mode === "buy" ? "BUY" : "SELL", quantity: numQty, price: numPrice };
+      if (mode === "buy") await buyStock(payload);
+      else await sellStock(payload);
+      setMessage({ type: "success", text: mode === "buy" ? "매수 완료!" : "매도 완료!" });
+      await fetchData();
+      onSuccess?.();
+    } catch (e) {
+      setMessage({ type: "error", text: typeof e.response?.data === "string" ? e.response.data : "주문 실패" });
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="smt-body">
+      <div className="smt-info-row"><span>현재가</span><strong>{fmtPrice(stock.price, stock.market)}</strong></div>
+      {mode === "buy"
+        ? <div className="smt-info-row"><span>주문 가능</span><strong>{fmt(Math.round(balance))}{unit}</strong></div>
+        : <div className="smt-info-row"><span>보유 수량</span><strong>{holding ? `${fmt(holding.quantity)}주` : "0주"}</strong></div>
+      }
+      {holding && mode === "buy" && (
+        <div className="smt-info-row dim"><span>현재 보유</span><strong>{fmt(currentQty)}주 (평단 {fmtPrice(currentAvgPrice, stock.market)})</strong></div>
+      )}
+      <div className="smt-input-group">
+        <label>가격</label>
+        <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="가격 입력"/>
+      </div>
+      <div className="smt-input-group">
+        <label>수량</label>
+        <div className="smt-qty-row">
+          <button onClick={() => setQuantity(q => Math.max(1, Number(q)-1))}>−</button>
+          <input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value)||0)}/>
+          <button onClick={() => setQuantity(q => Number(q)+1)}>+</button>
+        </div>
+        {mode === "sell" && holding && (
+          <div className="smt-qty-shortcuts">
+            {[25,50,75,100].map(pct => (
+              <button key={pct} onClick={() => setQuantity(Math.floor(holding.quantity*pct/100))}>{pct}%</button>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="smt-total"><span>총 {mode==="buy"?"매수":"매도"} 금액</span><strong>{fmt(Math.round(total))}{unit}</strong></div>
+      {mode === "buy" && numQty > 0 && numPrice > 0 && (
+        <div className="smt-estimate">
+          <div className="smt-est-row"><span>예상 평단가</span><strong>{dom?`${fmt(Math.round(expectedAvgPrice))}원`:`$${expectedAvgPrice.toFixed(2)}`}</strong></div>
+          <div className="smt-est-row"><span>구매 후 총 보유</span><strong>{fmt(newTotalQty)}주</strong></div>
+        </div>
+      )}
+      {mode === "sell" && holding && numQty > 0 && numPrice > 0 && (
+        <div className="smt-estimate">
+          <div className={`smt-est-row highlight ${expectedProfit>=0?"profit":"loss"}`}>
+            <span>예상 수익</span>
+            <strong>{expectedProfit>=0?"+":""}{fmt(Math.round(expectedProfit))}{unit} ({expectedProfitRate}%)</strong>
+          </div>
+        </div>
+      )}
+      {message && <div className={`smt-message ${message.type}`}>{message.text}</div>}
+      <button
+        className={`smt-submit ${mode}`}
+        onClick={handleSubmit}
+        disabled={loading || (mode==="buy" ? !canBuy : !canSell)}
+      >
+        {loading ? "처리 중..." : mode==="buy" ? "매수하기" : "매도하기"}
+      </button>
     </div>
   );
 }

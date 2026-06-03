@@ -281,33 +281,42 @@ export default function AccountPage({ user, setUser }) {
                       {totalPL >= 0 ? "+" : ""}{fmt(Math.round(totalPL))}원 ({totalPLRate}%)
                     </span>
                   </div>
-                  <button className="ex-inline-btn" onClick={() => { setShowExchange(v => !v); setExAmount(""); setExMsg(null); }}>환전</button>
+                  <button className="ex-inline-btn" onClick={() => { setShowExchange(true); setExAmount(""); setExMsg(null); }}>환전</button>
                 </div>
               </div>
             </div>
 
-            {/* 환전 인라인 패널 */}
+            {/* 환전 모달 */}
             {showExchange && (
-              <div className="ex-inline-panel">
-                <div className="ex-mode-tabs">
-                  <button className={`ex-mode-tab ${exchangeMode === "krw" ? "active" : ""}`} onClick={() => { setExchangeMode("krw"); setExAmount(""); setExMsg(null); }}>달러 사기</button>
-                  <button className={`ex-mode-tab ${exchangeMode === "usd" ? "active" : ""}`} onClick={() => { setExchangeMode("usd"); setExAmount(""); setExMsg(null); }}>달러 팔기</button>
+              <div className="ls-modal-overlay" onClick={() => { setShowExchange(false); setExAmount(""); setExMsg(null); }}>
+                <div className="ls-modal" onClick={e => e.stopPropagation()} style={{width: 360}}>
+                  <div className="ls-modal-title">환전</div>
+                  <div className="ls-modal-tabs">
+                    <button className={`ls-modal-tab ${exchangeMode === "krw" ? "active" : ""}`} onClick={() => { setExchangeMode("krw"); setExAmount(""); setExMsg(null); }}>달러 사기</button>
+                    <button className={`ls-modal-tab ${exchangeMode === "usd" ? "active" : ""}`} onClick={() => { setExchangeMode("usd"); setExAmount(""); setExMsg(null); }}>달러 팔기</button>
+                  </div>
+                  <div className="ex-inline-balances" style={{marginBottom: 16}}>
+                    <span>🇰🇷 {fmt(Math.round(balance))}원</span>
+                    <span className="ex-inline-arrow">⇄</span>
+                    <span>🇺🇸 ${dollarBalance.toFixed(2)}</span>
+                    <span className="ex-rate-badge">1 USD = {fmt(Math.round(exRate))}원</span>
+                  </div>
+                  <div className="ls-modal-input-wrap">
+                    <span className="ls-modal-label">{exchangeMode === "krw" ? "원화 입력" : "달러 입력"}</span>
+                    <div className="ex-input-wrap" style={{border: "1px solid var(--c-border)", borderRadius: 10, padding: "4px 14px"}}>
+                      <input type="number" value={exAmount} onChange={e => { setExAmount(e.target.value); setExMsg(null); }} placeholder={exchangeMode === "krw" ? "원화 입력" : "달러 입력"} autoFocus style={{border:"none",background:"none",outline:"none",fontSize:16,fontWeight:700,color:"var(--c-text)",fontFamily:"inherit",width:"100%",padding:"10px 0"}}/>
+                      <span className="ex-input-unit">{exchangeMode === "krw" ? "원" : "$"}</span>
+                    </div>
+                  </div>
+                  {preview && <div className="ex-preview-text">{preview}</div>}
+                  {exMsg && <div className={`ex-result-msg ${exMsg.type}`} style={{marginBottom: 12}}>{exMsg.text}</div>}
+                  <div className="ls-modal-btns">
+                    <button className="ls-modal-cancel" onClick={() => { setShowExchange(false); setExAmount(""); setExMsg(null); }}>취소</button>
+                    <button className="ls-modal-confirm" onClick={handleExchange} disabled={exLoading || !exAmount || Number(exAmount) <= 0}>
+                      {exLoading ? "처리 중..." : exchangeMode === "krw" ? "달러 사기" : "달러 팔기"}
+                    </button>
+                  </div>
                 </div>
-                <div className="ex-inline-balances">
-                  <span>🇰🇷 {fmt(Math.round(balance))}원</span>
-                  <span className="ex-inline-arrow">⇄</span>
-                  <span>🇺🇸 ${dollarBalance.toFixed(2)}</span>
-                  <span className="ex-rate-badge">1 USD = {fmt(Math.round(exRate))}원</span>
-                </div>
-                <div className="ex-input-wrap">
-                  <input type="number" value={exAmount} onChange={e => { setExAmount(e.target.value); setExMsg(null); }} placeholder={exchangeMode === "krw" ? "원화 입력" : "달러 입력"} autoFocus />
-                  <span className="ex-input-unit">{exchangeMode === "krw" ? "원" : "$"}</span>
-                </div>
-                {preview && <div className="ex-preview-text">{preview}</div>}
-                <button className="ex-confirm-btn" onClick={handleExchange} disabled={exLoading || !exAmount || Number(exAmount) <= 0}>
-                  {exLoading ? "처리 중..." : exchangeMode === "krw" ? "달러 사기" : "달러 팔기"}
-                </button>
-                {exMsg && <div className={`ex-result-msg ${exMsg.type}`}>{exMsg.text}</div>}
               </div>
             )}
 

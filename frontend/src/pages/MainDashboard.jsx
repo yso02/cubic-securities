@@ -14,6 +14,7 @@ import OrderBook from "../components/OrderBook";
 import TradeModal from "../components/TradeModal"; // MarketPage 모달에서 사용 중이므로 유지
 import AiChatDrawer from "../components/AiChatDrawer";
 import { getDomesticPrice, getOverseasPrice, fmtPrice, fmtChange as fmtCh, isUp as isUpCheck } from "../api/stockApi";
+import api from "../api/stockApi";
 import "./MainDashboard.css";
 
 const ICON_COLORS = {
@@ -46,6 +47,10 @@ export default function MainDashboard({ user }) {
   const modalWsRef = useRef(null);
 
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [depositTab, setDepositTab] = useState("deposit");
+  const [depositAmount, setDepositAmount] = useState("");
+  const [depositLoading, setDepositLoading] = useState(false);
   const [chartData, setChartData] = useState([]);
   const [chartLoading, setChartLoading] = useState(false);
 
@@ -145,7 +150,22 @@ export default function MainDashboard({ user }) {
     };
   }, [holdings.map(h => h.symbol).join(",")]);
 
-  const isWatched = (symbol) => watchlist.some(w => w.symbol === symbol);
+  const handleDeposit = async () => {
+    const amount = Number(String(depositAmount).replace(/,/g, ""));
+    if (!amount || amount <= 0) { alert("금액을 입력해주세요."); return; }
+    setDepositLoading(true);
+    try {
+      const endpoint = depositTab === "deposit" ? "/api/trade/deposit" : "/api/trade/withdraw";
+      await api.post(endpoint, { amount });
+      setShowDepositModal(false);
+      setDepositAmount("");
+      await loadPortfolio();
+      window.dispatchEvent(new Event("cubic_trade_complete"));
+    } catch (e) {
+      const msg = e.response?.data?.message || e.response?.data || "처리 실패";
+      alert(typeof msg === "string" ? msg : "처리 중 오류가 발생했습니다.");
+    } finally { setDepositLoading(false); }
+  };
   const toggleWatch = async (stock, e) => {
     if (e) e.stopPropagation();
     if (!user) { alert("로그인 후 이용해 주세요."); navigate("/login"); return; }
@@ -368,6 +388,26 @@ export default function MainDashboard({ user }) {
         <div className="dash-perf-card">
           <div className="perf-header">
             <span className="perf-title">포트폴리오 퍼포먼스</span>
+            {user && (
+              <button
+                className="perf-deposit-btn"
+                onClick={() => setShowDepositModal(true)}
+                style={{
+                  display: "flex", alignItems: "center", gap: "5px",
+                  padding: "6px 12px", borderRadius: "8px",
+                  background: "var(--c-primary-muted)", border: "1px solid var(--c-primary-border)",
+                  color: "var(--c-primary)", fontSize: "12px", fontWeight: "600",
+                  cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                }}
+                onMouseOver={e => e.currentTarget.style.background = "var(--c-primary)" || (e.currentTarget.style.color = "#fff")}
+                onMouseOut={e => { e.currentTarget.style.background = "var(--c-primary-muted)"; e.currentTarget.style.color = "var(--c-primary)"; }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                입금/출금
+              </button>
+            )}
           </div>
           <div className="perf-body">
             <div className="perf-left">
@@ -736,6 +776,36 @@ export default function MainDashboard({ user }) {
                 </div>
               </div>
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 입금/출금 모달 */}
+      {showDepositModal && (
+        <div className="ls-modal-overlay" onClick={() => { setShowDepositModal(false); setDepositAmount(""); }}>
+          <div className="ls-modal" onClick={e => e.stopPropagation()}>
+            <div className="ls-modal-title">잔고 관리</div>
+            <div className="ls-modal-tabs">
+              <button className={`ls-modal-tab ${depositTab==="deposit"?"active":""}`} onClick={() => setDepositTab("deposit")}>입금</button>
+              <button className={`ls-modal-tab ${depositTab==="withdraw"?"active":""}`} onClick={() => setDepositTab("withdraw")}>출금</button>
+            </div>
+            <div className="ls-modal-input-wrap">
+              <span className="ls-modal-label">{depositTab === "deposit" ? "입금" : "출금"}할 금액 (원)</span>
+              <input
+                className="ls-modal-input"
+                type="text"
+                placeholder="예: 1,000,000"
+                value={depositAmount}
+                onChange={e => setDepositAmount(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="ls-modal-btns">
+              <button className="ls-modal-cancel" onClick={() => { setShowDepositModal(false); setDepositAmount(""); }}>취소</button>
+              <button className="ls-modal-confirm" onClick={handleDeposit} disabled={depositLoading}>
+                {depositLoading ? "처리 중..." : depositTab === "deposit" ? "입금" : "출금"}
+              </button>
             </div>
           </div>
         </div>
