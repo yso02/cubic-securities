@@ -166,6 +166,8 @@ export default function MainDashboard({ user }) {
       alert(typeof msg === "string" ? msg : "처리 중 오류가 발생했습니다.");
     } finally { setDepositLoading(false); }
   };
+  const isWatched = (symbol) => watchlist.some(w => w.symbol === symbol);
+
   const toggleWatch = async (stock, e) => {
     if (e) e.stopPropagation();
     if (!user) { alert("로그인 후 이용해 주세요."); navigate("/login"); return; }
