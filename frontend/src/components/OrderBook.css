@@ -18,7 +18,10 @@
 .ob-tab.active { color: #0f766e; border-bottom-color: #14b8a6; }
 [data-theme="dark"] .ob-tab.active { color: #5eead4; border-bottom-color: #2dd4bf; }
 
-.ob-body { max-height: 280px; overflow-y: auto; }
+.ob-body {
+  height: calc(100% - 44px);
+  overflow-y: auto;
+}
 .ob-loading { padding: 40px; text-align: center; font-size: 13px; color: var(--c-text-muted); }
 
 /* 호가 행 */

@@ -75,7 +75,7 @@ export default function StockChart({ stock, fullscreen, onToggleFullscreen }) {
     if(chartRef.current){chartRef.current.remove();chartRef.current=null;}
     const c=containerRef.current;if(!c)return;
     const dk=document.documentElement.getAttribute("data-theme")==="dark";
-    const h=fullscreen?Math.max(500,window.innerHeight-240):220;
+    const h=fullscreen?Math.max(500,window.innerHeight-240):(c.clientHeight||220);
 
     const chart=createChart(c,{
       width:c.clientWidth,height:h,
