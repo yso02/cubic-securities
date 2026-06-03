@@ -1,6 +1,6 @@
 // src/pages/AccountPage.jsx
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Client } from "@stomp/stompjs";
 import {
   getMyInfo, getBalance, getHoldings, getOrders, getProfit,
@@ -22,7 +22,16 @@ const TABS = [
 
 export default function AccountPage({ user, setUser }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("assets");
+
+  // URL 쿼리 파라미터로 탭 전환
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && ["assets", "orders", "profit"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
   const [showExchange, setShowExchange] = useState(false);
   const [exchangeMode, setExchangeMode] = useState("krw"); // krw | usd
 
@@ -237,16 +246,6 @@ export default function AccountPage({ user, setUser }) {
 
   return (
     <div className="account-page">
-      {/* 좌측 사이드바 탭 */}
-      <div className="account-sidebar">
-        {TABS.map(t => (
-          <button key={t.key} className={`acc-tab ${activeTab === t.key ? "active" : ""}`}
-            onClick={() => setActiveTab(t.key)}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
       {/* 메인 콘텐츠 */}
       <div className="account-main">
 

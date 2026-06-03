@@ -589,6 +589,14 @@
 .ls-ai-sub-item:hover { background: var(--c-hover); color: var(--c-text); }
 .ls-ai-sub-item.active { color: var(--c-primary); font-weight: 600; }
 .ls-ai-sub-icon { font-size: 16px; flex-shrink: 0; line-height: 1.4; }
+.ls-ai-sub-svg {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--c-text-muted);
+}
+.ls-ai-sub-item:hover .ls-ai-sub-svg { color: var(--c-text); }
+.ls-ai-sub-item.active .ls-ai-sub-svg { color: var(--c-primary); }
 .ls-ai-sub-info { display: flex; flex-direction: column; gap: 1px; }
 .ls-ai-sub-label { font-size: 13px; font-weight: 500; line-height: 1.3; }
 .ls-ai-sub-desc { font-size: 11px; color: var(--c-text-muted); white-space: nowrap; }

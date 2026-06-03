@@ -8,34 +8,6 @@
   transition: background 0.3s;
 }
 
-/* ── 좌측 사이드바 ── */
-.account-sidebar {
-  width: 180px;
-  flex-shrink: 0;
-  border-right: 1px solid var(--c-border);
-  background: var(--c-surface);
-  padding: 16px 0;
-  transition: background 0.3s;
-}
-
-.acc-tab {
-  display: block; width: 100%;
-  padding: 12px 20px;
-  background: none; border: none;
-  text-align: left;
-  font-size: 14px; font-weight: 500;
-  color: var(--c-text-sub);
-  cursor: pointer; font-family: inherit;
-  transition: all 0.15s;
-  border-left: 3px solid transparent;
-}
-.acc-tab:hover { background: var(--c-hover); color: var(--c-text); }
-.acc-tab.active {
-  color: var(--c-text); font-weight: 700;
-  background: var(--c-hover);
-  border-left-color: #14b8a6;
-}
-
 /* ── 메인 콘텐츠 ── */
 .account-main {
   flex: 1; min-width: 0;
@@ -281,8 +253,6 @@
 
 /* ── 반응형 ── */
 @media (max-width: 768px) {
-  .account-sidebar { width: 120px; }
-  .acc-tab { padding: 12px 14px; font-size: 13px; }
   .acc-content { padding: 20px 16px; }
   .holdings-grid { grid-template-columns: 2fr 1fr 1fr 1fr; }
   .holdings-grid span:nth-child(4) { display: none; }

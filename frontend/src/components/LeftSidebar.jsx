@@ -14,6 +14,7 @@ export default function LeftSidebar({ user, onLogout }) {
   const [modalAmount, setModalAmount] = useState("");
   const [modalLoading, setModalLoading] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  const [portfolioOpen, setPortfolioOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -40,10 +41,24 @@ export default function LeftSidebar({ user, onLogout }) {
   ];
 
   const aiSubMenus = [
-    { label: "AI 채팅",    desc: "종목이나 투자에 대해 질문하세요", icon: "💬", path: "/ai?tab=chat" },
-    { label: "종목 분석",  desc: "보유 종목별 상세 분석",            icon: "📊", path: "/ai?tab=holdings" },
-    { label: "포트폴리오", desc: "전체 포트폴리오 분석",             icon: "📈", path: "/ai?tab=portfolio" },
-    { label: "추천",       desc: "섹터/종목 추천",                   icon: "🎯", path: "/ai?tab=recommend" },
+    {
+      label: "포트폴리오",
+      desc: "전체 포트폴리오 분석",
+      path: "/ai?tab=portfolio",
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>,
+    },
+    {
+      label: "추천",
+      desc: "섹터/종목 추천",
+      path: "/ai?tab=recommend",
+      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+    },
+  ];
+
+  const portfolioSubMenus = [
+    { label: "자산",     path: "/account?tab=assets" },
+    { label: "주문내역", path: "/account?tab=orders" },
+    { label: "수익분석", path: "/account?tab=profit" },
   ];
 
   const isActive = (path, label) => {
@@ -129,17 +144,51 @@ export default function LeftSidebar({ user, onLogout }) {
       {/* MAIN 메뉴 */}
       <div className="ls-section">
         <span className="ls-section-label">MAIN</span>
-        {mainMenus.map(m => (
-          <button
-            key={m.label}
-            className={`ls-menu-item ${isActive(m.path, m.label) ? "active" : ""}`}
-            onClick={() => navigate(m.path)}
-          >
-            {m.icon}
-            <span className="ls-menu-text">{m.label}</span>
-            <span className="ls-tooltip">{m.label}</span>
-          </button>
-        ))}
+        {/* 대시보드 */}
+        <button
+          className={`ls-menu-item ${isActive("/", "대시보드") ? "active" : ""}`}
+          onClick={() => navigate("/")}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span className="ls-menu-text">대시보드</span>
+          <span className="ls-tooltip">대시보드</span>
+        </button>
+
+        {/* 포트폴리오 (접기/펼치기) */}
+        <button
+          className={`ls-menu-item ${location.pathname === "/account" ? "active" : ""}`}
+          onClick={() => setPortfolioOpen(v => !v)}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span className="ls-menu-text" style={{flex:1}}>포트폴리오</span>
+          <svg className={`ls-ai-chevron ${portfolioOpen ? "open" : ""}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+          <span className="ls-tooltip">포트폴리오</span>
+        </button>
+        <div className={`ls-ai-submenu ${portfolioOpen ? "open" : ""}`}>
+          {portfolioSubMenus.map(m => (
+            <button
+              key={m.label}
+              className={`ls-ai-sub-item ${location.search.includes(m.path.split("?")[1]) && location.pathname === "/account" ? "active" : ""}`}
+              onClick={() => navigate(m.path)}
+            >
+              <span className="ls-ai-sub-info">
+                <span className="ls-ai-sub-label">{m.label}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* 관심종목 */}
+        <button
+          className={`ls-menu-item ${isActive("/watchlist", "관심종목") ? "active" : ""}`}
+          onClick={() => navigate("/watchlist")}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <span className="ls-menu-text">관심종목</span>
+          <span className="ls-tooltip">관심종목</span>
+        </button>
       </div>
 
       {/* 탐색 메뉴 */}
@@ -183,11 +232,11 @@ export default function LeftSidebar({ user, onLogout }) {
         <div className={`ls-ai-submenu ${aiOpen ? "open" : ""}`}>
           {aiSubMenus.map(m => (
             <button
-              key={m.tab}
+              key={m.label}
               className="ls-ai-sub-item"
               onClick={() => navigate(m.path)}
             >
-              <span className="ls-ai-sub-icon">{m.icon}</span>
+              <span className="ls-ai-sub-svg">{m.icon}</span>
               <span className="ls-ai-sub-info">
                 <span className="ls-ai-sub-label">{m.label}</span>
                 <span className="ls-ai-sub-desc">{m.desc}</span>
