@@ -11,12 +11,13 @@ import "./StockChart.css";
 const { createChart, ColorType, CrosshairMode } = LWC;
 
 const DOM_PERIODS = [
-  { label:"1분",type:"minute",timeUnit:1 },{ label:"5분",type:"minute",timeUnit:5 },
-  { label:"10분",type:"minute",timeUnit:10 },{ label:"30분",type:"minute",timeUnit:30 },
-  { label:"일봉",type:"daily",period:"D" },{ label:"주봉",type:"daily",period:"W" },{ label:"월봉",type:"daily",period:"M" },
+  { label:"1분", type:"minute", timeUnit:1 },
+  { label:"일봉", type:"daily", period:"D" },
+  { label:"월봉", type:"daily", period:"M" },
 ];
 const OVR_PERIODS = [
-  { label:"일봉",type:"daily",period:"0" },{ label:"주봉",type:"daily",period:"1" },{ label:"월봉",type:"daily",period:"2" },
+  { label:"일봉", type:"daily", period:"0" },
+  { label:"월봉", type:"daily", period:"2" },
 ];
 
 function calcMA(d,p){const r=[];for(let i=0;i<d.length;i++){if(i<p-1){r.push({time:d[i].time,value:undefined});continue;}let s=0;for(let j=0;j<p;j++)s+=d[i-j].close;r.push({time:d[i].time,value:s/p});}return r.filter(x=>x.value!==undefined);}
@@ -35,10 +36,6 @@ export default function StockChart({ stock, fullscreen, onToggleFullscreen }) {
   const [period, setPeriod] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showMA5, setShowMA5] = useState(true);
-  const [showMA20, setShowMA20] = useState(true);
-  const [showMA60, setShowMA60] = useState(false);
-  const [showVol, setShowVol] = useState(true);
   const [darkMode, setDarkMode] = useState(() => document.documentElement.getAttribute("data-theme") === "dark");
 
   // 다크모드 변경 감지
@@ -72,7 +69,7 @@ export default function StockChart({ stock, fullscreen, onToggleFullscreen }) {
       finally{if(!cancelled)setLoading(false);}
     })();
     return()=>{cancelled=true;};
-  },[stock?.symbol,period,showMA5,showMA20,showMA60,showVol,fullscreen,darkMode]);
+  },[stock?.symbol,period,fullscreen,darkMode]);
 
   const renderChart=(data)=>{
     if(chartRef.current){chartRef.current.remove();chartRef.current=null;}
@@ -85,7 +82,7 @@ export default function StockChart({ stock, fullscreen, onToggleFullscreen }) {
       layout:{background:{type:ColorType.Solid,color:dk?"#1a1d27":"#fff"},textColor:dk?"#9ca3af":"#6b7280",fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:11},
       grid:{vertLines:{color:dk?"#2d3140":"#f1f5f9"},horzLines:{color:dk?"#2d3140":"#f1f5f9"}},
       crosshair:{mode:CrosshairMode.Normal},
-      rightPriceScale:{borderColor:dk?"#2d3140":"#e5e7eb",scaleMargins:{top:0.1,bottom:showVol?0.25:0.05}},
+      rightPriceScale:{borderColor:dk?"#2d3140":"#e5e7eb",scaleMargins:{top:0.1,bottom:0.05}},
       timeScale:{borderColor:dk?"#2d3140":"#e5e7eb",timeVisible:period?.type==="minute",secondsVisible:false},
     });
 
@@ -93,11 +90,6 @@ export default function StockChart({ stock, fullscreen, onToggleFullscreen }) {
 
     const cs=add("Candlestick",{upColor:"#ef4444",downColor:"#3b82f6",borderUpColor:"#ef4444",borderDownColor:"#3b82f6",wickUpColor:"#ef4444",wickDownColor:"#3b82f6"});
     cs.setData(data.map(d=>({time:d.time,open:d.open,high:d.high,low:d.low,close:d.close})));
-
-    if(showMA5&&data.length>=5){const s=add("Line",{color:"#f59e0b",lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});s.setData(calcMA(data,5));}
-    if(showMA20&&data.length>=20){const s=add("Line",{color:"#14b8a6",lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});s.setData(calcMA(data,20));}
-    if(showMA60&&data.length>=60){const s=add("Line",{color:"#8b5cf6",lineWidth:1,priceLineVisible:false,lastValueVisible:false,crosshairMarkerVisible:false});s.setData(calcMA(data,60));}
-    if(showVol){const v=add("Histogram",{priceFormat:{type:"volume"},priceScaleId:"volume"});chart.priceScale("volume").applyOptions({scaleMargins:{top:0.8,bottom:0}});v.setData(data.map(d=>({time:d.time,value:d.volume,color:d.close>=d.open?"rgba(239,68,68,0.3)":"rgba(59,130,246,0.3)"})));}
 
     chart.timeScale().fitContent();
     chartRef.current=chart;
@@ -112,20 +104,7 @@ export default function StockChart({ stock, fullscreen, onToggleFullscreen }) {
   return(
     <div className={`stock-chart-wrap ${fullscreen?"fullscreen":""}`}>
       <div className="chart-header">
-        <div className="chart-stock-info">
-          <h3>{stock.name}</h3>
-          <span className="chart-symbol">{stock.symbol}</span>
-          <span className={`market-badge ${stock.market?.toLowerCase()}`}>{stock.market}</span>
-        </div>
         <div className="chart-header-right">
-          {stock.price&&(
-            <div className="chart-price-row">
-              <span className="chart-price">{fmtPrice(stock.price,stock.market)}</span>
-              <span className={`chart-change ${Number(stock.changePercent)>=0?"up":"down"}`}>
-                {Number(stock.changePercent)>=0?"▲":"▼"} {fmt(Math.abs(Number(stock.change)))} ({stock.changePercent}%)
-              </span>
-            </div>
-          )}
           <button className="fullscreen-btn" onClick={onToggleFullscreen} title={fullscreen?"축소":"전체화면"}>
             {fullscreen?(
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
@@ -137,14 +116,7 @@ export default function StockChart({ stock, fullscreen, onToggleFullscreen }) {
       </div>
 
       <div className="chart-period-tabs">
-        {periods.map(p=><button key={p.label} className={`period-tab ${period?.label===p.label?"active":""}`} onClick={()=>setPeriod(p)}>{p.label}</button>)}
-      </div>
-
-      <div className="chart-indicators">
-        <label className={`ind-chip ${showMA5?"on":""}`} style={{"--ind-color":"#f59e0b"}}><input type="checkbox" checked={showMA5} onChange={()=>setShowMA5(v=>!v)}/>MA5</label>
-        <label className={`ind-chip ${showMA20?"on":""}`} style={{"--ind-color":"#14b8a6"}}><input type="checkbox" checked={showMA20} onChange={()=>setShowMA20(v=>!v)}/>MA20</label>
-        <label className={`ind-chip ${showMA60?"on":""}`} style={{"--ind-color":"#8b5cf6"}}><input type="checkbox" checked={showMA60} onChange={()=>setShowMA60(v=>!v)}/>MA60</label>
-        <label className={`ind-chip ${showVol?"on":""}`} style={{"--ind-color":"#6b7280"}}><input type="checkbox" checked={showVol} onChange={()=>setShowVol(v=>!v)}/>거래량</label>
+        {periods.map(p=><button key={p.label} className={`period-btn ${period?.label===p.label?"active":""}`} onClick={()=>setPeriod(p)}>{p.label}</button>)}
       </div>
 
       <div className="chart-canvas-wrap" style={fullscreen?{minHeight:Math.max(500,window.innerHeight-240)}:{}}>

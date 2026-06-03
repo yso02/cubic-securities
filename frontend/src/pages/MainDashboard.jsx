@@ -656,7 +656,6 @@ export default function MainDashboard({ user }) {
                 })()}
                 <div>
                   <div className="stock-modal-name">{modalStock.name}</div>
-                  <div className="stock-modal-code">{modalStock.symbol} · {modalStock.market}</div>
                 </div>
               </div>
               <div className="stock-modal-right">
@@ -684,24 +683,35 @@ export default function MainDashboard({ user }) {
             {/* 메인 그리드 */}
             <div className="stock-modal-grid">
 
-              {/* 좌측: 현재가 + 차트 + 호가 */}
+              {/* 좌측: 차트박스(주가+차트) + 호가 */}
               <div className="stock-modal-left-col">
-                <div className="stock-modal-price-row">
-                  <span className="stock-modal-price">{fmtPrice(modalStock.price, modalStock.market)}</span>
-                  <span className={`stock-modal-change ${isUpCheck(modalStock.changePercent) ? "up" : "dn"}`}>
-                    {isUpCheck(modalStock.changePercent) ? "▲" : "▼"} {fmtCh(modalStock.changePercent)}
-                  </span>
-                </div>
-                <div className="stock-modal-chart">
-                  <StockChart stock={modalStock} fullscreen={false} onToggleFullscreen={() => {}}/>
+                <div className="sml-chart-box">
+                  <div className="sml-price-row">
+                    <span className="stock-modal-price">{fmtPrice(modalStock.price, modalStock.market)}</span>
+                    <span className={`stock-modal-change ${isUpCheck(modalStock.changePercent) ? "up" : "dn"}`}>
+                      {isUpCheck(modalStock.changePercent) ? "▲" : "▼"} {fmtCh(modalStock.changePercent)}
+                    </span>
+                  </div>
+                  <div className="stock-modal-chart">
+                    <StockChart stock={modalStock} fullscreen={false} onToggleFullscreen={() => {}}/>
+                  </div>
                 </div>
                 <div className="stock-modal-ob">
                   <OrderBook stock={modalStock}/>
                 </div>
               </div>
 
-              {/* 우측: 매수/매도 주문창 */}
+              {/* 우측: AI 분석 + 매수/매도 주문창 */}
               <div className="stock-modal-right-col">
+                {/* AI 분석 섹션 */}
+                <div className="sml-ai-section">
+                  <div className="sml-ai-header">
+                    <span className="sml-ai-title">✦ AI 분석</span>
+                  </div>
+                  <div className="sml-ai-body">
+                    <span className="sml-ai-pending">구현 예정</span>
+                  </div>
+                </div>
                 <div className="stock-modal-trade">
                   <div className="smt-tabs">
                     <button

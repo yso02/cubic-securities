@@ -47,11 +47,38 @@
 [data-theme="dark"] .chart-header .market-badge.kosdaq { background: rgba(167,139,250,0.1); color: #a78bfa; }
 [data-theme="dark"] .chart-header .market-badge.nasdaq { background: rgba(96,165,250,0.1); color: #60a5fa; }
 
-.chart-period-tabs { display: flex; gap: 2px; padding: 8px 18px; border-bottom: 1px solid var(--c-border-light); background: var(--c-hover); overflow-x: auto; transition: background 0.3s; }
+.chart-period-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px 4px;
+}
 .period-tab { padding: 5px 12px; border-radius: var(--r-sm); border: 1px solid var(--c-border); background: var(--c-surface); font-size: 12px; font-weight: 500; color: var(--c-text-sub); cursor: pointer; transition: all 0.12s; white-space: nowrap; font-family: inherit; }
 .period-tab:hover { background: var(--c-primary-muted); color: var(--c-primary-deep); }
 .period-tab.active { background: #14b8a6; color: #fff; border-color: #14b8a6; font-weight: 700; box-shadow: 0 1px 4px rgba(20,184,166,0.3); }
 [data-theme="dark"] .period-tab.active { background: rgba(45,212,191,0.15); color: #5eead4; border-color: rgba(94,234,212,0.3); }
+
+.period-btn {
+  padding: 5px 14px;
+  border: 1px solid var(--c-border);
+  border-radius: 20px;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.period-btn:hover {
+  background: var(--c-hover);
+  color: var(--c-text);
+}
+.period-btn.active {
+  background: var(--c-text);
+  color: var(--c-surface);
+  border-color: var(--c-text);
+  font-weight: 700;
+}
 
 .chart-indicators { display: flex; gap: 6px; padding: 6px 18px; border-bottom: 1px solid var(--c-border-light); flex-wrap: wrap; }
 .ind-chip { display: flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; cursor: pointer; user-select: none; border: 1px solid var(--c-border); background: var(--c-surface); color: var(--c-text-muted); transition: all 0.15s; }
