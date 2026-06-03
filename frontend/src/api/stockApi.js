@@ -203,6 +203,12 @@ export const aiRecommend = async () => {
   return res.data; // { message }
 };
 
+/* ═══════════ 포트폴리오 차트 ═══════════ */
+export const getPortfolioChart = async (days = 30) => {
+  const res = await api.get(`/api/portfolio/chart?days=${days}`);
+  return res.data;
+};
+
 /* ═══════════ 환율/환전 ═══════════ */
 export const getExchangeRate = async () => {
   const res = await api.get("/api/exchange/rate");

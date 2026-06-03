@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Client } from "@stomp/stompjs";
 import {
   getWatchlist, addWatchlist, removeWatchlist,
-  getMyInfo, getHoldings, getExchangeRate,
+  getMyInfo, getHoldings, getExchangeRate, getPortfolioChart,
   isDomestic, fmt, fmtChange, isUp,
   getLogoUrl, searchStocks, getExchangeCode, NGROK_URL,
 } from "../api/stockApi";
@@ -44,6 +45,8 @@ export default function MainDashboard({ user }) {
   const modalWsRef = useRef(null);
 
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+  const [chartData, setChartData] = useState([]);
+  const [chartLoading, setChartLoading] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
@@ -57,6 +60,21 @@ export default function MainDashboard({ user }) {
 
   useEffect(() => {
     if (user) { loadWatchlist(); loadPortfolio(); }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      setChartLoading(true);
+      try {
+        const data = await getPortfolioChart(30);
+        setChartData(data.data || []);
+      } catch (e) {
+        console.error("차트 데이터 로드 실패:", e);
+      } finally {
+        setChartLoading(false);
+      }
+    })();
   }, [user]);
 
   const loadWatchlist = async () => {
@@ -391,34 +409,55 @@ export default function MainDashboard({ user }) {
 
             <div className="perf-right">
               <div className="perf-chart-area">
-                <svg width="100%" height="140" viewBox="0 0 400 140" preserveAspectRatio="none">
-                  <defs>
-                    <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3"/>
-                      <stop offset="100%" stopColor="#22c55e" stopOpacity="0"/>
-                    </linearGradient>
-                  </defs>
-                  <path
-                    d="M0,110 C30,105 50,90 80,85 C110,80 130,95 160,70 C190,45 210,55 240,40 C270,25 290,35 320,20 C350,8 370,15 400,10"
-                    fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round"
-                  />
-                  <path
-                    d="M0,110 C30,105 50,90 80,85 C110,80 130,95 160,70 C190,45 210,55 240,40 C270,25 290,35 320,20 C350,8 370,15 400,10 L400,140 L0,140 Z"
-                    fill="url(#chartGrad)"
-                  />
-                  <circle cx="400" cy="10" r="4" fill="#22c55e"/>
-                  <rect x="340" y="0" width="58" height="20" rx="4" fill="#22c55e"/>
-                  <text x="369" y="14" textAnchor="middle" fill="white" fontSize="10" fontWeight="600">
-                    +{Math.abs(Number(totalPLRate))}%
-                  </text>
-                </svg>
-                <div className="perf-chart-labels">
-                  <span>09:00</span>
-                  <span>11:00</span>
-                  <span>13:00</span>
-                  <span>15:00</span>
-                  <span>현재</span>
-                </div>
+                {chartLoading ? (
+                  <div className="perf-chart-loading">
+                    <div className="loading-spinner-sm"/>
+                  </div>
+                ) : chartData.length > 0 ? (
+                  <>
+                    <ResponsiveContainer width="100%" height={140}>
+                      <LineChart data={chartData} margin={{top: 8, right: 8, left: 0, bottom: 0}}>
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fontSize: 10, fill: "var(--c-text-muted)" }}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(v) => v?.slice(5)}
+                          interval="preserveStartEnd"
+                        />
+                        <YAxis hide={true} domain={["auto", "auto"]} />
+                        <Tooltip
+                          contentStyle={{
+                            background: "var(--c-surface)",
+                            border: "1px solid var(--c-border)",
+                            borderRadius: "10px",
+                            fontSize: "12px",
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+                          }}
+                          formatter={(value) => [`${fmt(Math.round(value))}원`, "평가금액"]}
+                          labelFormatter={(label) => label}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#22c55e"
+                          strokeWidth={2}
+                          dot={false}
+                          activeDot={{ r: 4, fill: "#22c55e" }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                    <div className="perf-chart-labels">
+                      <span>{chartData[0]?.date?.slice(5)}</span>
+                      <span>{chartData[Math.floor(chartData.length / 2)]?.date?.slice(5)}</span>
+                      <span>오늘</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="perf-chart-placeholder">
+                    <span>차트 데이터가 없어요</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
