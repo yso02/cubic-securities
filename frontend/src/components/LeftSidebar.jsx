@@ -13,6 +13,7 @@ export default function LeftSidebar({ user, onLogout }) {
   const [modalTab, setModalTab] = useState("deposit");
   const [modalAmount, setModalAmount] = useState("");
   const [modalLoading, setModalLoading] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -38,17 +39,11 @@ export default function LeftSidebar({ user, onLogout }) {
     { label: "시장", path: "/market", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> },
   ];
 
-  const aiMenus = [
-    {
-      label: "포트폴리오 분석",
-      path: "/ai",
-      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/><circle cx="18" cy="7" r="3" fill="none"/></svg>
-    },
-    {
-      label: "종목 추천",
-      path: "/ai",
-      icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-    },
+  const aiSubMenus = [
+    { label: "AI 채팅",    desc: "종목이나 투자에 대해 질문하세요", icon: "💬", path: "/ai?tab=chat" },
+    { label: "종목 분석",  desc: "보유 종목별 상세 분석",            icon: "📊", path: "/ai?tab=holdings" },
+    { label: "포트폴리오", desc: "전체 포트폴리오 분석",             icon: "📈", path: "/ai?tab=portfolio" },
+    { label: "추천",       desc: "섹터/종목 추천",                   icon: "🎯", path: "/ai?tab=recommend" },
   ];
 
   const isActive = (path, label) => {
@@ -128,6 +123,9 @@ export default function LeftSidebar({ user, onLogout }) {
         </div>
       </div>
 
+      {/* 스크롤 가능한 메뉴 영역 */}
+      <div className="ls-menu-scroll">
+
       {/* MAIN 메뉴 */}
       <div className="ls-section">
         <span className="ls-section-label">MAIN</span>
@@ -163,18 +161,43 @@ export default function LeftSidebar({ user, onLogout }) {
       {/* AI 메뉴 */}
       <div className="ls-section">
         <span className="ls-section-label">AI</span>
-        {aiMenus.map(m => (
-          <button
-            key={m.label}
-            className={`ls-menu-item ${location.pathname === "/ai" ? "active" : ""}`}
-            onClick={() => navigate(m.path)}
-          >
-            {m.icon}
-            <span className="ls-menu-text">{m.label}</span>
-            <span className="ls-tooltip">{m.label}</span>
-          </button>
-        ))}
+
+        {/* 부모 버튼 */}
+        <button
+          className={`ls-ai-parent ${location.pathname === "/ai" ? "active" : ""}`}
+          onClick={() => setAiOpen(v => !v)}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 2a10 10 0 1 0 10 10H12z"/>
+            <path d="M12 12V2"/>
+            <path d="M12 12l7-7"/>
+          </svg>
+          <span className="ls-ai-parent-text">AI 큐빅</span>
+          <svg className={`ls-ai-chevron ${aiOpen ? "open" : ""}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+          <span className="ls-tooltip">AI 큐빅</span>
+        </button>
+
+        {/* 서브 메뉴 */}
+        <div className={`ls-ai-submenu ${aiOpen ? "open" : ""}`}>
+          {aiSubMenus.map(m => (
+            <button
+              key={m.tab}
+              className="ls-ai-sub-item"
+              onClick={() => navigate(m.path)}
+            >
+              <span className="ls-ai-sub-icon">{m.icon}</span>
+              <span className="ls-ai-sub-info">
+                <span className="ls-ai-sub-label">{m.label}</span>
+                <span className="ls-ai-sub-desc">{m.desc}</span>
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
+
+      </div>{/* ls-menu-scroll 끝 */}
 
       {/* 하단 프로필 */}
       <div className="ls-bottom">

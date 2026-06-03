@@ -1,6 +1,6 @@
 // src/pages/AiPage.jsx
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import { aiChat, aiAnalyzeHoldings, aiAnalyzePortfolio, aiRecommend } from "../api/stockApi";
 import "./AiPage.css";
@@ -14,12 +14,23 @@ const TABS = [
 
 export default function AiPage({ user }) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState("chat");
   const [chatInput, setChatInput] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState("");
   const chatEndRef = useRef(null);
+
+  // URL 쿼리 파라미터로 탭 전환
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (!tab || tab === "chat") {
+      setActiveTab("chat");
+    } else if (["holdings", "portfolio", "recommend"].includes(tab)) {
+      handleAnalysis(tab);
+    }
+  }, [searchParams]);
 
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatHistory]);
 
@@ -71,17 +82,6 @@ export default function AiPage({ user }) {
   return (
     <div className="ai-page">
       <div className="ai-container">
-        <div className="ai-sidebar">
-          <div className="ai-sidebar-hd"><h2>✦ AI 큐빅</h2><p>AI 기반 투자 분석</p></div>
-          {TABS.map(tab => (
-            <button key={tab.id} className={`ai-side-btn ${activeTab === tab.id ? "active" : ""}`}
-              onClick={() => tab.id === "chat" ? setActiveTab("chat") : handleAnalysis(tab.id)}>
-              <span className="ai-side-label">{tab.label}</span>
-              <span className="ai-side-desc">{tab.desc}</span>
-            </button>
-          ))}
-        </div>
-
         <div className="ai-main">
           {activeTab === "chat" ? (
             <>
@@ -136,8 +136,8 @@ export default function AiPage({ user }) {
               <div className="ai-disclaimer">⚠️ 모든 AI 분석은 참고용이며, 최종 투자 결정은 본인의 판단으로 해주세요.</div>
             </div>
           )}
-        </div>
-      </div>
+        </div>{/* ai-main */}
+      </div>{/* ai-container */}
     </div>
   );
 }
