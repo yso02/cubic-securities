@@ -416,10 +416,13 @@
 
 /* 원화/달러 카드 2개 */
 .asset-currency-cards {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   gap: 12px;
   margin-bottom: 20px;
+}
+.asset-currency-cards .asset-sum-card {
+  width: 280px;
+  flex-shrink: 0;
 }
 .asset-sum-card {
   background: var(--c-surface);
@@ -448,7 +451,7 @@
 /* ── 보유종목 필터 탭 ── */
 .acc-section-header {
   display: flex; align-items: center;
-  justify-content: space-between; margin-bottom: 12px;
+  justify-content: flex-start; margin-bottom: 12px;
 }
 .acc-section-header .acc-section-title { margin-bottom: 0; }
 .holdings-filter-tabs {
@@ -471,7 +474,8 @@
 }
 
 @media (max-width: 900px) {
-  .asset-currency-cards { grid-template-columns: 1fr; }
+  .asset-currency-cards { flex-wrap: wrap; }
+  .asset-currency-cards .asset-sum-card { width: 100%; }
   .acc-assets-header { flex-direction: column; }
   .acc-header-actions { width: 100%; }
 }
@@ -480,7 +484,7 @@
 .acc-section-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   margin-bottom: 12px;
   gap: 12px;
 }
@@ -519,6 +523,14 @@
 [data-theme="dark"] .asset-list,
 [data-theme="dark"] .acc-table {
   box-shadow: 0 2px 12px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.ex-korean-amount {
+  font-size: 13px;
+  color: var(--c-primary);
+  font-weight: 600;
+  margin-top: 6px;
+  padding: 0 2px;
 }
 
 /* ── 보유종목 로고 ── */

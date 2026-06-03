@@ -20,6 +20,37 @@ const TABS = [
   { key: "profit",   label: "수익분석" },
 ];
 
+function toKoreanAmountKrw(num) {
+  if (!num || num === 0) return "";
+  const units = ["", "만", "억", "조"];
+  let result = "";
+  let n = Math.floor(num);
+  let unitIdx = 0;
+  while (n > 0) {
+    const part = n % 10000;
+    if (part > 0) result = `${part.toLocaleString()}${units[unitIdx]} ` + result;
+    n = Math.floor(n / 10000);
+    unitIdx++;
+  }
+  return result.trim() + "원";
+}
+
+function toKoreanAmountUsd(num) {
+  if (!num || num === 0) return "";
+  const units = ["", "만", "억", "조"];
+  const krw = Math.floor(num);
+  let result = "";
+  let n = krw;
+  let unitIdx = 0;
+  while (n > 0) {
+    const part = n % 10000;
+    if (part > 0) result = `${part.toLocaleString()}${units[unitIdx]} ` + result;
+    n = Math.floor(n / 10000);
+    unitIdx++;
+  }
+  return result.trim() + "원 상당";
+}
+
 export default function AccountPage({ user, setUser }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -165,9 +196,10 @@ export default function AccountPage({ user, setUser }) {
     if (!exAmount || Number(exAmount) <= 0) return;
     setExLoading(true); setExMsg(null);
     try {
+      const amount = Number(String(exAmount).replace(/,/g, ""));
       const res = exchangeMode === "krw"
-        ? await exchangeKrwToUsd(Number(exAmount))
-        : await exchangeUsdToKrw(Number(exAmount));
+        ? await exchangeKrwToUsd(amount)
+        : await exchangeUsdToKrw(amount);
       setBalance(res.balance);
       setDollarBalance(res.dollarBalance);
       setExMsg({ type: "success", text: exchangeView === "krw"
@@ -283,7 +315,7 @@ export default function AccountPage({ user, setUser }) {
             {/* 상단 헤더: 총자산 + 검색/AI버튼 */}
             <div className="acc-assets-header">
               <div className="acc-total-asset">
-                <span className="acc-total-label">총 자산 {wsConnected && <span className="ws-badge-acc">● LIVE</span>}</span>
+                <span className="acc-total-label">총 자산</span>
                 <div className="acc-total-value">{fmt(Math.round(totalAsset))}원</div>
                 <div className={`acc-total-pl ${totalPL >= 0 ? "up" : "dn"}`}>
                   {totalPL >= 0 ? "+" : ""}{fmt(Math.round(totalPL))}원 ({totalPLRate}%)
@@ -326,7 +358,7 @@ export default function AccountPage({ user, setUser }) {
                 </div>
                 <button className="acc-ai-btn" onClick={() => navigate("/ai")}>
                   <span className="acc-ai-icon">✦</span>
-                  AI 어시스턴트
+                  AI 분석
                 </button>
               </div>
             </div>
@@ -370,10 +402,18 @@ export default function AccountPage({ user, setUser }) {
                   <div className="ls-modal-input-wrap">
                     <span className="ls-modal-label">{exchangeMode === "krw" ? "원화 입력" : "달러 입력"}</span>
                     <div className="ex-input-wrap" style={{border: "1px solid var(--c-border)", borderRadius: 10, padding: "4px 14px"}}>
-                      <input type="number" value={exAmount} onChange={e => { setExAmount(e.target.value); setExMsg(null); }} placeholder={exchangeMode === "krw" ? "원화 입력" : "달러 입력"} autoFocus style={{border:"none",background:"none",outline:"none",fontSize:16,fontWeight:700,color:"var(--c-text)",fontFamily:"inherit",width:"100%",padding:"10px 0"}}/>
+                      <input type="text" value={exAmount ? Number(exAmount).toLocaleString() : ""} onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ""); setExAmount(raw); setExMsg(null); }} placeholder={exchangeMode === "krw" ? "원화 입력" : "달러 입력"} autoFocus style={{border:"none",background:"none",outline:"none",fontSize:16,fontWeight:700,color:"var(--c-text)",fontFamily:"inherit",width:"100%",padding:"10px 0"}}/>
                       <span className="ex-input-unit">{exchangeMode === "krw" ? "원" : "$"}</span>
                     </div>
                   </div>
+                  {exAmount && Number(exAmount) > 0 && (
+                    <div className="ex-korean-amount">
+                      {exchangeMode === "krw"
+                        ? toKoreanAmountKrw(Number(exAmount))
+                        : toKoreanAmountUsd(Number(exAmount) * exRate)
+                      }
+                    </div>
+                  )}
                   {preview && <div className="ex-preview-text">{preview}</div>}
                   {exMsg && <div className={`ex-result-msg ${exMsg.type}`} style={{marginBottom: 12}}>{exMsg.text}</div>}
                   <div className="ls-modal-btns">
@@ -397,16 +437,6 @@ export default function AccountPage({ user, setUser }) {
                       <button key={key} className={`holdings-filter-tab ${holdingFilter===key?"active":""}`} onClick={() => setHoldingFilter(key)}>{label}</button>
                     ))}
                   </div>
-                </div>
-                <div className="holdings-search-wrap">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                  <input
-                    type="text"
-                    placeholder="종목 검색..."
-                    value={holdingSearch}
-                    onChange={e => setHoldingSearch(e.target.value)}
-                  />
-                  {holdingSearch && <button onClick={() => setHoldingSearch("")}>✕</button>}
                 </div>
               </div>
               <div className="acc-table">
