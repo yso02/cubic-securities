@@ -1,11 +1,11 @@
 /* OrderBook.css */
 .orderbook-wrap {
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-lg);
+  background: transparent;
+  border: none;
+  border-radius: 0;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  transition: background 0.3s, border-color 0.3s;
+  box-shadow: none;
+  transition: background 0.3s;
 }
 .ob-tabs { display: flex; border-bottom: 1px solid var(--c-border-light); }
 .ob-tab {
