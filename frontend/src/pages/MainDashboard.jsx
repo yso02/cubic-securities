@@ -417,11 +417,15 @@ export default function MainDashboard({ user }) {
                   <>
                     {(() => {
                       const CHART_POINTS = 10;
-                      const generateDateRange = (count) => {
+                      const generateFixedDateRange = () => {
                         const dates = [];
-                        for (let i = count - 1; i >= 0; i--) {
-                          const d = new Date();
-                          d.setDate(d.getDate() - i);
+                        const today = new Date();
+                        const startDate = chartData.length > 0
+                          ? new Date(chartData[0].date)
+                          : new Date(today);
+                        for (let i = 0; i < CHART_POINTS; i++) {
+                          const d = new Date(startDate);
+                          d.setDate(startDate.getDate() + i);
                           const yyyy = d.getFullYear();
                           const mm = String(d.getMonth() + 1).padStart(2, "0");
                           const dd = String(d.getDate()).padStart(2, "0");
@@ -429,69 +433,74 @@ export default function MainDashboard({ user }) {
                         }
                         return dates;
                       };
-                      const dateRange = generateDateRange(CHART_POINTS);
+                      const dateRange = generateFixedDateRange();
                       const chartDataMap = Object.fromEntries(chartData.map(d => [d.date, d.value]));
                       const paddedChartData = dateRange.map(date => ({
                         date,
                         value: chartDataMap[date] ?? null,
                       }));
                       return (
-                        <ResponsiveContainer width="100%" height={260}>
-                          <LineChart data={paddedChartData} margin={{top: 10, right: 16, left: 60, bottom: 0}}>
-                            <defs>
-                              <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#0d9488" stopOpacity={0.15}/>
-                                <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid
-                              strokeDasharray="3 3"
-                              stroke="var(--c-border)"
-                              vertical={false}
-                            />
-                            <XAxis
-                              dataKey="date"
-                              tick={{ fontSize: 11, fill: "var(--c-text-muted)" }}
-                              tickLine={false}
-                              axisLine={false}
-                              tickFormatter={(v) => v?.slice(5) || ""}
-                              interval={0}
-                              minTickGap={30}
-                            />
-                            <YAxis
-                              tick={{ fontSize: 11, fill: "var(--c-text-muted)" }}
-                              tickLine={false}
-                              axisLine={false}
-                              tickFormatter={(v) => {
-                                if (v >= 100_000_000) return (v / 100_000_000).toFixed(0) + "억";
-                                if (v >= 10_000) return (v / 10_000).toFixed(0) + "만";
-                                return fmt(v);
-                              }}
-                              width={56}
-                              domain={["auto", "auto"]}
-                            />
-                            <Tooltip
-                              contentStyle={{
-                                background: "var(--c-surface)",
-                                border: "1px solid var(--c-border)",
-                                borderRadius: "10px",
-                                fontSize: "12px",
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
-                              }}
-                              formatter={(value) => value != null ? [`${fmt(Math.round(value))}원`, "평가금액"] : ["-", "평가금액"]}
-                              labelFormatter={(label) => label}
-                            />
-                            <Line
-                              type="monotone"
-                              dataKey="value"
-                              stroke="#0d9488"
-                              strokeWidth={2}
-                              dot={false}
-                              connectNulls={false}
-                              activeDot={{ r: 5, fill: "#0d9488", strokeWidth: 0 }}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
+                        <div style={{position:"relative", width:"100%"}}>
+                          <ResponsiveContainer width="100%" height={260}>
+                            <LineChart data={paddedChartData} margin={{top: 10, right: 24, left: 60, bottom: 0}}>
+                              <defs>
+                                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#0d9488" stopOpacity={0.15}/>
+                                  <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid
+                                strokeDasharray="3 3"
+                                stroke="var(--c-border)"
+                                vertical={false}
+                              />
+                              <XAxis
+                                dataKey="date"
+                                tick={{ fontSize: 11, fill: "var(--c-text-muted)" }}
+                                tickLine={false}
+                                axisLine={false}
+                                tickFormatter={(v) => v?.slice(5) || ""}
+                                interval={0}
+                                minTickGap={30}
+                              />
+                              <YAxis
+                                tick={{ fontSize: 11, fill: "var(--c-text-muted)" }}
+                                tickLine={false}
+                                axisLine={false}
+                                tickFormatter={(v) => {
+                                  if (v >= 100_000_000) return (v / 100_000_000).toFixed(0) + "억";
+                                  if (v >= 10_000) return (v / 10_000).toFixed(0) + "만";
+                                  return fmt(v);
+                                }}
+                                width={56}
+                                domain={["auto", "auto"]}
+                              />
+                              <Tooltip
+                                contentStyle={{
+                                  background: "var(--c-surface)",
+                                  border: "1px solid var(--c-border)",
+                                  borderRadius: "10px",
+                                  fontSize: "12px",
+                                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+                                }}
+                                formatter={(value) => value != null ? [`${fmt(Math.round(value))}원`, "평가금액"] : ["-", "평가금액"]}
+                                labelFormatter={(label) => label}
+                              />
+                              <Line
+                                type="monotone"
+                                dataKey="value"
+                                stroke="#0d9488"
+                                strokeWidth={2}
+                                dot={false}
+                                connectNulls={false}
+                                activeDot={{ r: 5, fill: "#0d9488", strokeWidth: 0 }}
+                              />
+                            </LineChart>
+                          </ResponsiveContainer>
+                          {chartData.length > 0 && (
+                            <span className="chart-live-dot"/>
+                          )}
+                        </div>
                       );
                     })()}
                   </>
