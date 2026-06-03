@@ -234,49 +234,6 @@
   font-size: 13px;
   color: var(--c-text-muted);
 }
-.chart-live-dot {
-  position: absolute;
-  bottom: 32px;
-  right: 24px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #0d9488;
-  display: block;
-}
-.chart-live-dot::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #0d9488;
-  animation: livePulseRing 1.5s ease-in-out infinite;
-}
-.chart-live-dot::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #0d9488;
-  animation: livePulse 1.5s ease-in-out infinite;
-}
-@keyframes livePulse {
-  0%, 100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  50% { opacity: 0.6; transform: translate(-50%, -50%) scale(0.85); }
-}
-@keyframes livePulseRing {
-  0% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
-  100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; }
-}
-
 .perf-chart-labels {
   display: flex;
   justify-content: space-between;

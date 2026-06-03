@@ -439,68 +439,80 @@ export default function MainDashboard({ user }) {
                         date,
                         value: chartDataMap[date] ?? null,
                       }));
+                      const lastDataIndex = paddedChartData.reduce((last, d, i) =>
+                        d.value !== null ? i : last, -1);
                       return (
-                        <div style={{position:"relative", width:"100%"}}>
-                          <ResponsiveContainer width="100%" height={260}>
-                            <LineChart data={paddedChartData} margin={{top: 10, right: 24, left: 60, bottom: 0}}>
-                              <defs>
-                                <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="5%" stopColor="#0d9488" stopOpacity={0.15}/>
-                                  <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
-                                </linearGradient>
-                              </defs>
-                              <CartesianGrid
-                                strokeDasharray="3 3"
-                                stroke="var(--c-border)"
-                                vertical={false}
-                              />
-                              <XAxis
-                                dataKey="date"
-                                tick={{ fontSize: 11, fill: "var(--c-text-muted)" }}
-                                tickLine={false}
-                                axisLine={false}
-                                tickFormatter={(v) => v?.slice(5) || ""}
-                                interval={0}
-                                minTickGap={30}
-                              />
-                              <YAxis
-                                tick={{ fontSize: 11, fill: "var(--c-text-muted)" }}
-                                tickLine={false}
-                                axisLine={false}
-                                tickFormatter={(v) => {
-                                  if (v >= 100_000_000) return (v / 100_000_000).toFixed(0) + "억";
-                                  if (v >= 10_000) return (v / 10_000).toFixed(0) + "만";
-                                  return fmt(v);
-                                }}
-                                width={56}
-                                domain={["auto", "auto"]}
-                              />
-                              <Tooltip
-                                contentStyle={{
-                                  background: "var(--c-surface)",
-                                  border: "1px solid var(--c-border)",
-                                  borderRadius: "10px",
-                                  fontSize: "12px",
-                                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
-                                }}
-                                formatter={(value) => value != null ? [`${fmt(Math.round(value))}원`, "평가금액"] : ["-", "평가금액"]}
-                                labelFormatter={(label) => label}
-                              />
-                              <Line
-                                type="monotone"
-                                dataKey="value"
-                                stroke="#0d9488"
-                                strokeWidth={2}
-                                dot={false}
-                                connectNulls={false}
-                                activeDot={{ r: 5, fill: "#0d9488", strokeWidth: 0 }}
-                              />
-                            </LineChart>
-                          </ResponsiveContainer>
-                          {chartData.length > 0 && (
-                            <span className="chart-live-dot"/>
-                          )}
-                        </div>
+                        <ResponsiveContainer width="100%" height={260}>
+                          <LineChart data={paddedChartData} margin={{top: 10, right: 24, left: 60, bottom: 0}}>
+                            <defs>
+                              <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#0d9488" stopOpacity={0.15}/>
+                                <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke="var(--c-border)"
+                              vertical={false}
+                            />
+                            <XAxis
+                              dataKey="date"
+                              tick={{ fontSize: 11, fill: "var(--c-text-muted)" }}
+                              tickLine={false}
+                              axisLine={false}
+                              tickFormatter={(v) => v?.slice(5) || ""}
+                              interval={0}
+                              minTickGap={30}
+                            />
+                            <YAxis
+                              tick={{ fontSize: 11, fill: "var(--c-text-muted)" }}
+                              tickLine={false}
+                              axisLine={false}
+                              tickFormatter={(v) => {
+                                if (v >= 100_000_000) return (v / 100_000_000).toFixed(0) + "억";
+                                if (v >= 10_000) return (v / 10_000).toFixed(0) + "만";
+                                return fmt(v);
+                              }}
+                              width={56}
+                              domain={([dataMin, dataMax]) => {
+                                const margin = (dataMax - dataMin) * 0.3;
+                                return [Math.floor(dataMin - margin), Math.ceil(dataMax + margin)];
+                              }}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                background: "var(--c-surface)",
+                                border: "1px solid var(--c-border)",
+                                borderRadius: "10px",
+                                fontSize: "12px",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+                              }}
+                              formatter={(value) => value != null ? [`${fmt(Math.round(value))}원`, "평가금액"] : ["-", "평가금액"]}
+                              labelFormatter={(label) => label}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="value"
+                              stroke="#0d9488"
+                              strokeWidth={2}
+                              connectNulls={false}
+                              dot={(props) => {
+                                const { cx, cy, index } = props;
+                                if (index !== lastDataIndex) return null;
+                                return (
+                                  <g key={`dot-${index}`}>
+                                    <circle cx={cx} cy={cy} r={10} fill="#0d9488" opacity={0}>
+                                      <animate attributeName="r" from="6" to="14" dur="1.5s" repeatCount="indefinite"/>
+                                      <animate attributeName="opacity" from="0.5" to="0" dur="1.5s" repeatCount="indefinite"/>
+                                    </circle>
+                                    <circle cx={cx} cy={cy} r={5} fill="#0d9488"/>
+                                  </g>
+                                );
+                              }}
+                              activeDot={{ r: 5, fill: "#0d9488", strokeWidth: 0 }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
                       );
                     })()}
                   </>
