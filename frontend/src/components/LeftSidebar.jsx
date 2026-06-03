@@ -4,6 +4,21 @@ import { getMyInfo, getHoldings, fmt, isDomestic } from "../api/stockApi";
 import api from "../api/stockApi";
 import "./LeftSidebar.css";
 
+function toKoreanAmount(num) {
+  if (!num || num === 0) return "";
+  const units = ["", "만", "억", "조"];
+  let result = "";
+  let n = num;
+  let unitIdx = 0;
+  while (n > 0) {
+    const part = n % 10000;
+    if (part > 0) result = `${part.toLocaleString()}${units[unitIdx]} ` + result;
+    n = Math.floor(n / 10000);
+    unitIdx++;
+  }
+  return result.trim() + "원";
+}
+
 export default function LeftSidebar({ user, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -297,8 +312,17 @@ export default function LeftSidebar({ user, onLogout }) {
                 type="text"
                 placeholder="예: 1,000,000"
                 value={modalAmount}
-                onChange={e => { setModalAmount(e.target.value); setModalError(""); }}
+                onChange={e => {
+                  const raw = e.target.value.replace(/[^0-9]/g, "");
+                  setModalAmount(raw ? Number(raw).toLocaleString() : "");
+                  setModalError("");
+                }}
               />
+              {modalAmount && !modalError && (
+                <span className="ls-modal-amount-korean">
+                  {toKoreanAmount(Number(modalAmount.replace(/,/g, "")))}
+                </span>
+              )}
               {modalError && <span className="ls-modal-error">{modalError}</span>}
             </div>
             <div className="ls-modal-btns">
