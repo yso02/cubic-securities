@@ -687,17 +687,6 @@ export default function MainDashboard({ user }) {
               <div className="stock-modal-left-col">
                 {/* 차트 박스: 심볼+시장 + 주가 + 차트 */}
                 <div className="sml-chart-box">
-                  <div className="sml-price-row">
-                    <div className="sml-price-meta">
-                      <span className="sml-stock-market">{modalStock.market} · {modalStock.symbol}</span>
-                      <div className="sml-price-main">
-                        <span className="stock-modal-price">{fmtPrice(modalStock.price, modalStock.market)}</span>
-                        <span className={`stock-modal-change ${isUpCheck(modalStock.changePercent) ? "up" : "dn"}`}>
-                          {isUpCheck(modalStock.changePercent) ? "▲" : "▼"} {fmtCh(modalStock.changePercent)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
                   <div className="stock-modal-chart">
                     <StockChart stock={modalStock} fullscreen={false} onToggleFullscreen={() => {}}/>
                   </div>

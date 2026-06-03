@@ -50,10 +50,21 @@
 .chart-top-bar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  padding: 8px 12px 4px;
+  justify-content: space-between;
+  padding: 10px 14px 4px;
 }
-.chart-top-price {
+.chart-top-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.chart-stock-meta {
+  font-size: 11px;
+  color: var(--c-text-muted);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.chart-price-inline {
   display: flex;
   align-items: baseline;
   gap: 8px;

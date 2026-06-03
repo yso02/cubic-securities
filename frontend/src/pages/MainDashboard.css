@@ -790,7 +790,6 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-right: 1px solid var(--c-border);
 }
 .stock-modal-price-row {
   display: flex;
@@ -808,14 +807,16 @@
 .sml-bottom-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  border-top: 1px solid var(--c-border);
+  gap: 10px;
+  padding: 10px;
   flex-shrink: 0;
-  height: 240px;
-  overflow: hidden;
+  height: 250px;
 }
 .sml-ob-col {
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
   overflow-y: auto;
-  border-right: 1px solid var(--c-border);
+  background: var(--c-surface);
   height: 100%;
 }
 .sml-ob-col::-webkit-scrollbar { width: 3px; }
@@ -823,9 +824,13 @@
 
 /* AI 분석 컬럼 */
 .sml-ai-col {
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  background: var(--c-surface);
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
 }
 
 /* 우측 주문창 */
@@ -1007,6 +1012,7 @@
   padding: 10px 14px 8px;
   border-bottom: 1px solid var(--c-border);
   flex-shrink: 0;
+  border-radius: 12px 12px 0 0;
 }
 .sml-ai-title {
   font-size: 12px;
