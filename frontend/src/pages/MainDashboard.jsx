@@ -415,62 +415,85 @@ export default function MainDashboard({ user }) {
                   </div>
                 ) : chartData.length > 0 ? (
                   <>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <LineChart data={chartData} margin={{top: 10, right: 16, left: 60, bottom: 0}}>
-                        <defs>
-                          <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#0d9488" stopOpacity={0.15}/>
-                            <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          stroke="var(--c-border)"
-                          vertical={false}
-                        />
-                        <XAxis
-                          dataKey="date"
-                          tick={{ fontSize: 11, fill: "var(--c-text-muted)" }}
-                          tickLine={false}
-                          axisLine={false}
-                          tickFormatter={(v) => v?.slice(5)}
-                          interval={Math.floor(chartData.length / 4)}
-                          minTickGap={40}
-                        />
-                        <YAxis
-                          tick={{ fontSize: 11, fill: "var(--c-text-muted)" }}
-                          tickLine={false}
-                          axisLine={false}
-                          tickFormatter={(v) => {
-                            if (v >= 100_000_000) return (v / 100_000_000).toFixed(0) + "억";
-                            if (v >= 10_000) return (v / 10_000).toFixed(0) + "만";
-                            return fmt(v);
-                          }}
-                          width={56}
-                          domain={["auto", "auto"]}
-                        />
-                        <Tooltip
-                          contentStyle={{
-                            background: "var(--c-surface)",
-                            border: "1px solid var(--c-border)",
-                            borderRadius: "10px",
-                            fontSize: "12px",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
-                          }}
-                          formatter={(value) => [`${fmt(Math.round(value))}원`, "평가금액"]}
-                          labelFormatter={(label) => label}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="value"
-                          stroke="#0d9488"
-                          strokeWidth={2}
-                          dot={false}
-                          activeDot={{ r: 5, fill: "#0d9488", strokeWidth: 0 }}
-                          fill="url(#chartGradient)"
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
+                    {(() => {
+                      const CHART_POINTS = 10;
+                      const generateDateRange = (count) => {
+                        const dates = [];
+                        for (let i = count - 1; i >= 0; i--) {
+                          const d = new Date();
+                          d.setDate(d.getDate() - i);
+                          const yyyy = d.getFullYear();
+                          const mm = String(d.getMonth() + 1).padStart(2, "0");
+                          const dd = String(d.getDate()).padStart(2, "0");
+                          dates.push(`${yyyy}-${mm}-${dd}`);
+                        }
+                        return dates;
+                      };
+                      const dateRange = generateDateRange(CHART_POINTS);
+                      const chartDataMap = Object.fromEntries(chartData.map(d => [d.date, d.value]));
+                      const paddedChartData = dateRange.map(date => ({
+                        date,
+                        value: chartDataMap[date] ?? null,
+                      }));
+                      return (
+                        <ResponsiveContainer width="100%" height={260}>
+                          <LineChart data={paddedChartData} margin={{top: 10, right: 16, left: 60, bottom: 0}}>
+                            <defs>
+                              <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#0d9488" stopOpacity={0.15}/>
+                                <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke="var(--c-border)"
+                              vertical={false}
+                            />
+                            <XAxis
+                              dataKey="date"
+                              tick={{ fontSize: 11, fill: "var(--c-text-muted)" }}
+                              tickLine={false}
+                              axisLine={false}
+                              tickFormatter={(v) => v?.slice(5) || ""}
+                              interval={0}
+                              minTickGap={30}
+                            />
+                            <YAxis
+                              tick={{ fontSize: 11, fill: "var(--c-text-muted)" }}
+                              tickLine={false}
+                              axisLine={false}
+                              tickFormatter={(v) => {
+                                if (v >= 100_000_000) return (v / 100_000_000).toFixed(0) + "억";
+                                if (v >= 10_000) return (v / 10_000).toFixed(0) + "만";
+                                return fmt(v);
+                              }}
+                              width={56}
+                              domain={["auto", "auto"]}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                background: "var(--c-surface)",
+                                border: "1px solid var(--c-border)",
+                                borderRadius: "10px",
+                                fontSize: "12px",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+                              }}
+                              formatter={(value) => value != null ? [`${fmt(Math.round(value))}원`, "평가금액"] : ["-", "평가금액"]}
+                              labelFormatter={(label) => label}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="value"
+                              stroke="#0d9488"
+                              strokeWidth={2}
+                              dot={false}
+                              connectNulls={false}
+                              activeDot={{ r: 5, fill: "#0d9488", strokeWidth: 0 }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      );
+                    })()}
                   </>
                 ) : (
                   <div className="perf-chart-placeholder">
