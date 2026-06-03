@@ -6,8 +6,12 @@ import {
   getDomesticMarketNews, getOverseasMarketNews,
   getWatchlist, addWatchlist, removeWatchlist,
   getExchangeRate, isDomestic, fmt, fmtChange, isUp,
+<<<<<<< HEAD
   getLogoUrl, getExchangeCode, NGROK_URL,
   buyStock, sellStock, getBalance, getHoldings,
+=======
+  getLogoUrl, getExchangeCode, NGROK_URL, getCubicBatch,
+>>>>>>> cbaa4cf27a63f42e1989d59059cfbee76597ad6a
 } from "../api/stockApi";
 import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
@@ -70,6 +74,26 @@ function SparklineCard({ changePercent, width = 100, height = 40 }) {
   return <Sparkline changePercent={changePercent} width={width} height={height} />;
 }
 
+function CubicSignalBar({ score }) {
+  if (score === null || score === undefined) {
+    return <span className="market-signal-dash">-</span>;
+  }
+  const sellPct = 100 - score;
+  const buyPct = score;
+  return (
+    <div className="cubic-signal-bar">
+      <div className="cubic-signal-nums">
+        <span style={{ color: "#e57373" }}>{sellPct}%</span>
+        <span style={{ color: "#66bb6a" }}>{buyPct}%</span>
+      </div>
+      <div className="cubic-signal-track">
+        <div className="cubic-signal-sell" style={{ width: `${sellPct}%` }}/>
+        <div className="cubic-signal-buy" style={{ width: `${buyPct}%` }}/>
+      </div>
+    </div>
+  );
+}
+
 const fmtVolume = (val) => {
   if (!val) return "-";
   const num = Number(val);
@@ -97,6 +121,7 @@ export default function MarketPage({ user }) {
   const [modalStock, setModalStock] = useState(null);
   const [tradeModal, setTradeModal] = useState(null);
   const modalWsRef = useRef(null);
+  const [cubicScores, setCubicScores] = useState({});
 
   useEffect(() => { fetchStocks(); }, [market, sortType]);
   useEffect(() => { fetchTopStocks(); }, [market]);
@@ -182,6 +207,17 @@ export default function MarketPage({ user }) {
     if (wsConnected) subscribeStocks();
   }, [stocks, wsConnected]);
 
+  const fetchCubicScores = async (stockList) => {
+    if (!stockList?.length) return;
+    try {
+      const symbols = stockList.map(s => s.symbol);
+      const result = await getCubicBatch(symbols);
+      setCubicScores(result || {});
+    } catch (e) {
+      console.warn("Cubic batch 조회 실패:", e);
+    }
+  };
+
   const fetchStocks = async () => {
     setLoading(true);
     try {
@@ -189,6 +225,7 @@ export default function MarketPage({ user }) {
         ? await getDomesticRanking(sortType)
         : await getOverseasRanking(sortType);
       setStocks(data || []);
+      fetchCubicScores(data || []);
     } catch { setStocks([]); }
     finally { setLoading(false); }
   };
@@ -391,7 +428,7 @@ export default function MarketPage({ user }) {
                 <div className="market-price">{price}</div>
                 <div className="market-volume">{fmtVolume(s.volume)}</div>
                 <div className="market-signal">
-                  <span className="market-signal-badge pending">-</span>
+                  <CubicSignalBar score={cubicScores[s.symbol]?.cubicScore ?? null} />
                 </div>
               </div>
             );

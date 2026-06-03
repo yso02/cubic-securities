@@ -202,6 +202,10 @@ export const aiRecommend = async () => {
   const res = await api.post("/api/ai/analyze/recommend");
   return res.data; // { message }
 };
+export const getCubicBatch = async (symbols) => {
+  const res = await api.post("/api/ai/cubic/batch", symbols);
+  return res.data; // { "005930": { action, cubicScore, cellNum }, ... }
+};
 
 /* ═══════════ 포트폴리오 차트 ═══════════ */
 export const getPortfolioChart = async (days = 30) => {
