@@ -9,7 +9,7 @@ const api = axios.create({
     "ngrok-skip-browser-warning": "true",
     "Content-Type": "application/json",
   },
-  timeout: 10000,
+  timeout: 60000,
 });
 
 // JWT 토큰 자동 첨부
