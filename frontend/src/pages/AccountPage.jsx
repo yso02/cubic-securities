@@ -6,8 +6,9 @@ import {
   getMyInfo, getBalance, getHoldings, getOrders, getProfit,
   getDomesticPrice, getOverseasPrice, getExchangeRate,
   exchangeKrwToUsd, exchangeUsdToKrw,
-  isDomestic, fmt, fmtPrice, getExchangeCode, NGROK_URL,
+  isDomestic, fmt, fmtPrice, getExchangeCode, getLogoUrl, NGROK_URL,
 } from "../api/stockApi";
+import Twemoji from "../components/Twemoji";
 import "./AccountPage.css";
 
 const TABS = [
@@ -198,7 +199,7 @@ export default function AccountPage({ user, setUser }) {
             {/* 상단 3카드 */}
             <div className="asset-summary-cards">
               <div className="asset-sum-card">
-                <span className="asset-sum-flag">🇰🇷</span>
+                <span className="asset-sum-flag"><Twemoji emoji="🇰🇷" size={32} /></span>
                 <div>
                   <span className="asset-sum-label">원화</span>
                   <span className="asset-sum-value">{fmt(Math.round(balance))}원</span>
@@ -206,7 +207,7 @@ export default function AccountPage({ user, setUser }) {
                 </div>
               </div>
               <div className="asset-sum-card">
-                <span className="asset-sum-flag">🇺🇸</span>
+                <span className="asset-sum-flag"><Twemoji emoji="🇺🇸" size={32} /></span>
                 <div>
                   <span className="asset-sum-label">달러</span>
                   <span className="asset-sum-value">${dollarBalance.toFixed(2)}</span>
@@ -296,7 +297,15 @@ export default function AccountPage({ user, setUser }) {
                       const pl = getPL(h); const up = pl >= 0;
                       return (
                         <div key={h.id} className="acc-table-row holdings-grid clickable" onClick={() => handleStockClick(h)}>
-                          <span className="acc-name"><strong>{h.name}</strong><small>{h.symbol} · {h.market}</small></span>
+                          <span className="acc-name">
+                            {(() => {
+                              const logo = getLogoUrl(h.symbol, h.market);
+                              return logo
+                                ? <img src={logo} className="acc-stock-logo" alt="" onError={e => { e.target.style.display="none"; }} />
+                                : <div className="acc-stock-logo-fb">{h.name?.substring(0,2)}</div>;
+                            })()}
+                            <span className="acc-name-info"><strong>{h.name}</strong><small>{h.symbol}</small></span>
+                          </span>
                           <span className="acc-num"><span className={`live-price ${currentPrices[h.symbol] ? "live" : ""}`}>{fmtPrice(getPrice(h), h.market)}</span></span>
                           <span className="acc-num">{fmt(h.quantity)}주</span>
                           <span className="acc-num">{fmtPrice(h.avgPrice, h.market)}</span>

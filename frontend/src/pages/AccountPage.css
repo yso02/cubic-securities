@@ -172,7 +172,7 @@
 .acc-table-row.clickable { cursor: pointer; }
 .acc-table-row.clickable:hover { background: var(--c-primary-muted); }
 
-.acc-name { display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.acc-name { display: flex; flex-direction: row; align-items: center; gap: 10px; text-align: left; }
 .acc-name strong { font-size: 13.5px; font-weight: 700; color: var(--c-text); }
 .acc-name small { font-size: 11.5px; color: var(--c-text-muted); }
 .acc-num { font-size: 13px; color: var(--c-text-sub); text-align: right; font-weight: 500; }
@@ -455,3 +455,26 @@
 [data-theme="dark"] .acc-table {
   box-shadow: 0 2px 12px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2);
 }
+
+/* ── 보유종목 로고 ── */
+.acc-stock-logo {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  object-fit: contain;
+  border: 1px solid var(--c-border);
+  background: #fff;
+  flex-shrink: 0;
+}
+.acc-stock-logo-fb {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: #64748b; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700;
+  flex-shrink: 0;
+}
+.acc-name-info {
+  display: flex; align-items: baseline; gap: 6px;
+}
+.acc-name-info strong { font-size: 13.5px; font-weight: 700; color: var(--c-text); }
+.acc-name-info small { font-size: 11.5px; color: var(--c-text-muted); }
