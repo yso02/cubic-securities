@@ -12,6 +12,7 @@ import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
 import TradeModal from "../components/TradeModal";
 import { getDomesticPrice, getOverseasPrice, fmtPrice, fmtChange as fmtCh, isUp as isUpCheck } from "../api/stockApi";
+import Twemoji from "../components/Twemoji";
 import "./MarketPage.css";
 
 const ICON_COLORS = {
@@ -322,13 +323,15 @@ export default function MarketPage({ user }) {
             className={`market-main-tab ${market==="domestic"?"active":""}`}
             onClick={() => setMarket("domestic")}
           >
-            🇰🇷 국내주식
+            <Twemoji emoji="🇰🇷" />
+            <span>국내주식</span>
           </button>
           <button
             className={`market-main-tab ${market==="overseas"?"active":""}`}
             onClick={() => setMarket("overseas")}
           >
-            🇺🇸 미국주식
+            <Twemoji emoji="🇺🇸" />
+            <span>미국주식</span>
           </button>
         </div>
         <div className="market-sort-tabs">
