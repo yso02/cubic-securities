@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { Client } from "@stomp/stompjs";
 import {
   getWatchlist, addWatchlist, removeWatchlist,
@@ -415,17 +415,40 @@ export default function MainDashboard({ user }) {
                   </div>
                 ) : chartData.length > 0 ? (
                   <>
-                    <ResponsiveContainer width="100%" height={140}>
-                      <LineChart data={chartData} margin={{top: 8, right: 8, left: 0, bottom: 0}}>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <LineChart data={chartData} margin={{top: 10, right: 16, left: 60, bottom: 0}}>
+                        <defs>
+                          <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#0d9488" stopOpacity={0.15}/>
+                            <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="var(--c-border)"
+                          vertical={false}
+                        />
                         <XAxis
                           dataKey="date"
-                          tick={{ fontSize: 10, fill: "var(--c-text-muted)" }}
+                          tick={{ fontSize: 11, fill: "var(--c-text-muted)" }}
                           tickLine={false}
                           axisLine={false}
                           tickFormatter={(v) => v?.slice(5)}
-                          interval="preserveStartEnd"
+                          interval={Math.floor(chartData.length / 4)}
+                          minTickGap={40}
                         />
-                        <YAxis hide={true} domain={["auto", "auto"]} />
+                        <YAxis
+                          tick={{ fontSize: 11, fill: "var(--c-text-muted)" }}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(v) => {
+                            if (v >= 100_000_000) return (v / 100_000_000).toFixed(0) + "억";
+                            if (v >= 10_000) return (v / 10_000).toFixed(0) + "만";
+                            return fmt(v);
+                          }}
+                          width={56}
+                          domain={["auto", "auto"]}
+                        />
                         <Tooltip
                           contentStyle={{
                             background: "var(--c-surface)",
@@ -440,18 +463,14 @@ export default function MainDashboard({ user }) {
                         <Line
                           type="monotone"
                           dataKey="value"
-                          stroke="#22c55e"
+                          stroke="#0d9488"
                           strokeWidth={2}
                           dot={false}
-                          activeDot={{ r: 4, fill: "#22c55e" }}
+                          activeDot={{ r: 5, fill: "#0d9488", strokeWidth: 0 }}
+                          fill="url(#chartGradient)"
                         />
                       </LineChart>
                     </ResponsiveContainer>
-                    <div className="perf-chart-labels">
-                      <span>{chartData[0]?.date?.slice(5)}</span>
-                      <span>{chartData[Math.floor(chartData.length / 2)]?.date?.slice(5)}</span>
-                      <span>오늘</span>
-                    </div>
                   </>
                 ) : (
                   <div className="perf-chart-placeholder">
