@@ -356,11 +356,12 @@
 .ls-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0,0,0,0.55);
   z-index: 300;
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(2px);
 }
 
 .ls-modal {
@@ -368,8 +369,10 @@
   border-radius: 16px;
   padding: 24px;
   width: 320px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
   border: 1px solid var(--c-border);
+  position: relative;
+  z-index: 301;
 }
 
 .ls-modal-title {
@@ -471,6 +474,27 @@
   transition: opacity 0.15s;
 }
 .ls-modal-confirm:hover { opacity: 0.88; }
+
+.ls-modal-input.error {
+  border-color: #ef4444;
+  background: rgba(239,68,68,0.05);
+}
+.ls-modal-error {
+  font-size: 12px;
+  color: #ef4444;
+  font-weight: 500;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
+}
+.ls-modal-input.shake {
+  animation: shake 0.5s ease;
+  border-color: #ef4444;
+}
 
 /* 로그아웃 버튼 */
 .ls-profile-wrap {

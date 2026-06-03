@@ -13,6 +13,8 @@ export default function LeftSidebar({ user, onLogout }) {
   const [modalTab, setModalTab] = useState("deposit");
   const [modalAmount, setModalAmount] = useState("");
   const [modalLoading, setModalLoading] = useState(false);
+  const [modalError, setModalError] = useState("");
+  const [shakeInput, setShakeInput] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [portfolioOpen, setPortfolioOpen] = useState(false);
 
@@ -78,21 +80,29 @@ export default function LeftSidebar({ user, onLogout }) {
 
   const handleConfirm = async () => {
     const amount = Number(modalAmount.replace(/,/g, ""));
-    if (!amount || amount <= 0) { alert("금액을 입력해주세요."); return; }
+    if (!amount || amount <= 0) {
+      setModalError("금액을 입력해주세요.");
+      setShakeInput(true);
+      setTimeout(() => setShakeInput(false), 600);
+      return;
+    }
     setModalLoading(true);
+    setModalError("");
     try {
       if (modalTab === "deposit") {
         await api.post("/api/trade/deposit", { amount });
-        alert(`${fmt(amount)}원이 입금되었습니다.`);
       } else {
         await api.post("/api/trade/withdraw", { amount });
-        alert(`${fmt(amount)}원이 출금되었습니다.`);
       }
       setShowModal(false);
       setModalAmount("");
+      setModalError("");
       await refreshAsset();
-    } catch {
-      alert("처리 중 오류가 발생했습니다.");
+    } catch (e) {
+      const msg = e.response?.data || "처리 중 오류가 발생했습니다.";
+      setModalError(typeof msg === "string" ? msg : "잔액이 부족합니다.");
+      setShakeInput(true);
+      setTimeout(() => setShakeInput(false), 600);
     } finally { setModalLoading(false); }
   };
 
@@ -273,7 +283,7 @@ export default function LeftSidebar({ user, onLogout }) {
       </div>
 
       {showModal && (
-        <div className="ls-modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="ls-modal-overlay" onClick={() => { setShowModal(false); setModalError(""); }}>
           <div className="ls-modal" onClick={e => e.stopPropagation()}>
             <div className="ls-modal-title">잔고 관리</div>
             <div className="ls-modal-tabs">
@@ -283,15 +293,16 @@ export default function LeftSidebar({ user, onLogout }) {
             <div className="ls-modal-input-wrap">
               <span className="ls-modal-label">{modalTab === "deposit" ? "입금" : "출금"}할 금액 (원)</span>
               <input
-                className="ls-modal-input"
+                className={`ls-modal-input ${shakeInput ? "shake" : ""} ${modalError ? "error" : ""}`}
                 type="text"
                 placeholder="예: 1,000,000"
                 value={modalAmount}
-                onChange={e => setModalAmount(e.target.value)}
+                onChange={e => { setModalAmount(e.target.value); setModalError(""); }}
               />
+              {modalError && <span className="ls-modal-error">{modalError}</span>}
             </div>
             <div className="ls-modal-btns">
-              <button className="ls-modal-cancel" onClick={() => { setShowModal(false); setModalAmount(""); }}>취소</button>
+              <button className="ls-modal-cancel" onClick={() => { setShowModal(false); setModalAmount(""); setModalError(""); }}>취소</button>
               <button className="ls-modal-confirm" onClick={handleConfirm} disabled={modalLoading}>
                 {modalLoading ? "처리 중..." : modalTab === "deposit" ? "입금" : "출금"}
               </button>
