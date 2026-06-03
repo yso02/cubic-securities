@@ -312,6 +312,27 @@ export default function AccountPage({ user, setUser }) {
         {/* ── 자산 탭 ── */}
         {activeTab === "assets" && (
           <div className="acc-content">
+            {/* 원화/달러 카드 2개 */}
+            <div className="asset-currency-cards">
+              <div className="asset-sum-card">
+                <span className="asset-sum-flag"><Twemoji emoji="🇰🇷" size={32} /></span>
+                <div>
+                  <span className="asset-sum-label">원화</span>
+                  <span className="asset-sum-value">{fmt(Math.round(balance))}원</span>
+                  <span className="asset-sum-sub">주문 가능 금액</span>
+                </div>
+              </div>
+              <div className="asset-sum-card">
+                <span className="asset-sum-flag"><Twemoji emoji="🇺🇸" size={32} /></span>
+                <div>
+                  <span className="asset-sum-label">달러</span>
+                  <span className="asset-sum-value">${dollarBalance.toFixed(2)}</span>
+                  <span className="asset-sum-sub">{fmt(Math.round(dollarBalance * exRate))}원</span>
+                </div>
+                <button className="ex-inline-btn" style={{marginLeft:"auto"}} onClick={() => { setShowExchange(true); setExAmount(""); setExMsg(null); }}>환전</button>
+              </div>
+            </div>
+
             {/* 상단 헤더: 총자산 + 검색/AI버튼 */}
             <div className="acc-assets-header">
               <div className="acc-total-asset">
@@ -360,27 +381,6 @@ export default function AccountPage({ user, setUser }) {
                   <span className="acc-ai-icon">✦</span>
                   AI 분석
                 </button>
-              </div>
-            </div>
-
-            {/* 원화/달러 카드 2개 */}
-            <div className="asset-currency-cards">
-              <div className="asset-sum-card">
-                <span className="asset-sum-flag"><Twemoji emoji="🇰🇷" size={32} /></span>
-                <div>
-                  <span className="asset-sum-label">원화</span>
-                  <span className="asset-sum-value">{fmt(Math.round(balance))}원</span>
-                  <span className="asset-sum-sub">주문 가능 금액</span>
-                </div>
-              </div>
-              <div className="asset-sum-card">
-                <span className="asset-sum-flag"><Twemoji emoji="🇺🇸" size={32} /></span>
-                <div>
-                  <span className="asset-sum-label">달러</span>
-                  <span className="asset-sum-value">${dollarBalance.toFixed(2)}</span>
-                  <span className="asset-sum-sub">{fmt(Math.round(dollarBalance * exRate))}원</span>
-                </div>
-                <button className="ex-inline-btn" style={{marginLeft:"auto"}} onClick={() => { setShowExchange(true); setExAmount(""); setExMsg(null); }}>환전</button>
               </div>
             </div>
 
