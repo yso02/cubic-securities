@@ -6,10 +6,10 @@ import { aiChat, aiAnalyzeHoldings, aiAnalyzePortfolio, aiRecommend } from "../a
 import "./AiPage.css";
 
 const TABS = [
-  { id: "chat", label: "💬 AI 채팅", desc: "종목이나 투자에 대해 질문하세요" },
-  { id: "holdings", label: "📊 종목 분석", desc: "보유 종목별 상세 분석" },
-  { id: "portfolio", label: "📈 포트폴리오", desc: "전체 포트폴리오 분석" },
-  { id: "recommend", label: "🎯 추천", desc: "섹터/종목 추천" },
+  { id: "chat",      label: "AI 채팅",    desc: "종목이나 투자에 대해 질문하세요" },
+  { id: "holdings",  label: "종목 분석",  desc: "보유 종목별 상세 분석" },
+  { id: "portfolio", label: "포트폴리오", desc: "전체 포트폴리오 분석" },
+  { id: "recommend", label: "추천",       desc: "섹터/종목 추천" },
 ];
 
 export default function AiPage({ user }) {
@@ -22,6 +22,8 @@ export default function AiPage({ user }) {
   const [analysisResult, setAnalysisResult] = useState("");
   const chatEndRef = useRef(null);
 
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatHistory]);
+
   // URL 쿼리 파라미터로 탭 전환
   useEffect(() => {
     const tab = searchParams.get("tab");
@@ -31,8 +33,6 @@ export default function AiPage({ user }) {
       handleAnalysis(tab);
     }
   }, [searchParams]);
-
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatHistory]);
 
   if (!user) {
     return (
@@ -136,8 +136,8 @@ export default function AiPage({ user }) {
               <div className="ai-disclaimer">⚠️ 모든 AI 분석은 참고용이며, 최종 투자 결정은 본인의 판단으로 해주세요.</div>
             </div>
           )}
-        </div>{/* ai-main */}
-      </div>{/* ai-container */}
+        </div>
+      </div>
     </div>
   );
 }
