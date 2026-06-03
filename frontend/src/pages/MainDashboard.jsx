@@ -10,6 +10,7 @@ import {
 import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
 import TradeModal from "../components/TradeModal";
+import AiChatDrawer from "../components/AiChatDrawer";
 import { getDomesticPrice, getOverseasPrice, fmtPrice, fmtChange as fmtCh, isUp as isUpCheck } from "../api/stockApi";
 import "./MainDashboard.css";
 
@@ -41,6 +42,8 @@ export default function MainDashboard({ user }) {
   const [modalStock, setModalStock] = useState(null);
   const [tradeModal, setTradeModal] = useState(null);
   const modalWsRef = useRef(null);
+
+  const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
@@ -332,7 +335,7 @@ export default function MainDashboard({ user }) {
               </div>
             )}
           </div>
-          <button className="dash-ai-btn" onClick={() => navigate("/ai")}>
+          <button className="dash-ai-btn" onClick={() => setAiDrawerOpen(true)}>
             <span className="dash-ai-icon">✦</span>
             AI 어시스턴트
           </button>
@@ -589,6 +592,8 @@ export default function MainDashboard({ user }) {
           onSuccess={() => { loadPortfolio(); window.dispatchEvent(new Event("cubic_trade_complete")); }}
         />
       )}
+
+      <AiChatDrawer open={aiDrawerOpen} onClose={() => setAiDrawerOpen(false)} user={user} />
 
       {/* 푸터 */}
       <div className="dash-footer">
