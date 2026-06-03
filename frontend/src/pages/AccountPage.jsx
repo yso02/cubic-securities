@@ -7,7 +7,7 @@ import {
   getDomesticPrice, getOverseasPrice, getExchangeRate,
   exchangeKrwToUsd, exchangeUsdToKrw, addWatchlist, removeWatchlist, getWatchlist,
   buyStock, sellStock,
-  isDomestic, fmt, fmtPrice, getExchangeCode, getLogoUrl, NGROK_URL,
+  isDomestic, fmt, fmtPrice, getExchangeCode, getLogoUrl, NGROK_URL, searchStocks,
 } from "../api/stockApi";
 import Twemoji from "../components/Twemoji";
 import StockChart from "../components/StockChart";
@@ -51,6 +51,13 @@ export default function AccountPage({ user, setUser }) {
   // 보유종목 필터
   const [holdingFilter, setHoldingFilter] = useState("all");
   const [holdingSearch, setHoldingSearch] = useState("");
+
+  // 검색
+  const [accSearchQuery, setAccSearchQuery] = useState("");
+  const [accSearchResults, setAccSearchResults] = useState(null);
+  const [showAccSearchDrop, setShowAccSearchDrop] = useState(false);
+  const accSearchRef = useRef(null);
+  const accSearchTimer = useRef(null);
 
   // 종목 모달
   const [stockModal, setStockModal] = useState(null);
@@ -180,6 +187,27 @@ export default function AccountPage({ user, setUser }) {
     try { setWatchlist(await getWatchlist() || []); } catch {}
   };
 
+  const handleAccSearch = (q) => {
+    setAccSearchQuery(q);
+    if (accSearchTimer.current) clearTimeout(accSearchTimer.current);
+    if (!q.trim()) { setAccSearchResults(null); setShowAccSearchDrop(false); return; }
+    accSearchTimer.current = setTimeout(async () => {
+      try {
+        const res = await searchStocks(q);
+        setAccSearchResults(res?.slice(0, 8) || []);
+        setShowAccSearchDrop(true);
+      } catch { setAccSearchResults([]); }
+    }, 300);
+  };
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (accSearchRef.current && !accSearchRef.current.contains(e.target)) setShowAccSearchDrop(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   useEffect(() => { loadWatchlist(); }, []);
 
   const isWatched = (symbol) => watchlist.some(w => w.symbol === symbol);
@@ -252,8 +280,59 @@ export default function AccountPage({ user, setUser }) {
         {/* ── 자산 탭 ── */}
         {activeTab === "assets" && (
           <div className="acc-content">
-            {/* 상단 3카드 */}
-            <div className="asset-summary-cards">
+            {/* 상단 헤더: 총자산 + 검색/AI버튼 */}
+            <div className="acc-assets-header">
+              <div className="acc-total-asset">
+                <span className="acc-total-label">총 자산 {wsConnected && <span className="ws-badge-acc">● LIVE</span>}</span>
+                <div className="acc-total-value">{fmt(Math.round(totalAsset))}원</div>
+                <div className={`acc-total-pl ${totalPL >= 0 ? "up" : "dn"}`}>
+                  {totalPL >= 0 ? "+" : ""}{fmt(Math.round(totalPL))}원 ({totalPLRate}%)
+                </div>
+              </div>
+              <div className="acc-header-actions">
+                <div className="acc-search-wrap" ref={accSearchRef}>
+                  <div className="acc-search-box">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                    <input
+                      type="text"
+                      placeholder="종목명 / 코드 검색"
+                      value={accSearchQuery}
+                      onChange={e => handleAccSearch(e.target.value)}
+                      onFocus={() => { if (accSearchResults?.length) setShowAccSearchDrop(true); }}
+                    />
+                    {accSearchQuery && <button onClick={() => { setAccSearchQuery(""); setAccSearchResults(null); setShowAccSearchDrop(false); }}>✕</button>}
+                  </div>
+                  {showAccSearchDrop && accSearchResults?.length > 0 && (
+                    <div className="acc-search-dropdown">
+                      {accSearchResults.map(s => {
+                        const logo = getLogoUrl(s.symbol, s.market);
+                        return (
+                          <div key={s.symbol} className="acc-search-result" onClick={() => {
+                            handleSelectStock({ symbol: s.symbol, name: s.name, market: s.market, exchange: s.exchange, avgPrice: 0 });
+                            setAccSearchQuery(""); setAccSearchResults(null); setShowAccSearchDrop(false);
+                          }}>
+                            {logo
+                              ? <img src={logo} className="acc-sr-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
+                              : <div className="acc-sr-fallback">{s.name?.substring(0,2)}</div>}
+                            <div className="acc-sr-info">
+                              <span className="acc-sr-name">{s.name}</span>
+                              <span className="acc-sr-code">{s.symbol} · {s.market}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                <button className="acc-ai-btn" onClick={() => navigate("/ai")}>
+                  <span className="acc-ai-icon">✦</span>
+                  AI 어시스턴트
+                </button>
+              </div>
+            </div>
+
+            {/* 원화/달러 카드 2개 */}
+            <div className="asset-currency-cards">
               <div className="asset-sum-card">
                 <span className="asset-sum-flag"><Twemoji emoji="🇰🇷" size={32} /></span>
                 <div>
@@ -269,20 +348,7 @@ export default function AccountPage({ user, setUser }) {
                   <span className="asset-sum-value">${dollarBalance.toFixed(2)}</span>
                   <span className="asset-sum-sub">{fmt(Math.round(dollarBalance * exRate))}원</span>
                 </div>
-              </div>
-              <div className="asset-sum-card primary">
-                <div className="asset-sum-card-top">
-                  <div>
-                    <span className="asset-sum-label">
-                      총 자산 {wsConnected && <span className="ws-badge-acc">● LIVE</span>}
-                    </span>
-                    <span className="asset-sum-value">{fmt(Math.round(totalAsset))}원</span>
-                    <span className={`asset-sum-pl ${totalPL >= 0 ? "up" : "dn"}`}>
-                      {totalPL >= 0 ? "+" : ""}{fmt(Math.round(totalPL))}원 ({totalPLRate}%)
-                    </span>
-                  </div>
-                  <button className="ex-inline-btn" onClick={() => { setShowExchange(true); setExAmount(""); setExMsg(null); }}>환전</button>
-                </div>
+                <button className="ex-inline-btn" style={{marginLeft:"auto"}} onClick={() => { setShowExchange(true); setExAmount(""); setExMsg(null); }}>환전</button>
               </div>
             </div>
 

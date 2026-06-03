@@ -305,10 +305,119 @@
 .asset-invest-pl-sm.up { color: #ef4444; }
 .asset-invest-pl-sm.dn { color: #3b82f6; }
 
-/* ── 자산 요약 카드 3개 ── */
-.asset-summary-cards {
+/* 자산 탭 헤더 */
+.acc-assets-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+.acc-total-asset {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.acc-total-label {
+  font-size: 13px;
+  color: var(--c-text-muted);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.acc-total-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--c-text);
+  letter-spacing: -0.5px;
+}
+.acc-total-pl { font-size: 14px; font-weight: 600; }
+.acc-total-pl.up { color: #ef4444; }
+.acc-total-pl.dn { color: #3b82f6; }
+
+/* 우측 액션 영역 */
+.acc-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* 검색창 */
+.acc-search-wrap { position: relative; }
+.acc-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  padding: 8px 14px;
+  width: 240px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.acc-search-box svg { color: var(--c-text-muted); flex-shrink: 0; }
+.acc-search-box input {
+  flex: 1; border: none; background: transparent;
+  font-size: 13px; color: var(--c-text); outline: none; font-family: inherit;
+}
+.acc-search-box input::placeholder { color: var(--c-text-muted); }
+.acc-search-box button {
+  background: none; border: none; color: var(--c-text-muted);
+  cursor: pointer; font-size: 12px; padding: 0;
+}
+.acc-search-dropdown {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: var(--c-surface); border: 1px solid var(--c-border);
+  border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  overflow: hidden; z-index: 100;
+}
+.acc-search-result {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; cursor: pointer; transition: background 0.1s;
+}
+.acc-search-result:hover { background: var(--c-hover); }
+.acc-sr-logo { width: 28px; height: 28px; border-radius: 50%; object-fit: contain; }
+.acc-sr-fallback {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--c-hover); color: var(--c-text-sub);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700;
+}
+.acc-sr-info { display: flex; flex-direction: column; gap: 1px; }
+.acc-sr-name { font-size: 13px; font-weight: 600; color: var(--c-text); }
+.acc-sr-code { font-size: 11px; color: var(--c-text-muted); }
+
+/* AI 버튼 */
+.acc-ai-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 18px; border: none; border-radius: 10px;
+  font-size: 13px; font-weight: 600; color: #fff;
+  cursor: pointer; font-family: inherit;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6, #14b8a6, #6366f1);
+  background-size: 300% 300%;
+  animation: aiGradient 4s ease infinite;
+  box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+  transition: transform 0.1s, box-shadow 0.1s;
+  white-space: nowrap;
+}
+.acc-ai-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.45); }
+.acc-ai-icon { font-size: 14px; animation: aiSpin 3s linear infinite; display: inline-block; }
+@keyframes aiGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes aiSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* 원화/달러 카드 2개 */
+.asset-currency-cards {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.5fr;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -323,14 +432,6 @@
   transition: background 0.3s;
   box-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
 }
-.asset-sum-card.primary {
-  background: linear-gradient(135deg, #f0fdfa, #ccfbf1);
-  border-color: #99f6e4;
-}
-[data-theme="dark"] .asset-sum-card.primary {
-  background: linear-gradient(135deg, #042f2e, #0f3d3c);
-  border-color: rgba(94,234,212,0.2);
-}
 .asset-sum-flag { font-size: 28px; flex-shrink: 0; }
 .asset-sum-label {
   display: block; font-size: 12px; font-weight: 600;
@@ -342,13 +443,6 @@
 }
 .asset-sum-sub {
   display: block; font-size: 12px; color: var(--c-text-muted); margin-top: 2px;
-}
-.asset-sum-pl { display: block; font-size: 13px; font-weight: 600; margin-top: 2px; }
-.asset-sum-pl.up { color: #ef4444; }
-.asset-sum-pl.dn { color: #3b82f6; }
-.asset-sum-card-top {
-  display: flex; align-items: flex-start;
-  justify-content: space-between; width: 100%;
 }
 
 /* ── 보유종목 필터 탭 ── */
@@ -377,8 +471,9 @@
 }
 
 @media (max-width: 900px) {
-  .asset-summary-cards { grid-template-columns: 1fr 1fr; }
-  .asset-sum-card.primary { grid-column: 1 / -1; }
+  .asset-currency-cards { grid-template-columns: 1fr; }
+  .acc-assets-header { flex-direction: column; }
+  .acc-header-actions { width: 100%; }
 }
 
 /* ── 보유종목 헤더 개편 ── */
