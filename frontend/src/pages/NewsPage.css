@@ -187,6 +187,76 @@
 .news-state span { font-size: 28px; }
 .news-state p { margin: 0; }
 
+.news-updated {
+  font-size: 11px;
+  color: var(--c-text-muted);
+  margin-left: auto;
+}
+.news-section { margin-bottom: 16px; }
+.news-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-text-muted);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.news-section-title.positive { color: #16a34a; }
+.news-section-title.negative { color: #ef4444; }
+.news-headlines { display: flex; flex-direction: column; gap: 6px; }
+.news-headline-item {
+  display: flex; gap: 8px;
+  font-size: 13px; color: var(--c-text-sub);
+  line-height: 1.5;
+}
+.news-headline-dot { color: var(--c-primary); flex-shrink: 0; }
+.news-sector-card {
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.news-sector-card.positive { background: rgba(22,163,74,0.06); border: 1px solid rgba(22,163,74,0.2); }
+.news-sector-card.negative { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); }
+.news-sector-name { font-size: 13px; font-weight: 700; color: var(--c-text); margin-bottom: 4px; }
+.news-sector-reason { font-size: 12px; color: var(--c-text-sub); line-height: 1.6; margin-bottom: 10px; }
+.news-stocks { display: flex; flex-direction: column; gap: 6px; }
+.news-stock-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px;
+}
+.news-stock-logo {
+  width: 22px; height: 22px; border-radius: 50%;
+  object-fit: contain; border: 1px solid var(--c-border);
+  background: #fff; flex-shrink: 0;
+}
+.news-stock-logo-fb {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #64748b; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; font-weight: 700; flex-shrink: 0;
+}
+.news-stock-name { flex: 1; color: var(--c-text-sub); }
+.news-stock-change { font-weight: 700; font-size: 12px; }
+.news-stock-change.positive { color: #16a34a; }
+.news-stock-change.negative { color: #ef4444; }
+.news-summary {
+  font-size: 13px; color: var(--c-text-sub);
+  line-height: 1.7;
+  padding: 12px 14px;
+  background: var(--c-hover);
+  border-radius: 10px;
+}
+.news-skeleton-block {
+  height: 60px; border-radius: 8px;
+  background: var(--c-hover);
+  margin-bottom: 10px;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 /* ── 반응형 ── */
 @media (max-width: 900px) {
   .news-content { grid-template-columns: 1fr; }
