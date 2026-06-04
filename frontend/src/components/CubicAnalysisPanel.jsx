@@ -22,7 +22,9 @@ export default function CubicAnalysisPanel({ stock }) {
     const load = async () => {
       try {
         let result = await getCubicLatest(stock.symbol);
-        if (!result) {
+        // 유효한 데이터인지 확인 (빈 문자열, null, 빈 객체 모두 체크)
+        const isValid = result && typeof result === "object" && result.action;
+        if (!isValid) {
           result = await getCubicAnalyze(stock.symbol, stock.market || "KOSPI");
         }
         setData(result);
