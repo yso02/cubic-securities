@@ -252,7 +252,7 @@
 /* 하단 2컬럼 그리드 (포트폴리오 + 관심종목) */
 .dash-bottom-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 3fr 2fr;
   gap: 16px;
   flex: 1;
   min-height: 0;
@@ -264,11 +264,12 @@
   border-radius: 16px;
   border: 1px solid var(--c-border);
   box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-  overflow: hidden;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   height: calc(100vh - 320px);
   min-height: 300px;
+  position: relative;
 }
 .section-header {
   display: flex;
@@ -292,7 +293,7 @@
 .section-expand-btn:hover { background: var(--c-hover); color: var(--c-text); }
 .section-table-header {
   display: grid;
-  grid-template-columns: 2fr 1fr 0.6fr 1.1fr 1.1fr 0.9fr;
+  grid-template-columns: 1.4fr 1fr 0.5fr 1.1fr 1.1fr 1.1fr;
   gap: 8px;
   padding: 10px 16px;
   font-size: 12px;
@@ -321,7 +322,7 @@
 .section-list::-webkit-scrollbar-track { background: transparent; }
 .section-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 0.6fr 1.1fr 1.1fr 0.9fr;
+  grid-template-columns: 1.4fr 1fr 0.5fr 1.1fr 1.1fr 1.1fr;
   gap: 8px;
   padding: 11px 16px;
   border-radius: 0;
@@ -335,7 +336,7 @@
 
 .watchlist-header {
   display: grid;
-  grid-template-columns: 2fr 1fr 0.8fr 80px 0.9fr;
+  grid-template-columns: 1.8fr 0.9fr 1.1fr 1.2fr;
   gap: 8px;
   padding: 10px 16px;
   font-size: 12px;
@@ -352,7 +353,7 @@
 
 .watchlist-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 0.8fr 80px 0.9fr;
+  grid-template-columns: 1.8fr 0.9fr 1.1fr 1.2fr;
   gap: 8px;
   padding: 11px 16px;
   border-bottom: 1px solid var(--c-border);
@@ -363,16 +364,24 @@
 .watchlist-row:last-child { border-bottom: none; }
 .watchlist-row:hover { background: var(--c-hover); }
 
-.section-stock-info { display: flex; align-items: center; gap: 10px; }
+/* 확대 패널에서 관심종목 6컬럼 */
+.watchlist-header.expanded {
+  grid-template-columns: 1.8fr 55px 0.8fr 1fr 0.8fr 0.9fr;
+}
+.watchlist-row.expanded {
+  grid-template-columns: 1.8fr 55px 0.8fr 1fr 0.8fr 0.9fr;
+}
+
+.section-stock-info { display: flex; align-items: center; gap: 10px; min-width: 0; overflow: hidden; }
 .section-logo { width: 28px; height: 28px; border-radius: 50%; object-fit: contain; flex-shrink: 0; }
 .section-logo-fb {
   width: 28px; height: 28px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 9px; font-weight: 700; color: #fff; flex-shrink: 0;
 }
-.section-name { font-size: 14px; font-weight: 600; color: var(--c-text); }
+.section-name { font-size: 14px; font-weight: 600; color: var(--c-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .section-code { font-size: 11px; color: var(--c-text-muted); }
-.section-val { font-size: 13px; font-weight: 500; color: var(--c-text); text-align: right; white-space: nowrap; }
+.section-val { font-size: 13px; font-weight: 500; color: var(--c-text); text-align: right; white-space: nowrap; min-width: 0; overflow: hidden; display: flex; align-items: center; justify-content: flex-end; }
 .section-val.up { color: #ef4444; font-weight: 600; }
 .section-val.dn { color: #3b82f6; font-weight: 600; }
 
@@ -1051,4 +1060,97 @@
   border: 1px solid var(--c-border);
   border-radius: 20px;
   padding: 4px 12px;
+}
+
+.holdings-sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  color: var(--c-text-sub);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.holdings-sort-btn:hover { background: var(--c-hover); color: var(--c-text); }
+.holdings-sort-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: #ffffff;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  z-index: 200;
+  overflow: hidden;
+  min-width: 150px;
+}
+[data-theme="dark"] .holdings-sort-dropdown {
+  background: #1e2535;
+}
+.holdings-sort-option {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-text-sub);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.holdings-sort-option:hover { background: var(--c-hover); color: var(--c-text); }
+.holdings-sort-option.active { color: var(--c-primary); font-weight: 700; }
+
+/* fixed 드롭다운 다크모드 */
+[data-theme="dark"] .holdings-sort-dropdown-fixed {
+  background: #1e2535 !important;
+}
+
+/* ── 큐빅 신호 바 (MarketPage와 동일) ── */
+.cubic-signal-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  min-width: 0;
+  margin-left: auto;
+}
+.cubic-signal-bar:not(:has(.cubic-signal-nums)) .cubic-signal-track {
+  height: 8px;
+  border-radius: 4px;
+}
+.cubic-signal-nums {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 600;
+}
+.cubic-signal-track {
+  display: flex;
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--c-hover);
+}
+.cubic-signal-sell {
+  background: #e57373;
+  height: 100%;
+}
+.cubic-signal-buy {
+  background: #66bb6a;
+  height: 100%;
+}
+.market-signal-dash {
+  color: var(--c-text-muted);
+  font-size: 13px;
 }

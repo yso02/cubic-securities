@@ -7,7 +7,7 @@ import {
   getMyInfo, getHoldings, getExchangeRate, getPortfolioChart,
   buyStock, sellStock, getBalance,
   isDomestic, fmt, fmtChange, isUp,
-  getLogoUrl, searchStocks, getExchangeCode, NGROK_URL, resetSubscriptions,
+  getLogoUrl, searchStocks, getExchangeCode, NGROK_URL, resetSubscriptions, getCubicBatch,
 } from "../api/stockApi";
 import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
@@ -16,6 +16,25 @@ import AiChatDrawer from "../components/AiChatDrawer";
 import { getDomesticPrice, getOverseasPrice, fmtPrice, fmtChange as fmtCh, isUp as isUpCheck } from "../api/stockApi";
 import api from "../api/stockApi";
 import "./MainDashboard.css";
+
+function CubicSignalBar({ score }) {
+  if (score === null || score === undefined)
+    return <span className="market-signal-dash">-</span>;
+  const sellPct = 100 - score;
+  const buyPct = score;
+  return (
+    <div className="cubic-signal-bar">
+      <div className="cubic-signal-nums">
+        <span style={{ color: "#e57373" }}>{sellPct}%</span>
+        <span style={{ color: "#66bb6a" }}>{buyPct}%</span>
+      </div>
+      <div className="cubic-signal-track">
+        <div className="cubic-signal-sell" style={{ width: `${sellPct}%` }}/>
+        <div className="cubic-signal-buy"  style={{ width: `${buyPct}%` }}/>
+      </div>
+    </div>
+  );
+}
 
 const ICON_COLORS = {
   삼성전자:"#1428A0",SK하이닉스:"#EA002C",현대차:"#002C5F",
@@ -39,6 +58,8 @@ export default function MainDashboard({ user }) {
   const [currentPrices, setCurrentPrices] = useState({});
   const wsClientRef = useRef(null);
   const wsSubsRef = useRef([]);
+  const watchlistWsRef = useRef(null);
+  const [watchlistPrices, setWatchlistPrices] = useState({});
 
   // 종목 모달
   const [stockModal, setStockModal] = useState(null);
@@ -64,6 +85,11 @@ export default function MainDashboard({ user }) {
   const [showSearchDrop, setShowSearchDrop] = useState(false);
   const searchRef = useRef(null);
   const searchTimer = useRef(null);
+  const [holdingSort, setHoldingSort] = useState("eval_desc");
+  const [showSortDrop, setShowSortDrop] = useState(false);
+  const sortDropRef = useRef(null);
+  const sortBtnRef = useRef(null);
+  const [cubicScores, setCubicScores] = useState({});
 
   useEffect(() => {
     resetSubscriptions();
@@ -93,16 +119,112 @@ export default function MainDashboard({ user }) {
   }, [user]);
 
   const loadWatchlist = async () => {
-    try { setWatchlist(await getWatchlist() || []); } catch {}
+    try {
+      const wl = await getWatchlist() || [];
+      setWatchlist(wl);
+      if (wl.length) {
+        fetchWatchlistPrices(wl);
+        fetchCubicScores(wl); // watchlist만 (portfolio는 loadPortfolio에서 따로 처리)
+      }
+    } catch {}
   };
+
+  const fetchWatchlistPrices = async (wl) => {
+    const prices = {};
+    await Promise.allSettled(wl.map(async s => {
+      try {
+        const dom = isDomestic(s.market);
+        const d = dom
+          ? await getDomesticPrice(s.symbol)
+          : await getOverseasPrice(s.symbol, s.exchange || getExchangeCode(s.market));
+        prices[s.symbol] = {
+          price: parseFloat(d.price) || 0,
+          change: d.change,
+          changePercent: d.changePercent,
+          volume: d.acmlTrPbmn || d.tradingValue || d.volume || null,
+        };
+      } catch {}
+    }));
+    setWatchlistPrices(prev => ({ ...prev, ...prices }));
+    connectWatchlistWS(wl);
+  };
+
+  const connectWatchlistWS = (wl) => {
+    if (watchlistWsRef.current) watchlistWsRef.current.deactivate();
+    if (!wl.length) return;
+    const wsURL = NGROK_URL.replace("https://", "wss://").replace("http://", "ws://") + "/ws/websocket";
+    const client = new Client({
+      brokerURL: wsURL,
+      connectHeaders: { "ngrok-skip-browser-warning": "true" },
+      reconnectDelay: 8000,
+      onConnect: () => {
+        wl.forEach(s => {
+          try {
+            if (isDomestic(s.market)) {
+              client.publish({ destination: "/app/subscribe/domestic/price", body: s.symbol });
+              client.subscribe(`/topic/domestic/${s.symbol}`, msg => {
+                try {
+                  const d = JSON.parse(msg.body);
+                  setWatchlistPrices(prev => ({ ...prev, [s.symbol]: {
+                    ...prev[s.symbol],
+                    price: parseFloat(d.price) || prev[s.symbol]?.price || 0,
+                    change: d.change,
+                    changePercent: d.changePercent,
+                  }}));
+                } catch {}
+              });
+            } else {
+              const exc = s.exchange || getExchangeCode(s.market);
+              client.publish({ destination: "/app/subscribe/overseas", body: `${s.symbol},${exc}` });
+              client.subscribe(`/topic/overseas/${s.symbol}`, msg => {
+                try {
+                  const d = JSON.parse(msg.body);
+                  setWatchlistPrices(prev => ({ ...prev, [s.symbol]: {
+                    ...prev[s.symbol],
+                    price: parseFloat(d.price) || prev[s.symbol]?.price || 0,
+                    change: d.change,
+                    changePercent: d.changePercent,
+                  }}));
+                } catch {}
+              });
+            }
+          } catch {}
+        });
+      },
+    });
+    client.activate();
+    watchlistWsRef.current = client;
+  };
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (sortDropRef.current && !sortDropRef.current.contains(e.target)) setShowSortDrop(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const loadPortfolio = async () => {
     setPortfolioLoading(true);
     try {
       const [me, h] = await Promise.allSettled([getMyInfo(), getHoldings()]);
       if (me.status === "fulfilled") setMyBalance(me.value.balance || 0);
-      if (h.status === "fulfilled") setHoldings(h.value || []);
+      if (h.status === "fulfilled") {
+        setHoldings(h.value || []);
+        fetchCubicScores(h.value || []);
+      }
     } finally { setPortfolioLoading(false); }
+  };
+
+  const fetchCubicScores = async (holdingList) => {
+    if (!holdingList?.length) return;
+    try {
+      const symbols = holdingList.map(h => h.symbol);
+      const result = await getCubicBatch(symbols);
+      setCubicScores(prev => ({ ...prev, ...(result || {}) })); // 기존 값 유지하며 병합
+    } catch (e) {
+      console.warn("Cubic batch 조회 실패:", e);
+    }
   };
 
   // WebSocket 실시간 가격 구독
@@ -296,6 +418,30 @@ export default function MainDashboard({ user }) {
   const totalPL = totalEval - totalCost;
   const totalPLRate = totalCost > 0 ? ((totalPL / totalCost) * 100).toFixed(2) : "0.00";
 
+  // 포트폴리오 정렬
+  const SORT_OPTIONS = [
+    { key: "eval_desc", label: "평가금 높은 순" },
+    { key: "eval_asc",  label: "평가금 낮은 순" },
+    { key: "pl_desc",   label: "총 수익률 높은 순" },
+    { key: "pl_asc",    label: "총 수익률 낮은 순" },
+  ];
+  const getHoldingEvalKrw = (h) => {
+    const price = currentPrices[h.symbol] || h.avgPrice;
+    return (isDomestic(h.market) ? price : price * exRate.rate) * h.quantity;
+  };
+  const getHoldingPLRateNum = (h) => {
+    const evalKrw = getHoldingEvalKrw(h);
+    const costKrw = (isDomestic(h.market) ? h.avgPrice : h.avgPrice * exRate.rate) * h.quantity;
+    return costKrw > 0 ? (evalKrw - costKrw) / costKrw * 100 : 0;
+  };
+  const sortedHoldings = [...holdings].sort((a, b) => {
+    if (holdingSort === "eval_desc") return getHoldingEvalKrw(b) - getHoldingEvalKrw(a);
+    if (holdingSort === "eval_asc")  return getHoldingEvalKrw(a) - getHoldingEvalKrw(b);
+    if (holdingSort === "pl_desc")   return getHoldingPLRateNum(b) - getHoldingPLRateNum(a);
+    if (holdingSort === "pl_asc")    return getHoldingPLRateNum(a) - getHoldingPLRateNum(b);
+    return 0;
+  });
+
   // 하루 중 최저/최고 추적 - 날짜가 바뀌면 리셋, 값이 갱신될 때만 업데이트
   useEffect(() => {
     if (totalEval <= 0) return;
@@ -340,37 +486,66 @@ export default function MainDashboard({ user }) {
         </span>
         <span className="section-val">{fmt(Math.round(evalKrw))}원</span>
         <span className="section-val">
-          <span className="section-signal pending">구현예정</span>
+          <CubicSignalBar score={cubicScores[h.symbol]?.cubicScore ?? null} />
         </span>
       </div>
     );
   };
 
-  const renderWatchlistRow = (s, onClickExtra) => (
-    <div key={s.symbol} className="watchlist-row" onClick={() => { handleSelectStock(s); onClickExtra?.(); }}>
-      <div className="section-stock-info">
-        {(() => {
-          const logo = getLogoUrl(s.symbol, s.market);
-          return logo
-            ? <img src={logo} className="section-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
-            : <div className="section-logo-fb" style={{background:getBg(s.name)}}>{s.name?.substring(0,2)}</div>;
-        })()}
-        <div><div className="section-name">{s.name}</div></div>
+  const renderWatchlistRow = (s, onClickExtra, expanded = true) => {
+    const wp = watchlistPrices[s.symbol];
+    const price = wp?.price || 0;
+    const changePercent = wp?.changePercent ?? s.changePercent;
+    const up = isUp(changePercent);
+    const dom = isDomestic(s.market);
+    const volume = wp?.volume;
+    const fmtVol = (v) => {
+      if (!v) return "-";
+      const n = Number(v);
+      if (isNaN(n) || n === 0) return "-";
+      if (n >= 1_000_000_000_000) return (n / 1_000_000_000_000).toFixed(1) + "조";
+      if (n >= 100_000_000) return Math.round(n / 100_000_000) + "억";
+      return fmt(Math.round(n));
+    };
+    const sparkPoints = up ? "0,20 15,16 30,14 45,10 60,8" : "0,8 15,12 30,14 45,16 60,20";
+    const sparkColor = up ? "#ef4444" : "#3b82f6";
+
+    return (
+      <div key={s.symbol} className={`watchlist-row ${expanded ? "expanded" : ""}`} onClick={() => { handleSelectStock(s); onClickExtra?.(); }}>
+        <div className="section-stock-info">
+          {(() => {
+            const logo = getLogoUrl(s.symbol, s.market);
+            return logo
+              ? <img src={logo} className="section-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
+              : <div className="section-logo-fb" style={{background:getBg(s.name)}}>{s.name?.substring(0,2)}</div>;
+          })()}
+          <div><div className="section-name">{s.name}</div></div>
+        </div>
+        {/* 그래프 - 확대 시만 */}
+        {expanded && (
+          <span className="section-val section-trends">
+            <svg width="60" height="24" viewBox="0 0 60 24">
+              <polyline points={sparkPoints} fill="none" stroke={sparkColor} strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </span>
+        )}
+        {/* 등락률 */}
+        <span className={`section-val ${up ? "up" : "dn"}`}>
+          {changePercent != null ? fmtChange(changePercent) : "-"}
+        </span>
+        {/* 현재가 */}
+        <span className="section-val">
+          {price ? (dom ? `${fmt(Math.round(price))}원` : `$${price.toFixed(2)}`) : "-"}
+        </span>
+        {/* 거래대금 - 확대 시만 */}
+        {expanded && <span className="section-val">{fmtVol(volume)}</span>}
+        {/* 신호 */}
+        <span className="section-val">
+          <CubicSignalBar score={cubicScores[s.symbol]?.cubicScore ?? null} />
+        </span>
       </div>
-      <span className="section-val">-</span>
-      <span className={`section-val ${isUp(s.changePercent) ? "up" : "dn"}`}>
-        {s.changePercent ? fmtChange(s.changePercent) : "-"}
-      </span>
-      <span className="section-val section-trends">
-        <svg width="60" height="24" viewBox="0 0 60 24">
-          <polyline points="0,18 15,14 30,16 45,8 60,10" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
-      </span>
-      <span className="section-val">
-        <span className="section-signal pending">구현예정</span>
-      </span>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="dash-page">
@@ -614,9 +789,52 @@ export default function MainDashboard({ user }) {
           <div className="dash-section-card">
             <div className="section-header">
               <span className="section-title">내 포트폴리오</span>
-              <button className="section-expand-btn" onClick={() => setExpandPanel("portfolio")}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-              </button>
+              <div style={{display:"flex", alignItems:"center", gap:6}}>
+                {/* 정렬 드롭다운 */}
+                <div ref={sortDropRef} style={{position:"relative"}}>
+                  <button
+                    ref={sortBtnRef}
+                    className="holdings-sort-btn"
+                    onClick={() => setShowSortDrop(v => !v)}
+                  >
+                    {SORT_OPTIONS.find(o => o.key === holdingSort)?.label}
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                  {showSortDrop && (() => {
+                    const rect = sortBtnRef.current?.getBoundingClientRect();
+                    return (
+                      <div
+                        style={{
+                          position: "fixed",
+                          top: rect ? rect.bottom + 6 : 0,
+                          right: rect ? window.innerWidth - rect.right : 0,
+                          background: "#ffffff",
+                          border: "1px solid var(--c-border)",
+                          borderRadius: 10,
+                          boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+                          zIndex: 9999,
+                          overflow: "hidden",
+                          minWidth: 150,
+                        }}
+                        className="holdings-sort-dropdown-fixed"
+                      >
+                        {SORT_OPTIONS.map(o => (
+                          <button
+                            key={o.key}
+                            className={`holdings-sort-option ${holdingSort === o.key ? "active" : ""}`}
+                            onClick={() => { setHoldingSort(o.key); setShowSortDrop(false); }}
+                          >
+                            {o.label}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                </div>
+                <button className="section-expand-btn" onClick={() => setExpandPanel("portfolio")}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                </button>
+              </div>
             </div>
             <div className="section-table-header">
               <span>종목</span>
@@ -624,7 +842,7 @@ export default function MainDashboard({ user }) {
               <span style={{textAlign:"right"}}>보유</span>
               <span style={{textAlign:"right"}}>손익</span>
               <span style={{textAlign:"right"}}>평가금액</span>
-              <span style={{textAlign:"right"}}>매수/매도</span>
+              <span style={{textAlign:"right"}}>신호</span>
             </div>
             {!user ? (
               <div className="section-empty">로그인이 필요해요</div>
@@ -634,7 +852,7 @@ export default function MainDashboard({ user }) {
               <div className="section-empty">보유 종목이 없어요</div>
             ) : (
               <div className="section-list">
-                {holdings.map(h => renderPortfolioRow(h))}
+                {sortedHoldings.map(h => renderPortfolioRow(h))}
               </div>
             )}
           </div>
@@ -649,10 +867,9 @@ export default function MainDashboard({ user }) {
             </div>
             <div className="watchlist-header">
               <span>종목</span>
-              <span style={{textAlign:"right"}}>현재가</span>
               <span style={{textAlign:"right"}}>등락률</span>
-              <span style={{textAlign:"right"}}>Trends</span>
-              <span style={{textAlign:"right"}}>매수/매도</span>
+              <span style={{textAlign:"right"}}>현재가</span>
+              <span style={{textAlign:"right"}}>신호</span>
             </div>
             {!user ? (
               <div className="section-empty">로그인이 필요해요</div>
@@ -660,7 +877,7 @@ export default function MainDashboard({ user }) {
               <div className="section-empty">관심 종목이 없어요</div>
             ) : (
               <div className="section-list">
-                {watchlist.map(s => renderWatchlistRow(s))}
+                {watchlist.map(s => renderWatchlistRow(s, null, false))}
               </div>
             )}
           </div>
@@ -686,7 +903,7 @@ export default function MainDashboard({ user }) {
                     <span style={{textAlign:"right"}}>보유</span>
                     <span style={{textAlign:"right"}}>손익</span>
                     <span style={{textAlign:"right"}}>평가금액</span>
-                    <span style={{textAlign:"right"}}>매수/매도</span>
+                    <span style={{textAlign:"right"}}>신호</span>
                   </div>
                   {holdings.length === 0 ? (
                     <div className="section-empty">보유 종목이 없어요</div>
@@ -698,18 +915,19 @@ export default function MainDashboard({ user }) {
                 </>
               ) : (
                 <>
-                  <div className="watchlist-header">
+                  <div className="watchlist-header expanded">
                     <span>종목</span>
-                    <span style={{textAlign:"right"}}>현재가</span>
+                    <span>그래프</span>
                     <span style={{textAlign:"right"}}>등락률</span>
-                    <span style={{textAlign:"right"}}>Trends</span>
-                    <span style={{textAlign:"right"}}>매수/매도</span>
+                    <span style={{textAlign:"right"}}>현재가</span>
+                    <span style={{textAlign:"right"}}>거래대금</span>
+                    <span style={{textAlign:"right"}}>신호</span>
                   </div>
                   {watchlist.length === 0 ? (
                     <div className="section-empty">관심 종목이 없어요</div>
                   ) : (
                     <div className="section-list">
-                      {watchlist.map(s => renderWatchlistRow(s, () => setExpandPanel(null)))}
+                      {watchlist.map(s => renderWatchlistRow(s, () => setExpandPanel(null), true))}
                     </div>
                   )}
                 </>
