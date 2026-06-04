@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { getMyInfo, getHoldings, fmt, isDomestic } from "../api/stockApi";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { Client } from "@stomp/stompjs";
+import { getMyInfo, getHoldings, getExchangeRate, fmt, isDomestic, getExchangeCode, NGROK_URL } from "../api/stockApi";
 import api from "../api/stockApi";
 import "./LeftSidebar.css";
 
@@ -33,19 +34,93 @@ export default function LeftSidebar({ user, onLogout }) {
   const [aiOpen, setAiOpen] = useState(false);
   const [portfolioOpen, setPortfolioOpen] = useState(false);
 
-  useEffect(() => {
+  const holdingsRef = useRef([]);       // [{ symbol, market, quantity }]
+  const balanceRef = useRef(0);         // 원화 잔고
+  const dollarBalRef = useRef(0);       // 달러 잔고
+  const exRateRef = useRef(1300);       // 환율 (KRW/USD)
+  const pricesRef = useRef({});         // { symbol: currentPrice }
+  const wsClientRef = useRef(null);
+
+  const calcTotal = useCallback(() => {
+    const stockVal = holdingsRef.current.reduce((sum, h) => {
+      const price = pricesRef.current[h.symbol] ?? h.avgPrice;
+      const krwPrice = isDomestic(h.market) ? price : price * exRateRef.current;
+      return sum + krwPrice * h.quantity;
+    }, 0);
+    setTotalAsset(balanceRef.current + dollarBalRef.current * exRateRef.current + stockVal);
+  }, []);
+
+  const connectWS = useCallback((holdings) => {
+    if (wsClientRef.current) wsClientRef.current.deactivate();
+    if (!holdings.length) return;
+
+    const wsURL = NGROK_URL.replace("https://", "wss://").replace("http://", "ws://") + "/ws/websocket";
+    const client = new Client({
+      brokerURL: wsURL,
+      connectHeaders: { "ngrok-skip-browser-warning": "true" },
+      reconnectDelay: 8000,
+      onConnect: () => {
+        const domestic = holdings.filter(h => isDomestic(h.market));
+        const overseas = holdings.filter(h => !isDomestic(h.market));
+
+        domestic.forEach(h => {
+          client.publish({ destination: "/app/subscribe/domestic/price", body: h.symbol });
+          client.subscribe(`/topic/domestic/${h.symbol}`, msg => {
+            try {
+              const d = JSON.parse(msg.body);
+              const price = d.price ?? d.currentPrice ?? d.stckPrpr;
+              if (price) { pricesRef.current[h.symbol] = Number(price); calcTotal(); }
+            } catch {}
+          });
+        });
+
+        overseas.forEach(h => {
+          const exc = h.exchange || getExchangeCode(h.market);
+          client.publish({ destination: "/app/subscribe/overseas", body: `${h.symbol},${exc}` });
+          client.subscribe(`/topic/overseas/${h.symbol}`, msg => {
+            try {
+              const d = JSON.parse(msg.body);
+              const price = d.price ?? d.currentPrice ?? d.last;
+              if (price) { pricesRef.current[h.symbol] = Number(price); calcTotal(); }
+            } catch {}
+          });
+        });
+      },
+    });
+    client.activate();
+    wsClientRef.current = client;
+  }, [calcTotal]);
+
+  const loadAsset = useCallback(async () => {
     if (!user) return;
-    (async () => {
-      try {
-        const [me, holdings] = await Promise.allSettled([getMyInfo(), getHoldings()]);
-        const balance = me.status === "fulfilled" ? me.value.balance || 0 : 0;
-        const holdingVal = holdings.status === "fulfilled"
-          ? holdings.value.reduce((s, h) => s + h.avgPrice * h.quantity, 0)
-          : 0;
-        setTotalAsset(balance + holdingVal);
-      } catch {}
-    })();
-  }, [user]);
+    try {
+      const [meRes, holdRes, exRes] = await Promise.allSettled([
+        getMyInfo(), getHoldings(), getExchangeRate(),
+      ]);
+      if (meRes.status === "fulfilled") {
+        balanceRef.current = meRes.value.balance || 0;
+        dollarBalRef.current = meRes.value.dollarBalance || 0;
+      }
+      if (exRes.status === "fulfilled") {
+        exRateRef.current = exRes.value?.rate || exRes.value || 1300;
+      }
+      const holdings = holdRes.status === "fulfilled" ? holdRes.value : [];
+      holdingsRef.current = holdings;
+      holdings.forEach(h => { pricesRef.current[h.symbol] = h.avgPrice; });
+      calcTotal();
+      connectWS(holdings);
+    } catch {}
+  }, [user, calcTotal, connectWS]);
+
+  useEffect(() => {
+    loadAsset();
+    const handler = () => loadAsset();
+    window.addEventListener("cubic_trade_complete", handler);
+    return () => {
+      window.removeEventListener("cubic_trade_complete", handler);
+      wsClientRef.current?.deactivate();
+    };
+  }, [loadAsset]);
 
   const mainMenus = [
     { label: "대시보드", path: "/", icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> },
@@ -84,15 +159,7 @@ export default function LeftSidebar({ user, onLogout }) {
     return location.pathname === path;
   };
 
-  const refreshAsset = async () => {
-    try {
-      const [me, holdings] = await Promise.allSettled([getMyInfo(), getHoldings()]);
-      const balance = me.status === "fulfilled" ? me.value.balance || 0 : 0;
-      const holdingVal = holdings.status === "fulfilled"
-        ? holdings.value.reduce((s, h) => s + h.avgPrice * h.quantity, 0) : 0;
-      setTotalAsset(balance + holdingVal);
-    } catch {}
-  };
+  const refreshAsset = loadAsset;
 
   const handleConfirm = async () => {
     const amount = Number(modalAmount.replace(/,/g, ""));
@@ -248,19 +315,23 @@ export default function LeftSidebar({ user, onLogout }) {
 
         {/* 서브 메뉴 */}
         <div className={`ls-ai-submenu ${aiOpen ? "open" : ""}`}>
-          {aiSubMenus.map(m => (
-            <button
-              key={m.label}
-              className="ls-ai-sub-item"
-              onClick={() => navigate(m.path)}
-            >
-              <span className="ls-ai-sub-svg">{m.icon}</span>
-              <span className="ls-ai-sub-info">
-                <span className="ls-ai-sub-label">{m.label}</span>
-                <span className="ls-ai-sub-desc">{m.desc}</span>
-              </span>
-            </button>
-          ))}
+          {aiSubMenus.map(m => {
+            const tabKey = m.path.split("tab=")[1];
+            const isSubActive = location.pathname === "/ai" && location.search.includes(`tab=${tabKey}`);
+            return (
+              <button
+                key={m.label}
+                className={`ls-ai-sub-item ${isSubActive ? "active" : ""}`}
+                onClick={() => navigate(m.path)}
+              >
+                <span className="ls-ai-sub-svg">{m.icon}</span>
+                <span className="ls-ai-sub-info">
+                  <span className="ls-ai-sub-label">{m.label}</span>
+                  <span className="ls-ai-sub-desc">{m.desc}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
