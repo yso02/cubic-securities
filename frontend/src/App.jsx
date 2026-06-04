@@ -10,6 +10,7 @@ import LoginPage from "./pages/LoginPage";
 import AccountPage from "./pages/AccountPage";
 import AiPage from "./pages/AiPage";
 import StockDetailPage from "./pages/StockDetailPage";
+import NewsPage from "./pages/NewsPage";
 import { getMyInfo, logout as apiLogout } from "./api/stockApi";
 import QuizModal from "./components/QuizModal";
 import "./App.css";
@@ -68,6 +69,7 @@ export default function App() {
               <Route path="/ai" element={<AiPage user={user} />} />
               <Route path="/stock/:symbol" element={<StockDetailPage user={user} />} />
               <Route path="/market" element={<MarketPage user={user} />} />
+              <Route path="/news" element={<NewsPage />} />
               <Route path="/account" element={user ? <AccountPage user={user} setUser={setUser} /> : <Navigate to="/login" replace />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
