@@ -724,14 +724,25 @@ export default function MainDashboard({ user }) {
                               tickLine={false}
                               axisLine={false}
                               tickFormatter={(v) => {
-                                if (v >= 100_000_000) return (v / 100_000_000).toFixed(0) + "억";
-                                if (v >= 10_000) return (v / 10_000).toFixed(0) + "만";
-                                return fmt(v);
+                                if (!v && v !== 0) return "";
+                                const abs = Math.abs(v);
+                                if (abs >= 1_000_000_000_000) return (v / 1_000_000_000_000).toFixed(1) + "조";
+                                if (abs >= 100_000_000) return (v / 100_000_000).toFixed(1).replace(/\.0$/, "") + "억";
+                                if (abs >= 10_000_000) return (v / 10_000_000).toFixed(1).replace(/\.0$/, "") + "천만";
+                                if (abs >= 10_000) return (v / 10_000).toFixed(0) + "만";
+                                return fmt(Math.round(v));
                               }}
-                              width={56}
+                              width={64}
+                              tickCount={5}
                               domain={([dataMin, dataMax]) => {
-                                const margin = (dataMax - dataMin) * 0.3;
-                                return [Math.floor(dataMin - margin), Math.ceil(dataMax + margin)];
+                                if (dataMin === dataMax) return [dataMin * 0.95, dataMax * 1.05];
+                                const range = dataMax - dataMin;
+                                const margin = range * 0.15;
+                                // 깔끔한 단위로 반올림
+                                const unit = Math.pow(10, Math.floor(Math.log10(range)) - 1);
+                                const low = Math.floor((dataMin - margin) / unit) * unit;
+                                const high = Math.ceil((dataMax + margin) / unit) * unit;
+                                return [low, high];
                               }}
                             />
                             <Tooltip
