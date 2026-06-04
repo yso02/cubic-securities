@@ -310,3 +310,114 @@
   .detail-tabs { padding: 0 16px; }
   .detail-big-price { font-size: 20px; }
 }
+
+/* ── 모달과 동일한 메인 그리드 레이아웃 ── */
+.detail-main-grid {
+  display: flex;
+  gap: 0;
+  height: calc(100vh - 150px);
+  min-height: 0;
+}
+
+.detail-left-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-right: 1px solid var(--c-border);
+}
+
+.detail-chart-area {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.detail-bottom-row {
+  display: flex;
+  height: 320px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--c-border);
+}
+
+.detail-ob-area {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  border-right: 1px solid var(--c-border);
+}
+
+.detail-ai-area {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.detail-ai-header {
+  margin-bottom: 12px;
+}
+
+.detail-ai-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.detail-ai-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detail-ai-pending {
+  font-size: 12px;
+  color: var(--c-text-muted);
+}
+
+/* 우측 매수/매도 패널 */
+.detail-right-col {
+  width: 300px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.detail-trade-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0;
+}
+
+/* 관심종목 버튼 */
+.detail-watch-btn {
+  width: 36px; height: 36px;
+  background: none; border: 1px solid var(--c-border);
+  border-radius: 8px; cursor: pointer;
+  font-size: 18px; color: var(--c-text-muted);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.detail-watch-btn:hover { border-color: var(--c-primary); color: var(--c-primary); }
+
+/* 해외주식 달러 가격 */
+.detail-big-usd {
+  font-size: 14px;
+  color: var(--c-text-muted);
+  font-weight: 500;
+}
+
+/* 반응형 */
+@media (max-width: 900px) {
+  .detail-main-grid { flex-direction: column; height: auto; }
+  .detail-left-col { border-right: none; border-bottom: 1px solid var(--c-border); }
+  .detail-right-col { width: 100%; }
+  .detail-bottom-row { height: auto; flex-direction: column; }
+  .detail-ob-area { border-right: none; border-bottom: 1px solid var(--c-border); height: 300px; }
+  .detail-ai-area { width: 100%; height: 160px; }
+}
