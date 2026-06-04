@@ -4,9 +4,9 @@ import "./CubicAnalysisPanel.css";
 
 const ACTION_LABEL = { BUY: "매수 권장", SELL: "매도 권장", HOLD: "관망 권장" };
 const ACTION_COLOR = { BUY: "buy", SELL: "sell", HOLD: "hold" };
-const REGIME_LABEL = { UP: "상승", DOWN: "하락", SIDEWAYS: "횡보" };
-const RISK_LABEL = { HIGH: "높음", MEDIUM: "보통", LOW: "낮음" };
-const MOMENTUM_LABEL = { STRONG: "강함", NORMAL: "보통", WEAK: "약함" };
+const REGIME_LABEL = { UP: "상승", DOWN: "하락", SIDEWAYS: "횡보", Side: "횡보", Up: "상승", Down: "하락" };
+const RISK_LABEL = { HIGH: "높음", MEDIUM: "보통", LOW: "낮음", High: "높음", Mid: "보통", Low: "낮음" };
+const MOMENTUM_LABEL = { STRONG: "강함", NORMAL: "보통", WEAK: "약함", Strong: "강함", Normal: "보통", Weak: "약함" };
 
 export default function CubicAnalysisPanel({ stock }) {
   const [data, setData] = useState(null);
@@ -58,12 +58,12 @@ export default function CubicAnalysisPanel({ stock }) {
   const score = data.cubic_score ?? data.cubicScore ?? 50;
   const desc = data.description || {};
   const cell = data.cell || {};
-  const regime = cell.regime || cell.x || "-";
-  const risk = cell.risk || cell.y || "-";
-  const momentum = cell.momentum || cell.z || "-";
-  const analyzedAt = data.date || data.analyzedAt
-    ? new Date(data.date || data.analyzedAt).toLocaleDateString("ko-KR")
-    : "-";
+  const regime = cell.x || cell.regime || "-";
+  const risk = cell.y || cell.risk || "-";
+  const momentum = cell.z || cell.momentum || "-";
+  const analyzedAt = data.date || (data.analyzedAt
+    ? new Date(data.analyzedAt).toLocaleDateString("ko-KR")
+    : "-");
 
   return (
     <div className="cap-wrap">
