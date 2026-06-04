@@ -184,6 +184,10 @@ export const getDomesticMarketNews = async () => {
   const res = await api.get("/api/market/news/domestic");
   return res.data;
 };
+export const getMarketNews = async () => {
+  const res = await api.get("/api/market/news");
+  return res.data;
+};
 
 /* ═══════════ AI ═══════════ */
 export const aiChat = async (message, history = []) => {
@@ -385,7 +389,43 @@ export const submitQuiz = async (quizId, answer) => {
   return res.data;
 };
 
+// Logo.dev에 없는 종목은 로컬 파일로 fallback
+// 파일 위치: public/ 폴더 기준
+export const LOCAL_LOGO_MAP = {
+  // 해외
+  "MU":    "/MUU.svg",
+  "QQQ":   "/QQQ.svg",
+  "SOXL":  "/SOXL.svg",
+  "SOXS":  "/SOXS.svg",
+  "SOXX":  "/SOXX.svg",
+  "SPY":   "/SPY.svg",
+  "SQQQ":  "/SQQQ.svg",
+  "TQQQ":  "/TQQQ.svg",
+  // 국내 - 숫자 코드
+  "0193W0": "/0193W0.svg",
+  "0195R0": "/0195R0.svg",
+  "0195S0": "/0195S0.svg",
+  "019310": "/019310.svg",
+  "069500": "/069500.svg",
+  "091160": "/091160.svg",
+  "122630": "/122630.svg",
+  "229200": "/229200.svg",
+  "233740": "/233740.svg",
+  // 국내 - 회사명 파일 → 심볼 매핑
+  "005930": "/005930.png",
+  "005935": "/005935.png",
+  "009150": "/005930.png",  // 삼성전기 - 삼성 로고 사용
+  "036930": "/036930.svg",
+  "042700": "/042700.png",
+  "402340": "/402340.png",
+  // 추가 종목은 여기에: "SYMBOL": "/파일명.svg"
+};
+
 export const getLogoUrl = (symbol, market) => {
+  // 로컬 파일 먼저 확인
+  if (LOCAL_LOGO_MAP[symbol]) return LOCAL_LOGO_MAP[symbol];
+
+  // 없으면 Logo.dev
   const isOverseas = !isDomestic(market);
   const map = isOverseas ? OVERSEAS_LOGO_MAP : DOMESTIC_LOGO_MAP;
   const domain = map[symbol];
