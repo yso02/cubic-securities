@@ -144,21 +144,20 @@ export default function MainDashboard({ user }) {
     wsClientRef.current = client;
 
     return () => {
+      // 먼저 백엔드 구독 해제 (deactivate 전에)
+      holdings.forEach(h => {
+        try {
+          if (isDomestic(h.market)) {
+            client.publish({ destination: "/app/unsubscribe/domestic/price", body: h.symbol });
+          } else {
+            const exc = h.exchange || getExchangeCode(h.market);
+            client.publish({ destination: "/app/unsubscribe/overseas", body: `${h.symbol},${exc}` });
+          }
+        } catch {}
+      });
+      // 그 다음 프론트 구독 해제
       wsSubsRef.current.forEach(s => { try { s.unsubscribe(); } catch {} });
       wsSubsRef.current = [];
-      // 백엔드 구독 해제
-      if (client.connected) {
-        holdings.forEach(h => {
-          try {
-            if (isDomestic(h.market)) {
-              client.publish({ destination: "/app/unsubscribe/domestic/price", body: h.symbol });
-            } else {
-              const exc = h.exchange || getExchangeCode(h.market);
-              client.publish({ destination: "/app/unsubscribe/overseas", body: `${h.symbol},${exc}` });
-            }
-          } catch {}
-        });
-      }
       client.deactivate();
     };
   }, [holdings.map(h => h.symbol).join(",")]);

@@ -143,8 +143,8 @@
   font-size: 13px;
   font-weight: 600;
 }
-.top4-change.up { color: #22c55e; }
-.top4-change.dn { color: #ef4444; }
+.top4-change.up { color: #ef4444; }
+.top4-change.dn { color: #3b82f6; }
 
 /* 탭 영역 */
 .market-tabs-wrap {
@@ -317,8 +317,8 @@
   font-weight: 600;
   text-align: right;
 }
-.market-change.up { color: #22c55e; }
-.market-change.dn { color: #ef4444; }
+.market-change.up { color: #ef4444; }
+.market-change.dn { color: #3b82f6; }
 
 .market-price {
   font-size: 13px;
