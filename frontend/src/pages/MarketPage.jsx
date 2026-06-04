@@ -220,8 +220,9 @@ export default function MarketPage({ user }) {
       const data = market === "domestic"
         ? await getDomesticRanking(sortType)
         : await getOverseasRanking(sortType);
-      setStocks(data || []);
-      fetchCubicScores(data || []);
+      const top20 = (data || []).slice(0, 20);
+      setStocks(top20);
+      fetchCubicScores(top20);
     } catch { setStocks([]); }
     finally { setLoading(false); }
   };
@@ -255,13 +256,14 @@ export default function MarketPage({ user }) {
       onConnect: () => {
         const dom = isDomestic(stock.market);
         if (dom) {
-          client.publish({ destination: "/app/subscribe/domestic/price", body: stock.symbol });
+          client.publish({ destination: "/app/subscribe/domestic", body: stock.symbol });
           client.subscribe(`/topic/domestic/${stock.symbol}`, msg => {
             try { const d = JSON.parse(msg.body); setModalStock(prev => prev ? { ...prev, ...d } : prev); } catch {}
           });
         } else {
           const exc = stock.exchange || getExchangeCode(stock.market);
           client.publish({ destination: "/app/subscribe/overseas", body: `${stock.symbol},${exc}` });
+          client.publish({ destination: "/app/subscribe/overseas/orderbook", body: `${stock.symbol},${exc}` });
           client.subscribe(`/topic/overseas/${stock.symbol}`, msg => {
             try { const d = JSON.parse(msg.body); setModalStock(prev => prev ? { ...prev, ...d } : prev); } catch {}
           });
