@@ -146,6 +146,19 @@ export default function MainDashboard({ user }) {
     return () => {
       wsSubsRef.current.forEach(s => { try { s.unsubscribe(); } catch {} });
       wsSubsRef.current = [];
+      // 백엔드 구독 해제
+      if (client.connected) {
+        holdings.forEach(h => {
+          try {
+            if (isDomestic(h.market)) {
+              client.publish({ destination: "/app/unsubscribe/domestic/price", body: h.symbol });
+            } else {
+              const exc = h.exchange || getExchangeCode(h.market);
+              client.publish({ destination: "/app/unsubscribe/overseas", body: `${h.symbol},${exc}` });
+            }
+          } catch {}
+        });
+      }
       client.deactivate();
     };
   }, [holdings.map(h => h.symbol).join(",")]);
