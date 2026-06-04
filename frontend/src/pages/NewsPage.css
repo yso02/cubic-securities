@@ -46,7 +46,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-  align-items: start;
+  padding: 0 24px 24px;
 }
 
 /* ── 컬럼 ── */
@@ -54,18 +54,16 @@
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: 16px;
-  overflow: hidden;
+  padding: 20px;
+  overflow-y: auto;
 }
 .news-col-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 18px;
+  margin-bottom: 20px;
+  padding-bottom: 14px;
   border-bottom: 1px solid var(--c-border);
-  background: var(--c-hover);
-  position: sticky;
-  top: 0;
-  z-index: 2;
 }
 .news-col-flag { font-size: 18px; }
 .news-col-title {
@@ -192,7 +190,9 @@
   color: var(--c-text-muted);
   margin-left: auto;
 }
-.news-section { margin-bottom: 16px; }
+.news-section {
+  margin-bottom: 20px;
+}
 .news-section-title {
   font-size: 12px;
   font-weight: 700;
@@ -205,21 +205,29 @@
 .news-section-title.negative { color: #ef4444; }
 .news-headlines { display: flex; flex-direction: column; gap: 6px; }
 .news-headline-item {
-  display: flex; gap: 8px;
-  font-size: 13px; color: var(--c-text-sub);
-  line-height: 1.5;
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--c-text-sub);
+  line-height: 1.6;
+  padding: 4px 0;
 }
 .news-headline-dot { color: var(--c-primary); flex-shrink: 0; }
 .news-sector-card {
-  border-radius: 10px;
-  padding: 12px 14px;
+  border-radius: 12px;
+  padding: 16px;
   margin-bottom: 8px;
 }
 .news-sector-card.positive { background: rgba(22,163,74,0.06); border: 1px solid rgba(22,163,74,0.2); }
 .news-sector-card.negative { background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); }
 .news-sector-name { font-size: 13px; font-weight: 700; color: var(--c-text); margin-bottom: 4px; }
 .news-sector-reason { font-size: 12px; color: var(--c-text-sub); line-height: 1.6; margin-bottom: 10px; }
-.news-stocks { display: flex; flex-direction: column; gap: 6px; }
+.news-stocks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
 .news-stock-item {
   display: flex; align-items: center; gap: 8px;
   font-size: 12px;
