@@ -5,6 +5,18 @@ import ReactMarkdown from "react-markdown";
 import { aiChat, aiAnalyzeHoldings, aiAnalyzePortfolio, aiRecommend } from "../api/stockApi";
 import "./AiPage.css";
 
+function getCachedAnalysis(type) {
+  try {
+    return sessionStorage.getItem(`ai_analysis_${type}`) || null;
+  } catch { return null; }
+}
+
+function setCachedAnalysis(type, result) {
+  try {
+    sessionStorage.setItem(`ai_analysis_${type}`, result);
+  } catch {}
+}
+
 const TABS = [
   { id: "chat",      label: "AI 채팅",    desc: "종목이나 투자에 대해 질문하세요" },
   { id: "holdings",  label: "종목 분석",  desc: "보유 종목별 상세 분석" },
@@ -19,11 +31,6 @@ export default function AiPage({ user }) {
   const [chatInput, setChatInput] = useState("");
   const [chatHistory, setChatHistory] = useState([]);
   const [loading, setLoading] = useState(false);
-  // 탭별 캐시 저장 (portfolio, recommend)
-  const [analysisCache, setAnalysisCache] = useState({
-    portfolio: null,
-    recommend: null,
-  });
   const [analysisResult, setAnalysisResult] = useState("");
   const chatEndRef = useRef(null);
 
@@ -75,13 +82,13 @@ export default function AiPage({ user }) {
     setActiveTab(type);
     if (type === "chat") return;
 
-    // 캐시된 결과 있고 강제 갱신 아니면 캐시 표시
-    if (!forceRefresh && analysisCache[type]) {
-      setAnalysisResult(analysisCache[type]);
-      return;
+    if (!forceRefresh) {
+      const cached = getCachedAnalysis(type);
+      if (cached) {
+        setAnalysisResult(cached);
+        return;
+      }
     }
-
-    // 캐시 없으면 빈 화면 (분석 버튼 대기)
     setAnalysisResult("");
   };
 
@@ -96,7 +103,7 @@ export default function AiPage({ user }) {
       const result = res?.message || "분석 결과가 없습니다.";
       setAnalysisResult(result);
       if (type === "portfolio" || type === "recommend") {
-        setAnalysisCache(prev => ({ ...prev, [type]: result }));
+        setCachedAnalysis(type, result);
       }
     } catch (e) {
       setAnalysisResult(`⚠️ ${typeof e.response?.data === "string" ? e.response.data : "분석 실패"}`);
