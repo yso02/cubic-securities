@@ -30,7 +30,7 @@ function transformDaily(raw){if(!raw||!Array.isArray(raw))return[];const seen=ne
 
 function transformMinute(raw){if(!raw||!Array.isArray(raw))return[];const now=new Date();const base=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;const seen=new Set();return raw.map(d=>{const tf=d.date||d.time;const t=parseMinTime(tf,base);if(!t||seen.has(t))return null;seen.add(t);return{time:t,open:+d.open||0,high:+d.high||0,low:+d.low||0,close:+(d.close||d.settlement_price)||0,volume:parseInt(d.volume)||0};}).filter(Boolean).sort((a,b)=>a.time-b.time);}
 
-export default function StockChart({ stock, fullscreen, onToggleFullscreen }) {
+export default function StockChart({ stock, fullscreen, onToggleFullscreen, hidePrice = false }) {
   const containerRef = useRef(null);
   const chartRef = useRef(null);
   const [period, setPeriod] = useState(null);
@@ -105,9 +105,11 @@ export default function StockChart({ stock, fullscreen, onToggleFullscreen }) {
     <div className={`stock-chart-wrap ${fullscreen?"fullscreen":""}`}>
       <div className="chart-top-bar">
         <div className="chart-top-left">
-          <span className="chart-stock-meta">{stock.market} · {stock.symbol}</span>
+          {!hidePrice && (
+            <span className="chart-stock-meta">{stock.market} · {stock.symbol}</span>
+          )}
           <div className="chart-price-inline">
-            {stock.price && (
+            {stock.price && !hidePrice && (
               <>
                 <span className="chart-inline-price">{fmtPrice(stock.price, stock.market)}</span>
                 <span className={`chart-inline-change ${Number(stock.changePercent) >= 0 ? "up" : "down"}`}>

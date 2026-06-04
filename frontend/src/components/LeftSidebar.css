@@ -659,7 +659,13 @@
   white-space: nowrap;
 }
 .ls-ai-sub-item:hover { background: var(--c-hover); color: var(--c-text); }
-.ls-ai-sub-item.active { color: var(--c-primary); font-weight: 600; }
+.ls-ai-sub-item.active {
+  color: var(--c-primary);
+  font-weight: 600;
+  background: var(--c-primary-muted);
+  border-left: 2px solid var(--c-primary);
+  padding-left: 18px;
+}
 .ls-ai-sub-icon { font-size: 16px; flex-shrink: 0; line-height: 1.4; }
 .ls-ai-sub-svg {
   flex-shrink: 0;

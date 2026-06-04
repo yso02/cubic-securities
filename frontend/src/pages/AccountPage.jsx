@@ -7,7 +7,7 @@ import {
   getDomesticPrice, getOverseasPrice, getExchangeRate,
   exchangeKrwToUsd, exchangeUsdToKrw, addWatchlist, removeWatchlist, getWatchlist,
   buyStock, sellStock,
-  isDomestic, fmt, fmtPrice, getExchangeCode, getLogoUrl, NGROK_URL, searchStocks, resetSubscriptions,
+  isDomestic, fmt, fmtPrice, fmtChange, isUp, getExchangeCode, getLogoUrl, NGROK_URL, searchStocks, resetSubscriptions,
 } from "../api/stockApi";
 import Twemoji from "../components/Twemoji";
 import StockChart from "../components/StockChart";
@@ -198,7 +198,7 @@ export default function AccountPage({ user, setUser }) {
         : await exchangeUsdToKrw(amount);
       setBalance(res.balance);
       setDollarBalance(res.dollarBalance);
-      setExMsg({ type: "success", text: exchangeView === "krw"
+      setExMsg({ type: "success", text: exchangeMode === "krw"
         ? `$${res.exchanged.toFixed(2)} 환전 완료`
         : `${fmt(Math.round(res.exchanged))}원 환전 완료` });
       setExAmount("");
@@ -391,32 +391,58 @@ export default function AccountPage({ user, setUser }) {
                   {/* From 필드 */}
                   <div className="ex-toss-field">
                     <div className="ex-toss-field-label">
-                      <span className="ex-toss-flag">{exchangeMode === "krw" ? "🇰🇷" : "🇺🇸"}</span>
+                      <img
+                        className="ex-currency-icon"
+                        src={exchangeMode === "krw"
+                          ? `https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1f0-1f1f7.svg`
+                          : `https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1fa-1f1f8.svg`}
+                        alt={exchangeMode === "krw" ? "KRW" : "USD"}
+                      />
                       <span className="ex-toss-field-name">{exchangeMode === "krw" ? "원화를" : "달러를"}</span>
                     </div>
                     <div className="ex-toss-input-row">
                       <input
                         className="ex-toss-input"
                         type="text"
+                        inputMode="numeric"
                         placeholder="0"
-                        value={exAmount}
-                        onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ""); setExAmount(raw); setExMsg(null); }}
+                        value={exAmount ? Number(String(exAmount).replace(/,/g, "")).toLocaleString() : ""}
+                        onChange={e => {
+                          const raw = e.target.value.replace(/[^0-9.]/g, "");
+                          setExAmount(raw);
+                          setExMsg(null);
+                        }}
                         autoFocus
                       />
-                      <span className="ex-toss-unit">{exchangeMode === "krw" ? "원" : "달러"}</span>
+                      <span className="ex-toss-unit">{exchangeMode === "krw" ? "원" : "USD"}</span>
                     </div>
+                    {/* 한국어 금액 표시 */}
+                    {exchangeMode === "krw" && Number(exAmount) > 0 && (
+                      <div className="ex-toss-korean">{toKoreanAmountKrw(Number(exAmount))}</div>
+                    )}
                     <div className="ex-toss-avail">
-                      환전가능금액 · {exchangeMode === "krw" ? `${fmt(Math.round(balance))}원` : `$${dollarBalance.toFixed(2)}`}
+                      환전 가능 · {exchangeMode === "krw"
+                        ? <><span className="ex-avail-icon">₩</span> {fmt(Math.round(balance))}원</>
+                        : <><span className="ex-avail-icon">$</span> {dollarBalance.toFixed(2)} USD</>
+                      }
                     </div>
                   </div>
 
                   {/* 화살표 */}
-                  <div className="ex-toss-arrow">↓</div>
+                  <div className="ex-toss-arrow">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+                  </div>
 
                   {/* To 필드 */}
                   <div className="ex-toss-field to">
                     <div className="ex-toss-field-label">
-                      <span className="ex-toss-flag">{exchangeMode === "krw" ? "🇺🇸" : "🇰🇷"}</span>
+                      <img
+                        className="ex-currency-icon"
+                        src={exchangeMode === "krw"
+                          ? `https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1fa-1f1f8.svg`
+                          : `https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/svg/1f1f0-1f1f7.svg`}
+                        alt={exchangeMode === "krw" ? "USD" : "KRW"}
+                      />
                       <span className="ex-toss-field-name">{exchangeMode === "krw" ? "달러로" : "원화로"}</span>
                     </div>
                     <div className="ex-toss-input-row">
@@ -427,9 +453,13 @@ export default function AccountPage({ user, setUser }) {
                             : fmt(Math.round(Number(exAmount) * exRate))
                           : "0"}
                       </span>
-                      <span className="ex-toss-unit muted">{exchangeMode === "krw" ? "달러" : "원"}</span>
+                      <span className="ex-toss-unit muted">{exchangeMode === "krw" ? "USD" : "원"}</span>
                     </div>
-                    <div className="ex-toss-rate">적용 환율 : {fmt(Math.round(exRate))}원</div>
+                    {/* 원화 결과 한국어 표시 */}
+                    {exchangeMode === "usd" && Number(exAmount) > 0 && (
+                      <div className="ex-toss-korean">{toKoreanAmountKrw(Math.round(Number(exAmount) * exRate))}</div>
+                    )}
+                    <div className="ex-toss-rate">적용 환율 · 1 USD = {fmt(Math.round(exRate))}원</div>
                   </div>
 
                   {exMsg && <div className={`ex-result-msg ${exMsg.type}`}>{exMsg.text}</div>}
@@ -440,7 +470,7 @@ export default function AccountPage({ user, setUser }) {
                     onClick={handleExchange}
                     disabled={exLoading || !exAmount || Number(exAmount) <= 0}
                   >
-                    {exLoading ? "처리 중..." : "다음"}
+                    {exLoading ? "처리 중..." : "환전하기"}
                   </button>
                 </div>
               </div>
@@ -506,13 +536,31 @@ export default function AccountPage({ user, setUser }) {
                             })()}
                             <span className="acc-name-info"><strong>{h.name}</strong><small>{h.symbol}</small></span>
                           </span>
-                          <span className="acc-num">
+                          <span className="acc-num" style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1}}>
                             <span className={`live-price ${currentPrices[h.symbol] ? "live" : ""}`}>
-                              {fmtPrice(getPrice(h), h.market)}
+                              {isDomestic(h.market)
+                                ? `${fmt(Math.round(getPrice(h)))}원`
+                                : `${fmt(Math.round(getPrice(h) * exRate))}원`}
                             </span>
+                            {!isDomestic(h.market) && (
+                              <small style={{color:"var(--c-text-muted)",fontSize:11}}>
+                                ${Number(getPrice(h)).toFixed(2)}
+                              </small>
+                            )}
                           </span>
                           <span className="acc-num">{fmt(h.quantity)}주</span>
-                          <span className="acc-num">{fmtPrice(h.avgPrice, h.market)}</span>
+                          <span className="acc-num" style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:1}}>
+                            <span>
+                              {isDomestic(h.market)
+                                ? `${fmt(Math.round(h.avgPrice))}원`
+                                : `${fmt(Math.round(h.avgPrice * exRate))}원`}
+                            </span>
+                            {!isDomestic(h.market) && (
+                              <small style={{color:"var(--c-text-muted)",fontSize:11}}>
+                                ${Number(h.avgPrice).toFixed(2)}
+                              </small>
+                            )}
+                          </span>
                           <span className="acc-num strong">{fmt(Math.round(evalKrw))}원</span>
                           <span className={`acc-num profit-cell ${up ? "up" : "down"}`}>
                             {up ? "+" : ""}{fmt(Math.round(plKrw))}원
@@ -610,18 +658,7 @@ export default function AccountPage({ user, setUser }) {
                 })()}
                 <div>
                   <div className="stock-modal-name">{modalStock.name}</div>
-                  {modalStock.price && (
-                    <div className="stock-modal-price-row">
-                      {isDomestic(modalStock.market) ? (
-                        <span className="smp-krw">{fmt(Math.round(modalStock.price))}원</span>
-                      ) : (
-                        <>
-                          <span className="smp-krw">{fmt(Math.round(Number(modalStock.price) * exRate))}원</span>
-                          <span className="smp-usd">${Number(modalStock.price).toFixed(2)}</span>
-                        </>
-                      )}
-                    </div>
-                  )}
+                  <div className="stock-modal-sub">{modalStock.symbol} · {modalStock.market}</div>
                 </div>
               </div>
               <div className="stock-modal-right">
@@ -640,8 +677,26 @@ export default function AccountPage({ user, setUser }) {
             <div className="stock-modal-grid">
               <div className="stock-modal-left-col">
                 <div className="sml-chart-box">
+                  {/* 차트 안 가격 표시 */}
+                  {modalStock.price && (
+                    <div className="sml-price-bar">
+                      <span className="smpb-krw">
+                        {isDomestic(modalStock.market)
+                          ? `${fmt(Math.round(Number(modalStock.price)))}원`
+                          : `${fmt(Math.round(Number(modalStock.price) * exRate))}원`}
+                      </span>
+                      {!isDomestic(modalStock.market) && (
+                        <span className="smpb-usd">${Number(modalStock.price).toFixed(2)}</span>
+                      )}
+                      {modalStock.changePercent != null && (
+                        <span className={`smpb-change ${isUp(modalStock.changePercent) ? "up" : "dn"}`}>
+                          {isUp(modalStock.changePercent) ? "▲" : "▼"} {fmtChange(modalStock.changePercent)}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <div className="stock-modal-chart">
-                    <StockChart stock={modalStock} fullscreen={false} onToggleFullscreen={() => {}}/>
+                    <StockChart stock={modalStock} fullscreen={false} onToggleFullscreen={() => {}} hidePrice={true}/>
                   </div>
                 </div>
                 <div className="sml-bottom-row">

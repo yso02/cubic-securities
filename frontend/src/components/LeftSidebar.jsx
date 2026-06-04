@@ -259,7 +259,7 @@ export default function LeftSidebar({ user, onLogout }) {
 
         {/* 포트폴리오 (접기/펼치기) */}
         <button
-          className={`ls-menu-item ${location.pathname === "/account" ? "active" : ""}`}
+          className={`ls-menu-item ${location.pathname === "/account" && !location.search ? "active" : ""}`}
           onClick={() => {
             if (collapsed) { setCollapsed(false); setPortfolioOpen(true); navigate("/account"); }
             else setPortfolioOpen(v => !v);
@@ -311,7 +311,7 @@ export default function LeftSidebar({ user, onLogout }) {
 
         {/* 부모 버튼 */}
         <button
-          className={`ls-ai-parent ${location.pathname === "/ai" ? "active" : ""}`}
+          className={`ls-ai-parent ${location.pathname === "/ai" && !location.search ? "active" : ""}`}
           onClick={() => {
             if (collapsed) { setCollapsed(false); setAiOpen(true); navigate("/ai"); }
             else setAiOpen(v => !v);

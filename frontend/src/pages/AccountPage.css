@@ -780,3 +780,37 @@
   color: var(--c-text-muted);
   font-weight: 500;
 }
+
+/* ── 차트 박스 내 가격 표시 ── */
+.sml-price-bar {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 16px 8px;
+  border-bottom: 1px solid var(--c-border);
+  background: var(--c-surface);
+}
+.smpb-krw {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--c-text);
+  letter-spacing: -0.5px;
+}
+.smpb-usd {
+  font-size: 13px;
+  color: var(--c-text-muted);
+  font-weight: 500;
+}
+.smpb-change {
+  font-size: 13px;
+  font-weight: 600;
+}
+.smpb-change.up { color: #ef4444; }
+.smpb-change.dn { color: #3b82f6; }
+
+/* 모달 이름 아래 종목코드/시장 */
+.stock-modal-sub {
+  font-size: 11px;
+  color: var(--c-text-muted);
+  margin-top: 2px;
+}

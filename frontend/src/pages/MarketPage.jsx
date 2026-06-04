@@ -505,18 +505,7 @@ export default function MarketPage({ user }) {
                 })()}
                 <div>
                   <div className="stock-modal-name">{modalStock.name}</div>
-                  {modalStock.price && (
-                    <div className="stock-modal-price-row">
-                      {isDomestic(modalStock.market) ? (
-                        <span className="smp-krw">{fmt(Math.round(modalStock.price))}원</span>
-                      ) : (
-                        <>
-                          <span className="smp-krw">{fmt(Math.round(Number(modalStock.price) * (exRate?.rate || exRate || 1380)))}원</span>
-                          <span className="smp-usd">${Number(modalStock.price).toFixed(2)}</span>
-                        </>
-                      )}
-                    </div>
-                  )}
+                  <div className="stock-modal-sub">{modalStock.symbol} · {modalStock.market}</div>
                 </div>
               </div>
               <div className="stock-modal-right">
@@ -533,13 +522,29 @@ export default function MarketPage({ user }) {
                 <button className="sma-close" onClick={closeStockModal}>✕</button>
               </div>
             </div>
-
             {/* 메인 그리드 */}
             <div className="stock-modal-grid">
               <div className="stock-modal-left-col">
                 <div className="sml-chart-box">
+                  {modalStock.price && (
+                    <div className="sml-price-bar">
+                      <span className="smpb-krw">
+                        {isDomestic(modalStock.market)
+                          ? `${fmt(Math.round(Number(modalStock.price)))}원`
+                          : `${fmt(Math.round(Number(modalStock.price) * (exRate?.rate || exRate || 1380)))}원`}
+                      </span>
+                      {!isDomestic(modalStock.market) && (
+                        <span className="smpb-usd">${Number(modalStock.price).toFixed(2)}</span>
+                      )}
+                      {modalStock.changePercent != null && (
+                        <span className={`smpb-change ${isUp(modalStock.changePercent) ? "up" : "dn"}`}>
+                          {isUp(modalStock.changePercent) ? "▲" : "▼"} {fmtChange(modalStock.changePercent)}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <div className="stock-modal-chart">
-                    <StockChart stock={modalStock} fullscreen={false} onToggleFullscreen={() => {}}/>
+                    <StockChart stock={modalStock} fullscreen={false} onToggleFullscreen={() => {}} hidePrice={true}/>
                   </div>
                 </div>
                 <div className="sml-bottom-row">
