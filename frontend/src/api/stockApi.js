@@ -213,6 +213,14 @@ export const getCubicBatch = async (symbols) => {
   const res = await api.post("/api/ai/cubic/batch", symbols);
   return res.data; // { "005930": { action, cubicScore, cellNum }, ... }
 };
+export const getCubicAnalyze = async (symbol, market = "KOSPI") => {
+  const res = await api.get(`/api/ai/cubic/analyze/${symbol}?market=${market}`);
+  return res.data;
+};
+export const getCubicLatest = async (symbol) => {
+  const res = await api.get(`/api/ai/cubic/latest/${symbol}`);
+  return res.data;
+};
 
 /* ═══════════ 포트폴리오 차트 ═══════════ */
 export const getPortfolioChart = async (days = 30) => {
@@ -393,7 +401,8 @@ export const submitQuiz = async (quizId, answer) => {
 // 파일 위치: public/ 폴더 기준
 export const LOCAL_LOGO_MAP = {
   // 해외
-  "MU":    "/MUU.svg",
+  "MU":    "/Micron-logo-white.svg",
+  "MUU":   "/MUU.svg",
   "QQQ":   "/QQQ.svg",
   "SOXL":  "/SOXL.svg",
   "SOXS":  "/SOXS.svg",
@@ -431,15 +440,4 @@ export const getLogoUrl = (symbol, market) => {
   const domain = map[symbol];
   if (!domain) return null;
   return `https://img.logo.dev/${domain}?token=${LOGO_DEV_TOKEN}&size=40`;
-};
-
-/* ═══════════ Cubic AI 분석 ═══════════ */
-export const getCubicLatest = async (symbol) => {
-  const res = await api.get(`/api/ai/cubic/latest/${symbol}`);
-  return res.data;
-};
-
-export const getCubicAnalyze = async (symbol, market) => {
-  const res = await api.post("/api/ai/cubic/analyze", { symbol, market });
-  return res.data;
 };
