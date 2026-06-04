@@ -8,6 +8,7 @@ import {
   getExchangeRate, isDomestic, fmt, fmtChange, isUp,
   getLogoUrl, getExchangeCode, NGROK_URL, getCubicBatch,
   buyStock, sellStock, getBalance, getHoldings, resetSubscriptions,
+  searchStocks,
 } from "../api/stockApi";
 import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
@@ -113,6 +114,9 @@ export default function MarketPage({ user }) {
   const [wsConnected, setWsConnected] = useState(false);
   const [topStocks, setTopStocks] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchTimerRef = useRef(null);
   const [stockModal, setStockModal] = useState(null);
   const [modalStock, setModalStock] = useState(null);
   const [tradeModal, setTradeModal] = useState(null);
@@ -287,11 +291,23 @@ export default function MarketPage({ user }) {
 
   const getBg = (name) => ICON_COLORS[name] || "#64748b";
 
-  const filteredStocks = stocks.filter(s =>
-    !searchQuery ||
-    s.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.symbol?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // 검색어 변경 시 API 호출 (debounce 300ms)
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    if (!searchQuery.trim()) { setSearchResults([]); return; }
+    searchTimerRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await searchStocks(searchQuery.trim());
+        setSearchResults(Array.isArray(res) ? res : []);
+      } catch { setSearchResults([]); }
+      finally { setSearchLoading(false); }
+    }, 300);
+    return () => clearTimeout(searchTimerRef.current);
+  }, [searchQuery]);
+
+  const isSearchMode = searchQuery.trim().length > 0;
+  const filteredStocks = isSearchMode ? searchResults : stocks;
 
   return (
     <div className="market-page">
@@ -389,12 +405,20 @@ export default function MarketPage({ user }) {
       {/* 종목 리스트 */}
       <div className="market-list-card">
         <div className="market-list-header">
-          <span>종목</span>
-          <span>그래프</span>
-          <span>등락률</span>
-          <span>현재가</span>
-          <span>거래대금</span>
-          <span>신호</span>
+          {isSearchMode ? (
+            <span style={{gridColumn:"1/-1", color:"var(--c-text-sub)", fontSize:13}}>
+              {searchLoading ? "검색 중..." : `"${searchQuery}" 검색 결과 ${filteredStocks.length}건`}
+            </span>
+          ) : (
+            <>
+              <span>종목</span>
+              <span>그래프</span>
+              <span>등락률</span>
+              <span>현재가</span>
+              <span>거래대금</span>
+              <span>신호</span>
+            </>
+          )}
         </div>
         <div className="market-list-body">
           {loading ? (
