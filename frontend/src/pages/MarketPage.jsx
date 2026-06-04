@@ -7,7 +7,7 @@ import {
   getWatchlist, addWatchlist, removeWatchlist,
   getExchangeRate, isDomestic, fmt, fmtChange, isUp,
   getLogoUrl, getExchangeCode, NGROK_URL, getCubicBatch,
-  buyStock, sellStock, getBalance, getHoldings,
+  buyStock, sellStock, getBalance, getHoldings, resetSubscriptions,
 } from "../api/stockApi";
 import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
@@ -118,6 +118,10 @@ export default function MarketPage({ user }) {
   const [tradeModal, setTradeModal] = useState(null);
   const modalWsRef = useRef(null);
   const [cubicScores, setCubicScores] = useState({});
+
+  useEffect(() => {
+    resetSubscriptions();
+  }, []);
 
   useEffect(() => { fetchStocks(); }, [market, sortType]);
   useEffect(() => { fetchTopStocks(); }, [market]);

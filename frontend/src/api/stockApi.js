@@ -202,6 +202,9 @@ export const aiRecommend = async () => {
   const res = await api.post("/api/ai/analyze/recommend");
   return res.data; // { message }
 };
+export const resetSubscriptions = async () => {
+  try { await api.post("/api/subscriptions/reset"); } catch {}
+};
 export const getCubicBatch = async (symbols) => {
   const res = await api.post("/api/ai/cubic/batch", symbols);
   return res.data; // { "005930": { action, cubicScore, cellNum }, ... }

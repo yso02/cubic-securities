@@ -7,7 +7,7 @@ import {
   getDomesticPrice, getOverseasPrice, getExchangeRate,
   exchangeKrwToUsd, exchangeUsdToKrw, addWatchlist, removeWatchlist, getWatchlist,
   buyStock, sellStock,
-  isDomestic, fmt, fmtPrice, getExchangeCode, getLogoUrl, NGROK_URL, searchStocks,
+  isDomestic, fmt, fmtPrice, getExchangeCode, getLogoUrl, NGROK_URL, searchStocks, resetSubscriptions,
 } from "../api/stockApi";
 import Twemoji from "../components/Twemoji";
 import StockChart from "../components/StockChart";
@@ -103,6 +103,7 @@ export default function AccountPage({ user, setUser }) {
   const [exMsg, setExMsg] = useState(null);
 
   useEffect(() => {
+    resetSubscriptions();
     fetchAll();
     const handler = () => fetchAll();
     window.addEventListener("cubic_trade_complete", handler);

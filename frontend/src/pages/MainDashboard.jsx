@@ -7,7 +7,7 @@ import {
   getMyInfo, getHoldings, getExchangeRate, getPortfolioChart,
   buyStock, sellStock, getBalance,
   isDomestic, fmt, fmtChange, isUp,
-  getLogoUrl, searchStocks, getExchangeCode, NGROK_URL,
+  getLogoUrl, searchStocks, getExchangeCode, NGROK_URL, resetSubscriptions,
 } from "../api/stockApi";
 import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
@@ -59,6 +59,10 @@ export default function MainDashboard({ user }) {
   const [showSearchDrop, setShowSearchDrop] = useState(false);
   const searchRef = useRef(null);
   const searchTimer = useRef(null);
+
+  useEffect(() => {
+    resetSubscriptions();
+  }, []);
 
   useEffect(() => {
     (async () => { try { setExRate(await getExchangeRate()); } catch {} })();
