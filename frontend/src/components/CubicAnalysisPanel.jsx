@@ -22,10 +22,16 @@ export default function CubicAnalysisPanel({ stock }) {
     const load = async () => {
       try {
         let result = await getCubicLatest(stock.symbol);
-        // 유효한 데이터인지 확인 (빈 문자열, null, 빈 객체 모두 체크)
         const isValid = result && typeof result === "object" && result.action;
         if (!isValid) {
           result = await getCubicAnalyze(stock.symbol, stock.market || "KOSPI");
+        }
+        // description이 null이면 실시간 분석 호출
+        if (isValid && !result.description) {
+          try {
+            const fresh = await getCubicAnalyze(stock.symbol, stock.market || "KOSPI");
+            if (fresh?.description) result = { ...result, description: fresh.description };
+          } catch {}
         }
         setData(result);
       } catch (e) {
@@ -49,13 +55,15 @@ export default function CubicAnalysisPanel({ stock }) {
   );
 
   const action = data.action || "HOLD";
-  const score = data.cubicScore ?? 50;
+  const score = data.cubic_score ?? data.cubicScore ?? 50;
   const desc = data.description || {};
   const cell = data.cell || {};
-  const regime = cell.regime || "-";
-  const risk = cell.risk || "-";
-  const momentum = cell.momentum || "-";
-  const analyzedAt = data.analyzedAt ? new Date(data.analyzedAt).toLocaleDateString("ko-KR") : "-";
+  const regime = cell.regime || cell.x || "-";
+  const risk = cell.risk || cell.y || "-";
+  const momentum = cell.momentum || cell.z || "-";
+  const analyzedAt = data.date || data.analyzedAt
+    ? new Date(data.date || data.analyzedAt).toLocaleDateString("ko-KR")
+    : "-";
 
   return (
     <div className="cap-wrap">
