@@ -54,6 +54,11 @@ export default function MainDashboard({ user }) {
   const [chartData, setChartData] = useState([]);
   const [chartLoading, setChartLoading] = useState(false);
 
+  // 하루 중 최저/최고 평가금액 추적
+  const [dayLow, setDayLow] = useState(null);
+  const [dayHigh, setDayHigh] = useState(null);
+  const dayDateRef = useRef(null); // "YYYY-MM-DD" 형식으로 오늘 날짜 저장
+
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState(null);
   const [showSearchDrop, setShowSearchDrop] = useState(false);
@@ -291,6 +296,22 @@ export default function MainDashboard({ user }) {
   const totalPL = totalEval - totalCost;
   const totalPLRate = totalCost > 0 ? ((totalPL / totalCost) * 100).toFixed(2) : "0.00";
 
+  // 하루 중 최저/최고 추적 - 날짜가 바뀌면 리셋, 값이 갱신될 때만 업데이트
+  useEffect(() => {
+    if (totalEval <= 0) return;
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    if (dayDateRef.current !== today) {
+      // 새 날짜 → 오늘 기준 초기화
+      dayDateRef.current = today;
+      setDayLow(totalEval);
+      setDayHigh(totalEval);
+    } else {
+      // 같은 날 → 최저/최고만 갱신
+      setDayLow(prev => (prev === null || totalEval < prev) ? totalEval : prev);
+      setDayHigh(prev => (prev === null || totalEval > prev) ? totalEval : prev);
+    }
+  }, [totalEval]);
+
   const renderPortfolioRow = (h, onClickExtra) => {
     const isKr = isDomestic(h.market);
     const currentPrice = currentPrices[h.symbol] || h.avgPrice;
@@ -449,11 +470,11 @@ export default function MainDashboard({ user }) {
                     <div className="perf-boxes-row">
                       <div className="perf-box">
                         <span className="perf-box-label">최저 평가금액</span>
-                        <span className="perf-box-value">{fmt(Math.round(totalEval * 0.98))}원</span>
+                        <span className="perf-box-value">{dayLow !== null ? `${fmt(Math.round(dayLow))}원` : "-"}</span>
                       </div>
                       <div className="perf-box">
                         <span className="perf-box-label">최고 평가금액</span>
-                        <span className="perf-box-value">{fmt(Math.round(totalEval * 1.02))}원</span>
+                        <span className="perf-box-value">{dayHigh !== null ? `${fmt(Math.round(dayHigh))}원` : "-"}</span>
                       </div>
                     </div>
                   </div>

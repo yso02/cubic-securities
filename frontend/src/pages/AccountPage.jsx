@@ -79,16 +79,12 @@ export default function AccountPage({ user, setUser }) {
   const clientRef = useRef(null);
   const subsRef = useRef(new Map());
 
-  // 보유종목 필터
+  // 보유종목 필터/정렬/검색
   const [holdingFilter, setHoldingFilter] = useState("all");
   const [holdingSearch, setHoldingSearch] = useState("");
-
-  // 검색
-  const [accSearchQuery, setAccSearchQuery] = useState("");
-  const [accSearchResults, setAccSearchResults] = useState(null);
-  const [showAccSearchDrop, setShowAccSearchDrop] = useState(false);
-  const accSearchRef = useRef(null);
-  const accSearchTimer = useRef(null);
+  const [holdingSort, setHoldingSort] = useState("eval_desc"); // eval_desc|eval_asc|pl_desc|pl_asc
+  const [showSortDrop, setShowSortDrop] = useState(false);
+  const sortDropRef = useRef(null);
 
   // 종목 모달
   const [stockModal, setStockModal] = useState(null);
@@ -192,7 +188,6 @@ export default function AccountPage({ user, setUser }) {
     };
   }, [holdings.map(h => h.symbol).join(",")]);
 
-  // 환전
   const handleExchange = async () => {
     if (!exAmount || Number(exAmount) <= 0) return;
     setExLoading(true); setExMsg(null);
@@ -220,22 +215,9 @@ export default function AccountPage({ user, setUser }) {
     try { setWatchlist(await getWatchlist() || []); } catch {}
   };
 
-  const handleAccSearch = (q) => {
-    setAccSearchQuery(q);
-    if (accSearchTimer.current) clearTimeout(accSearchTimer.current);
-    if (!q.trim()) { setAccSearchResults(null); setShowAccSearchDrop(false); return; }
-    accSearchTimer.current = setTimeout(async () => {
-      try {
-        const res = await searchStocks(q);
-        setAccSearchResults(res?.slice(0, 8) || []);
-        setShowAccSearchDrop(true);
-      } catch { setAccSearchResults([]); }
-    }, 300);
-  };
-
   useEffect(() => {
     const handler = (e) => {
-      if (accSearchRef.current && !accSearchRef.current.contains(e.target)) setShowAccSearchDrop(false);
+      if (sortDropRef.current && !sortDropRef.current.contains(e.target)) setShowSortDrop(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
@@ -293,15 +275,42 @@ export default function AccountPage({ user, setUser }) {
   };
 
   const getPrice = h => currentPrices[h.symbol]?.price || h.avgPrice;
-  const getEval = h => getPrice(h) * h.quantity;
-  const getBuy = h => h.avgPrice * h.quantity;
-  const getPL = h => getEval(h) - getBuy(h);
-  const getPLRate = h => { const b = getBuy(h); return b > 0 ? ((getPL(h) / b) * 100).toFixed(2) : "0.00"; };
-  const totalBuy = holdings.reduce((s, h) => s + getBuy(h), 0);
-  const totalEval = holdings.reduce((s, h) => s + getEval(h), 0);
-  const totalPL = totalEval - totalBuy;
-  const totalPLRate = totalBuy > 0 ? ((totalPL / totalBuy) * 100).toFixed(2) : "0.00";
-  const totalAsset = Number(balance) + totalEval + (dollarBalance * exRate);
+  // 평가금액 - 해외는 현재 환율로 KRW 변환
+  const getEvalKrw = h => {
+    const price = getPrice(h);
+    return isDomestic(h.market) ? price * h.quantity : price * h.quantity * exRate;
+  };
+  const getBuyKrw = h => isDomestic(h.market)
+    ? h.avgPrice * h.quantity
+    : h.avgPrice * h.quantity * exRate;
+  const getPLKrw = h => getEvalKrw(h) - getBuyKrw(h);
+  const getPLRateNum = h => { const b = getBuyKrw(h); return b > 0 ? (getPLKrw(h) / b) * 100 : 0; };
+  const getPLRate = h => getPLRateNum(h).toFixed(2);
+
+  // 투자 평가금액 (주식만, KRW 기준)
+  const totalStockEvalKrw = holdings.reduce((s, h) => s + getEvalKrw(h), 0);
+  const totalBuyKrw = holdings.reduce((s, h) => s + getBuyKrw(h), 0);
+  const totalPLKrw = totalStockEvalKrw - totalBuyKrw;
+  const totalPLRateKrw = totalBuyKrw > 0 ? ((totalPLKrw / totalBuyKrw) * 100).toFixed(2) : "0.00";
+
+  // 정렬된 보유종목
+  const SORT_OPTIONS = [
+    { key: "eval_desc", label: "평가금 높은 순" },
+    { key: "eval_asc",  label: "평가금 낮은 순" },
+    { key: "pl_desc",   label: "총 수익률 높은 순" },
+    { key: "pl_asc",    label: "총 수익률 낮은 순" },
+  ];
+  const filteredHoldings = holdings.filter(h =>
+    (holdingFilter === "all" ? true : holdingFilter === "domestic" ? isDomestic(h.market) : !isDomestic(h.market)) &&
+    (!holdingSearch || h.name?.toLowerCase().includes(holdingSearch.toLowerCase()) || h.symbol?.toLowerCase().includes(holdingSearch.toLowerCase()))
+  );
+  const sortedHoldings = [...filteredHoldings].sort((a, b) => {
+    if (holdingSort === "eval_desc") return getEvalKrw(b) - getEvalKrw(a);
+    if (holdingSort === "eval_asc")  return getEvalKrw(a) - getEvalKrw(b);
+    if (holdingSort === "pl_desc")   return getPLRateNum(b) - getPLRateNum(a);
+    if (holdingSort === "pl_asc")    return getPLRateNum(a) - getPLRateNum(b);
+    return 0;
+  });
 
 
 
@@ -334,95 +343,105 @@ export default function AccountPage({ user, setUser }) {
               </div>
             </div>
 
-            {/* 상단 헤더: 총자산 + 검색/AI버튼 */}
+            {/* 상단 헤더: 투자 평가금액 + 검색 */}
             <div className="acc-assets-header">
               <div className="acc-total-asset">
-                <span className="acc-total-label">총 자산</span>
-                <div className="acc-total-value">{fmt(Math.round(totalAsset))}원</div>
-                <div className={`acc-total-pl ${totalPL >= 0 ? "up" : "dn"}`}>
-                  {totalPL >= 0 ? "+" : ""}{fmt(Math.round(totalPL))}원 ({totalPLRate}%)
+                <span className="acc-total-label">투자 평가금액</span>
+                <div className="acc-total-value">{fmt(Math.round(totalStockEvalKrw))}원</div>
+                <div className={`acc-total-pl ${totalPLKrw >= 0 ? "up" : "dn"}`}>
+                  {totalPLKrw >= 0 ? "+" : ""}{fmt(Math.round(totalPLKrw))}원 ({totalPLRateKrw}%)
                 </div>
               </div>
               <div className="acc-header-actions">
-                <div className="acc-search-wrap" ref={accSearchRef}>
-                  <div className="acc-search-box">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-                    <input
-                      type="text"
-                      placeholder="종목명 / 코드 검색"
-                      value={accSearchQuery}
-                      onChange={e => handleAccSearch(e.target.value)}
-                      onFocus={() => { if (accSearchResults?.length) setShowAccSearchDrop(true); }}
-                    />
-                    {accSearchQuery && <button onClick={() => { setAccSearchQuery(""); setAccSearchResults(null); setShowAccSearchDrop(false); }}>✕</button>}
-                  </div>
-                  {showAccSearchDrop && accSearchResults?.length > 0 && (
-                    <div className="acc-search-dropdown">
-                      {accSearchResults.map(s => {
-                        const logo = getLogoUrl(s.symbol, s.market);
-                        return (
-                          <div key={s.symbol} className="acc-search-result" onClick={() => {
-                            handleSelectStock({ symbol: s.symbol, name: s.name, market: s.market, exchange: s.exchange, avgPrice: 0 });
-                            setAccSearchQuery(""); setAccSearchResults(null); setShowAccSearchDrop(false);
-                          }}>
-                            {logo
-                              ? <img src={logo} className="acc-sr-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
-                              : <div className="acc-sr-fallback">{s.name?.substring(0,2)}</div>}
-                            <div className="acc-sr-info">
-                              <span className="acc-sr-name">{s.name}</span>
-                              <span className="acc-sr-code">{s.symbol} · {s.market}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                <div className="acc-search-box">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                  <input
+                    type="text"
+                    placeholder="보유 종목 검색"
+                    value={holdingSearch}
+                    onChange={e => setHoldingSearch(e.target.value)}
+                  />
+                  {holdingSearch && <button onClick={() => setHoldingSearch("")}>✕</button>}
                 </div>
-                <button className="acc-ai-btn" onClick={() => navigate("/ai")}>
+                <button className="acc-ai-btn" onClick={() => navigate("/ai?tab=portfolio")}>
                   <span className="acc-ai-icon">✦</span>
                   AI 분석
                 </button>
               </div>
             </div>
 
-            {/* 환전 모달 */}
+            {/* 환전 모달 - 토스 스타일 */}
             {showExchange && (
               <div className="ls-modal-overlay" onClick={() => { setShowExchange(false); setExAmount(""); setExMsg(null); }}>
-                <div className="ls-modal" onClick={e => e.stopPropagation()} style={{width: 360}}>
-                  <div className="ls-modal-title">환전</div>
-                  <div className="ls-modal-tabs">
-                    <button className={`ls-modal-tab ${exchangeMode === "krw" ? "active" : ""}`} onClick={() => { setExchangeMode("krw"); setExAmount(""); setExMsg(null); }}>달러 사기</button>
-                    <button className={`ls-modal-tab ${exchangeMode === "usd" ? "active" : ""}`} onClick={() => { setExchangeMode("usd"); setExAmount(""); setExMsg(null); }}>달러 팔기</button>
+                <div className="ex-toss-modal" onClick={e => e.stopPropagation()}>
+                  {/* 헤더 */}
+                  <div className="ex-toss-header">
+                    <div className="ex-toss-title-row">
+                      <span className="ex-toss-title">환전하기</span>
+                    </div>
+                    <button className="ex-toss-close" onClick={() => { setShowExchange(false); setExAmount(""); setExMsg(null); }}>✕</button>
                   </div>
-                  <div className="ex-inline-balances" style={{marginBottom: 16}}>
-                    <span>🇰🇷 {fmt(Math.round(balance))}원</span>
-                    <span className="ex-inline-arrow">⇄</span>
-                    <span>🇺🇸 ${dollarBalance.toFixed(2)}</span>
-                    <span className="ex-rate-badge">1 USD = {fmt(Math.round(exRate))}원</span>
+
+                  {/* 방향 탭 */}
+                  <div className="ex-toss-tabs">
+                    <button className={`ex-toss-tab ${exchangeMode === "krw" ? "active" : ""}`} onClick={() => { setExchangeMode("krw"); setExAmount(""); setExMsg(null); }}>달러로 환전</button>
+                    <button className={`ex-toss-tab ${exchangeMode === "usd" ? "active" : ""}`} onClick={() => { setExchangeMode("usd"); setExAmount(""); setExMsg(null); }}>원화로 환전</button>
                   </div>
-                  <div className="ls-modal-input-wrap">
-                    <span className="ls-modal-label">{exchangeMode === "krw" ? "원화 입력" : "달러 입력"}</span>
-                    <div className="ex-input-wrap" style={{border: "1px solid var(--c-border)", borderRadius: 10, padding: "4px 14px"}}>
-                      <input type="text" value={exAmount ? Number(exAmount).toLocaleString() : ""} onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ""); setExAmount(raw); setExMsg(null); }} placeholder={exchangeMode === "krw" ? "원화 입력" : "달러 입력"} autoFocus style={{border:"none",background:"none",outline:"none",fontSize:16,fontWeight:700,color:"var(--c-text)",fontFamily:"inherit",width:"100%",padding:"10px 0"}}/>
-                      <span className="ex-input-unit">{exchangeMode === "krw" ? "원" : "$"}</span>
+
+                  {/* From 필드 */}
+                  <div className="ex-toss-field">
+                    <div className="ex-toss-field-label">
+                      <span className="ex-toss-flag">{exchangeMode === "krw" ? "🇰🇷" : "🇺🇸"}</span>
+                      <span className="ex-toss-field-name">{exchangeMode === "krw" ? "원화를" : "달러를"}</span>
+                    </div>
+                    <div className="ex-toss-input-row">
+                      <input
+                        className="ex-toss-input"
+                        type="text"
+                        placeholder="0"
+                        value={exAmount}
+                        onChange={e => { const raw = e.target.value.replace(/[^0-9.]/g, ""); setExAmount(raw); setExMsg(null); }}
+                        autoFocus
+                      />
+                      <span className="ex-toss-unit">{exchangeMode === "krw" ? "원" : "달러"}</span>
+                    </div>
+                    <div className="ex-toss-avail">
+                      환전가능금액 · {exchangeMode === "krw" ? `${fmt(Math.round(balance))}원` : `$${dollarBalance.toFixed(2)}`}
                     </div>
                   </div>
-                  {exAmount && Number(exAmount) > 0 && (
-                    <div className="ex-korean-amount">
-                      {exchangeMode === "krw"
-                        ? toKoreanAmountKrw(Number(exAmount))
-                        : toKoreanAmountUsd(Number(exAmount) * exRate)
-                      }
+
+                  {/* 화살표 */}
+                  <div className="ex-toss-arrow">↓</div>
+
+                  {/* To 필드 */}
+                  <div className="ex-toss-field to">
+                    <div className="ex-toss-field-label">
+                      <span className="ex-toss-flag">{exchangeMode === "krw" ? "🇺🇸" : "🇰🇷"}</span>
+                      <span className="ex-toss-field-name">{exchangeMode === "krw" ? "달러로" : "원화로"}</span>
                     </div>
-                  )}
-                  {preview && <div className="ex-preview-text">{preview}</div>}
-                  {exMsg && <div className={`ex-result-msg ${exMsg.type}`} style={{marginBottom: 12}}>{exMsg.text}</div>}
-                  <div className="ls-modal-btns">
-                    <button className="ls-modal-cancel" onClick={() => { setShowExchange(false); setExAmount(""); setExMsg(null); }}>취소</button>
-                    <button className="ls-modal-confirm" onClick={handleExchange} disabled={exLoading || !exAmount || Number(exAmount) <= 0}>
-                      {exLoading ? "처리 중..." : exchangeMode === "krw" ? "달러 사기" : "달러 팔기"}
-                    </button>
+                    <div className="ex-toss-input-row">
+                      <span className="ex-toss-result">
+                        {Number(exAmount) > 0
+                          ? exchangeMode === "krw"
+                            ? (Number(exAmount) / exRate).toFixed(2)
+                            : fmt(Math.round(Number(exAmount) * exRate))
+                          : "0"}
+                      </span>
+                      <span className="ex-toss-unit muted">{exchangeMode === "krw" ? "달러" : "원"}</span>
+                    </div>
+                    <div className="ex-toss-rate">적용 환율 : {fmt(Math.round(exRate))}원</div>
                   </div>
+
+                  {exMsg && <div className={`ex-result-msg ${exMsg.type}`}>{exMsg.text}</div>}
+
+                  {/* 다음 버튼 */}
+                  <button
+                    className="ex-toss-confirm"
+                    onClick={handleExchange}
+                    disabled={exLoading || !exAmount || Number(exAmount) <= 0}
+                  >
+                    {exLoading ? "처리 중..." : "다음"}
+                  </button>
                 </div>
               </div>
             )}
@@ -439,11 +458,28 @@ export default function AccountPage({ user, setUser }) {
                     ))}
                   </div>
                 </div>
+                {/* 정렬 드롭다운 */}
+                <div className="holdings-sort-wrap" ref={sortDropRef}>
+                  <button className="holdings-sort-btn" onClick={() => setShowSortDrop(v => !v)}>
+                    {SORT_OPTIONS.find(o => o.key === holdingSort)?.label}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                  {showSortDrop && (
+                    <div className="holdings-sort-dropdown">
+                      {SORT_OPTIONS.map(o => (
+                        <button key={o.key} className={`holdings-sort-option ${holdingSort === o.key ? "active" : ""}`}
+                          onClick={() => { setHoldingSort(o.key); setShowSortDrop(false); }}>
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="acc-table">
                 {loading ? (
                   <div className="acc-empty"><div className="loading-spinner" /></div>
-                ) : !holdings.filter(h => (holdingFilter === "all" ? true : holdingFilter === "domestic" ? isDomestic(h.market) : !isDomestic(h.market)) && (!holdingSearch || h.name?.includes(holdingSearch) || h.symbol?.toLowerCase().includes(holdingSearch.toLowerCase()))).length ? (
+                ) : !sortedHoldings.length ? (
                   <div className="acc-empty">
                     <span className="acc-empty-ico">📭</span>
                     <p>보유 종목이 없어요</p>
@@ -453,10 +489,12 @@ export default function AccountPage({ user, setUser }) {
                   <>
                     <div className="acc-table-head holdings-grid">
                       <span>종목</span><span>현재가</span><span>수량</span>
-                      <span>평균매수가</span><span>평가금액</span><span>수익률</span>
+                      <span>평균매수가</span><span>평가금액(원)</span><span>수익률</span>
                     </div>
-                    {holdings.filter(h => (holdingFilter === "all" ? true : holdingFilter === "domestic" ? isDomestic(h.market) : !isDomestic(h.market)) && (!holdingSearch || h.name?.includes(holdingSearch) || h.symbol?.toLowerCase().includes(holdingSearch.toLowerCase()))).map(h => {
-                      const pl = getPL(h); const up = pl >= 0;
+                    {sortedHoldings.map(h => {
+                      const evalKrw = getEvalKrw(h);
+                      const plKrw = getPLKrw(h);
+                      const up = plKrw >= 0;
                       return (
                         <div key={h.id} className="acc-table-row holdings-grid clickable" onClick={() => handleSelectStock(h)}>
                           <span className="acc-name">
@@ -468,12 +506,16 @@ export default function AccountPage({ user, setUser }) {
                             })()}
                             <span className="acc-name-info"><strong>{h.name}</strong><small>{h.symbol}</small></span>
                           </span>
-                          <span className="acc-num"><span className={`live-price ${currentPrices[h.symbol] ? "live" : ""}`}>{fmtPrice(getPrice(h), h.market)}</span></span>
+                          <span className="acc-num">
+                            <span className={`live-price ${currentPrices[h.symbol] ? "live" : ""}`}>
+                              {fmtPrice(getPrice(h), h.market)}
+                            </span>
+                          </span>
                           <span className="acc-num">{fmt(h.quantity)}주</span>
                           <span className="acc-num">{fmtPrice(h.avgPrice, h.market)}</span>
-                          <span className="acc-num strong">{fmt(Math.round(getEval(h)))}{isDomestic(h.market) ? "원" : "$"}</span>
+                          <span className="acc-num strong">{fmt(Math.round(evalKrw))}원</span>
                           <span className={`acc-num profit-cell ${up ? "up" : "down"}`}>
-                            {up ? "+" : ""}{fmt(Math.round(pl))}{isDomestic(h.market) ? "원" : "$"}
+                            {up ? "+" : ""}{fmt(Math.round(plKrw))}원
                             <small>({getPLRate(h)}%)</small>
                           </span>
                         </div>

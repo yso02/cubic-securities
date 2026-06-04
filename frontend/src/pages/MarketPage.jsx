@@ -116,7 +116,18 @@ export default function MarketPage({ user }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [showSearchDrop, setShowSearchDrop] = useState(false);
+  const searchBoxRef = useRef(null);
   const searchTimerRef = useRef(null);
+
+  // 검색 드롭다운 바깥 클릭 닫기
+  useEffect(() => {
+    const handler = (e) => {
+      if (searchBoxRef.current && !searchBoxRef.current.contains(e.target)) setShowSearchDrop(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
   const [stockModal, setStockModal] = useState(null);
   const [modalStock, setModalStock] = useState(null);
   const [tradeModal, setTradeModal] = useState(null);
@@ -294,20 +305,20 @@ export default function MarketPage({ user }) {
   // 검색어 변경 시 API 호출 (debounce 300ms)
   useEffect(() => {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    if (!searchQuery.trim()) { setSearchResults([]); return; }
+    if (!searchQuery.trim()) { setSearchResults([]); setShowSearchDrop(false); return; }
     searchTimerRef.current = setTimeout(async () => {
       setSearchLoading(true);
       try {
         const res = await searchStocks(searchQuery.trim());
-        setSearchResults(Array.isArray(res) ? res : []);
+        setSearchResults(Array.isArray(res) ? res.slice(0, 10) : []);
+        setShowSearchDrop(true);
       } catch { setSearchResults([]); }
       finally { setSearchLoading(false); }
     }, 300);
     return () => clearTimeout(searchTimerRef.current);
   }, [searchQuery]);
 
-  const isSearchMode = searchQuery.trim().length > 0;
-  const filteredStocks = isSearchMode ? searchResults : stocks;
+  const filteredStocks = stocks; // 검색은 드롭다운으로 처리
 
   return (
     <div className="market-page">
@@ -317,14 +328,38 @@ export default function MarketPage({ user }) {
           <p className="market-subtitle">실시간 시장 현황을 확인하세요</p>
         </div>
         <div className="market-header-right">
-          <div className="market-search-box">
+          <div className="market-search-box" ref={searchBoxRef} style={{position:"relative"}}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             <input
               type="text"
               placeholder="종목 검색..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
+              onFocus={() => { if (searchResults.length) setShowSearchDrop(true); }}
             />
+            {searchQuery && <button onClick={() => { setSearchQuery(""); setSearchResults([]); setShowSearchDrop(false); }} style={{background:"none",border:"none",cursor:"pointer",color:"var(--c-text-muted)"}}>✕</button>}
+            {showSearchDrop && searchResults.length > 0 && (
+              <div className="topbar-dropdown" style={{top:"calc(100% + 8px)", left:0, right:0, zIndex:200}}>
+                {searchLoading && <div style={{padding:"12px 16px",color:"var(--c-text-muted)",fontSize:13}}>검색 중...</div>}
+                {searchResults.map(s => {
+                  const logo = getLogoUrl(s.symbol, s.market);
+                  return (
+                    <div key={s.symbol} className="topbar-result" onClick={() => {
+                      setShowSearchDrop(false); setSearchQuery("");
+                      handleSelectStock(s);
+                    }}>
+                      {logo
+                        ? <img src={logo} className="tr-logo" alt="" onError={e=>{e.target.style.display="none";}}/>
+                        : <div className="tr-fallback">{s.name?.substring(0,2)}</div>}
+                      <div className="tr-info">
+                        <span className="tr-name">{s.name}</span>
+                        <span className="tr-code">{s.symbol} · {s.market}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -405,20 +440,12 @@ export default function MarketPage({ user }) {
       {/* 종목 리스트 */}
       <div className="market-list-card">
         <div className="market-list-header">
-          {isSearchMode ? (
-            <span style={{gridColumn:"1/-1", color:"var(--c-text-sub)", fontSize:13}}>
-              {searchLoading ? "검색 중..." : `"${searchQuery}" 검색 결과 ${filteredStocks.length}건`}
-            </span>
-          ) : (
-            <>
-              <span>종목</span>
-              <span>그래프</span>
-              <span>등락률</span>
-              <span>현재가</span>
-              <span>거래대금</span>
-              <span>신호</span>
-            </>
-          )}
+          <span>종목</span>
+          <span>그래프</span>
+          <span>등락률</span>
+          <span>현재가</span>
+          <span>거래대금</span>
+          <span>신호</span>
         </div>
         <div className="market-list-body">
           {loading ? (

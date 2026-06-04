@@ -555,3 +555,210 @@
 }
 .acc-name-info strong { font-size: 13.5px; font-weight: 700; color: var(--c-text); }
 .acc-name-info small { font-size: 11.5px; color: var(--c-text-muted); }
+
+/* ── 토스 스타일 환전 모달 ── */
+.ex-toss-modal {
+  background: var(--c-surface);
+  border-radius: 20px;
+  padding: 28px;
+  width: 420px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  border: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.ex-toss-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.ex-toss-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ex-toss-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--c-text);
+}
+.ex-toss-fee {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--c-primary);
+  background: var(--c-primary-muted);
+  border: 1px solid var(--c-primary-border);
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+.ex-toss-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+.ex-toss-tabs {
+  display: flex;
+  background: var(--c-hover);
+  border-radius: 10px;
+  padding: 3px;
+  gap: 2px;
+}
+.ex-toss-tab {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  background: transparent;
+  color: var(--c-text-muted);
+  transition: all 0.15s;
+}
+.ex-toss-tab.active {
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+.ex-toss-field {
+  background: var(--c-hover);
+  border-radius: 14px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ex-toss-field.to {
+  opacity: 0.85;
+}
+.ex-toss-field-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ex-toss-flag { font-size: 22px; }
+.ex-toss-field-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--c-text);
+}
+.ex-toss-input-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.ex-toss-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--c-text);
+  font-family: inherit;
+  min-width: 0;
+}
+.ex-toss-input::placeholder { color: var(--c-text-muted); }
+.ex-toss-result {
+  flex: 1;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--c-text-muted);
+}
+.ex-toss-unit {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--c-text-sub);
+  flex-shrink: 0;
+}
+.ex-toss-unit.muted { color: var(--c-text-muted); }
+.ex-toss-avail {
+  font-size: 12px;
+  color: var(--c-text-muted);
+  text-align: right;
+}
+.ex-toss-rate {
+  font-size: 12px;
+  color: var(--c-text-muted);
+  text-align: right;
+}
+.ex-toss-arrow {
+  text-align: center;
+  font-size: 20px;
+  color: var(--c-text-muted);
+  margin: -8px 0;
+}
+.ex-toss-confirm {
+  width: 100%;
+  padding: 14px;
+  background: var(--c-primary);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+.ex-toss-confirm:hover:not(:disabled) { opacity: 0.88; }
+.ex-toss-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── 정렬 드롭다운 ── */
+.holdings-sort-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.holdings-sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+  color: var(--c-text-sub);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.holdings-sort-btn:hover { background: var(--c-hover); color: var(--c-text); }
+.holdings-sort-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 100;
+  overflow: hidden;
+  min-width: 150px;
+}
+.holdings-sort-option {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-text-sub);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.holdings-sort-option:hover { background: var(--c-hover); color: var(--c-text); }
+.holdings-sort-option.active { color: var(--c-primary); font-weight: 700; }
