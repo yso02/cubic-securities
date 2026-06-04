@@ -735,6 +735,18 @@ export default function MainDashboard({ user }) {
                 })()}
                 <div>
                   <div className="stock-modal-name">{modalStock.name}</div>
+                  {modalStock.price && (
+                    <div className="stock-modal-price-row">
+                      {isDomestic(modalStock.market) ? (
+                        <span className="smp-krw">{fmt(Math.round(modalStock.price))}원</span>
+                      ) : (
+                        <>
+                          <span className="smp-krw">{fmt(Math.round(Number(modalStock.price) * (exRate?.rate || exRate || 1380)))}원</span>
+                          <span className="smp-usd">${Number(modalStock.price).toFixed(2)}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="stock-modal-right">
@@ -804,6 +816,7 @@ export default function MainDashboard({ user }) {
                     <TradeModalInline
                       stock={modalStock}
                       mode={tradeModal || "buy"}
+                      exRate={exRate?.rate || exRate || 1380}
                       onSuccess={() => { loadPortfolio(); window.dispatchEvent(new Event("cubic_trade_complete")); }}
                     />
                   ) : (
@@ -860,7 +873,7 @@ export default function MainDashboard({ user }) {
   );
 }
 
-function TradeModalInline({ stock, mode, onSuccess }) {
+function TradeModalInline({ stock, mode, onSuccess, exRate = 1380 }) {
   const [quantity, setQuantity] = useState(1);
   const [price, setPrice] = useState("");
   const [balance, setBalance] = useState(0);
@@ -882,21 +895,25 @@ function TradeModalInline({ stock, mode, onSuccess }) {
     } catch {}
   };
 
+  const dom = isDomestic(stock?.market);
   const numPrice = Number(price) || 0;
   const numQty = Number(quantity) || 0;
-  const total = numPrice * numQty;
-  const dom = isDomestic(stock?.market);
-  const unit = dom ? "원" : "$";
+  const krwPrice = dom ? numPrice : numPrice * exRate;
+  const total = krwPrice * numQty;
   const currentAvgPrice = holding?.avgPrice || 0;
+  const currentAvgPriceKrw = dom ? currentAvgPrice : currentAvgPrice * exRate;
   const currentQty = holding?.quantity || 0;
   const newTotalQty = currentQty + numQty;
-  const expectedAvgPrice = newTotalQty > 0 ? ((currentAvgPrice * currentQty) + total) / newTotalQty : numPrice;
+  const expectedAvgPriceKrw = newTotalQty > 0 ? ((currentAvgPriceKrw * currentQty) + total) / newTotalQty : krwPrice;
   const sellRevenue = total;
-  const sellCost = currentAvgPrice * numQty;
+  const sellCost = currentAvgPriceKrw * numQty;
   const expectedProfit = sellRevenue - sellCost;
   const expectedProfitRate = sellCost > 0 ? ((expectedProfit / sellCost) * 100).toFixed(2) : "0.00";
-  const canBuy = total > 0 && total <= balance && numQty > 0;
-  const canSell = holding && numQty <= holding.quantity && numQty > 0 && numPrice > 0;
+  const maxBuyQty = krwPrice > 0 ? Math.floor(balance / krwPrice) : 0;
+  const maxSellQty = holding?.quantity || 0;
+  const setQtyCapped = (v) => setQuantity(Math.max(0, Math.min(v, mode === "buy" ? maxBuyQty : maxSellQty)));
+  const canBuy = numQty > 0 && total <= balance && krwPrice > 0;
+  const canSell = holding && numQty > 0 && numQty <= maxSellQty && numPrice > 0;
 
   const handleSubmit = async () => {
     setLoading(true); setMessage(null);
@@ -914,54 +931,56 @@ function TradeModalInline({ stock, mode, onSuccess }) {
 
   return (
     <div className="smt-body">
-      <div className="smt-info-row"><span>현재가</span><strong>{fmtPrice(stock.price, stock.market)}</strong></div>
+      <div className="smt-info-row">
+        <span>현재가</span>
+        <div style={{textAlign:"right"}}>
+          <strong>{fmt(Math.round(krwPrice))}원</strong>
+          {!dom && <div style={{fontSize:11,color:"var(--c-text-muted)"}}>≈ ${numPrice.toFixed(2)}</div>}
+        </div>
+      </div>
       {mode === "buy"
-        ? <div className="smt-info-row"><span>주문 가능</span><strong>{fmt(Math.round(balance))}{unit}</strong></div>
+        ? <div className="smt-info-row"><span>주문 가능</span><strong>{fmt(Math.round(balance))}원</strong></div>
         : <div className="smt-info-row"><span>보유 수량</span><strong>{holding ? `${fmt(holding.quantity)}주` : "0주"}</strong></div>
       }
       {holding && mode === "buy" && (
-        <div className="smt-info-row dim"><span>현재 보유</span><strong>{fmt(currentQty)}주 (평단 {fmtPrice(currentAvgPrice, stock.market)})</strong></div>
+        <div className="smt-info-row dim"><span>현재 보유</span><strong>{fmt(currentQty)}주 (평단 {fmt(Math.round(currentAvgPriceKrw))}원)</strong></div>
       )}
       <div className="smt-input-group">
         <label>가격</label>
         <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="가격 입력"/>
       </div>
       <div className="smt-input-group">
-        <label>수량</label>
+        <label>수량 {mode === "buy" && maxBuyQty > 0 && <span style={{fontWeight:400,color:"var(--c-text-muted)"}}>최대 {fmt(maxBuyQty)}주</span>}</label>
         <div className="smt-qty-row">
-          <button onClick={() => setQuantity(q => Math.max(1, Number(q)-1))}>−</button>
-          <input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value)||0)}/>
-          <button onClick={() => setQuantity(q => Number(q)+1)}>+</button>
+          <button onClick={() => setQtyCapped(numQty - 1)}>−</button>
+          <input type="number" value={quantity} onChange={e => setQtyCapped(Number(e.target.value)||0)} min={0} max={mode==="buy"?maxBuyQty:maxSellQty}/>
+          <button onClick={() => setQtyCapped(numQty + 1)}>+</button>
         </div>
         {mode === "sell" && holding && (
           <div className="smt-qty-shortcuts">
             {[25,50,75,100].map(pct => (
-              <button key={pct} onClick={() => setQuantity(Math.floor(holding.quantity*pct/100))}>{pct}%</button>
+              <button key={pct} onClick={() => setQtyCapped(Math.floor(holding.quantity*pct/100))}>{pct}%</button>
             ))}
           </div>
         )}
       </div>
-      <div className="smt-total"><span>총 {mode==="buy"?"매수":"매도"} 금액</span><strong>{fmt(Math.round(total))}{unit}</strong></div>
-      {mode === "buy" && numQty > 0 && numPrice > 0 && (
+      <div className="smt-total"><span>총 {mode==="buy"?"매수":"매도"} 금액</span><strong>{fmt(Math.round(total))}원</strong></div>
+      {mode === "buy" && numQty > 0 && krwPrice > 0 && (
         <div className="smt-estimate">
-          <div className="smt-est-row"><span>예상 평단가</span><strong>{dom?`${fmt(Math.round(expectedAvgPrice))}원`:`$${expectedAvgPrice.toFixed(2)}`}</strong></div>
+          <div className="smt-est-row"><span>예상 평단가</span><strong>{fmt(Math.round(expectedAvgPriceKrw))}원</strong></div>
           <div className="smt-est-row"><span>구매 후 총 보유</span><strong>{fmt(newTotalQty)}주</strong></div>
         </div>
       )}
-      {mode === "sell" && holding && numQty > 0 && numPrice > 0 && (
+      {mode === "sell" && holding && numQty > 0 && krwPrice > 0 && (
         <div className="smt-estimate">
           <div className={`smt-est-row highlight ${expectedProfit>=0?"profit":"loss"}`}>
             <span>예상 수익</span>
-            <strong>{expectedProfit>=0?"+":""}{fmt(Math.round(expectedProfit))}{unit} ({expectedProfitRate}%)</strong>
+            <strong>{expectedProfit>=0?"+":""}{fmt(Math.round(expectedProfit))}원 ({expectedProfitRate}%)</strong>
           </div>
         </div>
       )}
       {message && <div className={`smt-message ${message.type}`}>{message.text}</div>}
-      <button
-        className={`smt-submit ${mode}`}
-        onClick={handleSubmit}
-        disabled={loading || (mode==="buy" ? !canBuy : !canSell)}
-      >
+      <button className={`smt-submit ${mode}`} onClick={handleSubmit} disabled={loading || (mode==="buy" ? !canBuy : !canSell)}>
         {loading ? "처리 중..." : mode==="buy" ? "매수하기" : "매도하기"}
       </button>
     </div>
