@@ -617,12 +617,7 @@
   white-space: nowrap;
 }
 .ls-ai-sub-item:hover { background: var(--c-hover); color: var(--c-text); }
-.ls-ai-sub-item.active {
-  background: var(--c-primary-muted);
-  color: var(--c-primary);
-  font-weight: 600;
-  border-left: 2px solid var(--c-primary);
-}
+.ls-ai-sub-item.active { color: var(--c-primary); font-weight: 600; }
 .ls-ai-sub-icon { font-size: 16px; flex-shrink: 0; line-height: 1.4; }
 .ls-ai-sub-svg {
   flex-shrink: 0;
@@ -635,3 +630,26 @@
 .ls-ai-sub-info { display: flex; flex-direction: column; gap: 1px; }
 .ls-ai-sub-label { font-size: 13px; font-weight: 500; line-height: 1.3; }
 .ls-ai-sub-desc { font-size: 11px; color: var(--c-text-muted); white-space: nowrap; }
+
+/* 다크모드 토글 버튼 */
+.ls-dark-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--c-text-sub);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 4px;
+}
+.ls-dark-btn:hover { background: var(--c-hover); color: var(--c-text); }
+.ls-dark-btn svg { flex-shrink: 0; }
+.left-sidebar.collapsed .ls-dark-btn span { opacity: 0; max-width: 0; overflow: hidden; }
