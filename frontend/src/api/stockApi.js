@@ -432,3 +432,14 @@ export const getLogoUrl = (symbol, market) => {
   if (!domain) return null;
   return `https://img.logo.dev/${domain}?token=${LOGO_DEV_TOKEN}&size=40`;
 };
+
+/* ═══════════ Cubic AI 분석 ═══════════ */
+export const getCubicLatest = async (symbol) => {
+  const res = await api.get(`/api/ai/cubic/latest/${symbol}`);
+  return res.data;
+};
+
+export const getCubicAnalyze = async (symbol, market) => {
+  const res = await api.post("/api/ai/cubic/analyze", { symbol, market });
+  return res.data;
+};

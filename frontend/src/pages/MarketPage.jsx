@@ -12,6 +12,7 @@ import {
 } from "../api/stockApi";
 import StockChart from "../components/StockChart";
 import OrderBook from "../components/OrderBook";
+import CubicAnalysisPanel from "../components/CubicAnalysisPanel";
 import { getDomesticPrice, getOverseasPrice, fmtPrice, fmtChange as fmtCh, isUp as isUpCheck } from "../api/stockApi";
 import Twemoji from "../components/Twemoji";
 import "./MarketPage.css";
@@ -550,8 +551,7 @@ export default function MarketPage({ user }) {
                 <div className="sml-bottom-row">
                   <div className="sml-ob-col"><OrderBook stock={modalStock}/></div>
                   <div className="sml-ai-col">
-                    <div className="sml-ai-header"><span className="sml-ai-title">✦ AI 분석</span></div>
-                    <div className="sml-ai-body"><span className="sml-ai-pending">구현 예정</span></div>
+                    <CubicAnalysisPanel stock={modalStock} />
                   </div>
                 </div>
               </div>
