@@ -21,21 +21,20 @@ export default function CubicAnalysisPanel({ stock }) {
 
     const load = async () => {
       try {
-        let result = await getCubicLatest(stock.symbol);
-        const isValid = result && typeof result === "object" && result.action;
-        if (!isValid) {
-          result = await getCubicAnalyze(stock.symbol, stock.market || "KOSPI");
-        }
-        // description이 null이면 실시간 분석 호출
-        if (isValid && !result.description) {
-          try {
-            const fresh = await getCubicAnalyze(stock.symbol, stock.market || "KOSPI");
-            if (fresh?.description) result = { ...result, description: fresh.description };
-          } catch {}
-        }
+        const result = await getCubicAnalyze(stock.symbol, stock.market || "KOSPI");
         setData(result);
       } catch (e) {
-        setError("분석 데이터를 불러올 수 없어요.");
+        // 실시간 분석 실패 시 DB 캐시로 fallback
+        try {
+          const cached = await getCubicLatest(stock.symbol);
+          if (cached && cached.action) {
+            setData(cached);
+          } else {
+            setError("분석 데이터를 불러올 수 없어요.");
+          }
+        } catch {
+          setError("분석 데이터를 불러올 수 없어요.");
+        }
       } finally {
         setLoading(false);
       }
