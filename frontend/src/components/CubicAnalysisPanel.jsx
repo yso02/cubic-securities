@@ -11,6 +11,9 @@ const REGIME_LABEL = {
 };
 const RISK_LABEL = { HIGH: "높음", MEDIUM: "보통", LOW: "낮음", High: "높음", Mid: "보통", Low: "낮음" };
 const MOMENTUM_LABEL = { STRONG: "강함", NORMAL: "보통", WEAK: "약함", Strong: "강함", Normal: "보통", Weak: "약함" };
+const REGIME_COLOR = { Bull: "#16a34a", Up: "#16a34a", UP: "#16a34a", Side: "#f59e0b", SIDEWAYS: "#f59e0b", Bear: "#ef4444", Down: "#ef4444", DOWN: "#ef4444" };
+const RISK_COLOR = { Low: "#16a34a", LOW: "#16a34a", Mid: "#f59e0b", MEDIUM: "#f59e0b", High: "#ef4444", HIGH: "#ef4444" };
+const MOMENTUM_COLOR = { Strong: "#16a34a", STRONG: "#16a34a", Normal: "#f59e0b", NORMAL: "#f59e0b", Weak: "#ef4444", WEAK: "#ef4444" };
 
 export default function CubicAnalysisPanel({ stock }) {
   const [data, setData] = useState(null);
@@ -122,15 +125,21 @@ export default function CubicAnalysisPanel({ stock }) {
       <div className="cap-stats">
         <div className="cap-stat">
           <span className="cap-stat-label">시장</span>
-          <span className="cap-stat-value">{REGIME_LABEL[regime] || regime}</span>
+          <span className="cap-stat-value" style={{ color: REGIME_COLOR[regime] || "var(--c-text)" }}>
+            {REGIME_LABEL[regime] || regime}
+          </span>
         </div>
         <div className="cap-stat">
           <span className="cap-stat-label">위험도</span>
-          <span className="cap-stat-value">{RISK_LABEL[risk] || risk}</span>
+          <span className="cap-stat-value" style={{ color: RISK_COLOR[risk] || "var(--c-text)" }}>
+            {RISK_LABEL[risk] || risk}
+          </span>
         </div>
         <div className="cap-stat">
           <span className="cap-stat-label">힘</span>
-          <span className="cap-stat-value">{MOMENTUM_LABEL[momentum] || momentum}</span>
+          <span className="cap-stat-value" style={{ color: MOMENTUM_COLOR[momentum] || "var(--c-text)" }}>
+            {MOMENTUM_LABEL[momentum] || momentum}
+          </span>
         </div>
       </div>
 
