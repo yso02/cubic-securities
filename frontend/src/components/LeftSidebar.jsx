@@ -33,7 +33,7 @@ export default function LeftSidebar({ user, onLogout }) {
   const [shakeInput, setShakeInput] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [portfolioOpen, setPortfolioOpen] = useState(false);
-  const [dark, setDark] = useState(() => localStorage.getItem("cubic_dark") === "true");
+  const [dark, setDark] = useState(() => document.documentElement.getAttribute("data-theme") === "dark");
   const [showProfile, setShowProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
   const [profileLoading, setProfileLoading] = useState(false);
@@ -260,7 +260,10 @@ export default function LeftSidebar({ user, onLogout }) {
         {/* 포트폴리오 (접기/펼치기) */}
         <button
           className={`ls-menu-item ${location.pathname === "/account" ? "active" : ""}`}
-          onClick={() => setPortfolioOpen(v => !v)}
+          onClick={() => {
+            if (collapsed) { setCollapsed(false); setPortfolioOpen(true); navigate("/account"); }
+            else setPortfolioOpen(v => !v);
+          }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
           <span className="ls-menu-text" style={{flex:1}}>포트폴리오</span>
@@ -309,7 +312,10 @@ export default function LeftSidebar({ user, onLogout }) {
         {/* 부모 버튼 */}
         <button
           className={`ls-ai-parent ${location.pathname === "/ai" ? "active" : ""}`}
-          onClick={() => setAiOpen(v => !v)}
+          onClick={() => {
+            if (collapsed) { setCollapsed(false); setAiOpen(true); navigate("/ai"); }
+            else setAiOpen(v => !v);
+          }}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 2a10 10 0 1 0 10 10H12z"/>
@@ -351,14 +357,13 @@ export default function LeftSidebar({ user, onLogout }) {
       <div className="ls-bottom">
         {user ? (
           <>
-            {/* 다크모드 토글 */}
             <button className="ls-dark-btn" onClick={() => setDark(v => !v)}>
-              {dark ? (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-              ) : (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-              )}
+              {dark
+                ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{flexShrink:0}}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{flexShrink:0}}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              }
               <span className="ls-menu-text">{dark ? "라이트 모드" : "다크 모드"}</span>
+              <span className="ls-tooltip">{dark ? "라이트 모드" : "다크 모드"}</span>
             </button>
 
             <div className="ls-profile-wrap">
@@ -372,6 +377,7 @@ export default function LeftSidebar({ user, onLogout }) {
                   <span className="ls-profile-name">{user.name}</span>
                   <span className="ls-profile-email">{user.email}</span>
                 </div>
+                <span className="ls-tooltip">{user.name}</span>
               </div>
               <button className="ls-logout-btn" onClick={onLogout} title="로그아웃">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -379,22 +385,21 @@ export default function LeftSidebar({ user, onLogout }) {
                   <polyline points="16 17 21 12 16 7"/>
                   <line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
+                <span className="ls-tooltip">로그아웃</span>
               </button>
             </div>
           </>
         ) : (
           <>
             <button className="ls-dark-btn" onClick={() => setDark(v => !v)}>
-              {dark ? (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-              ) : (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-              )}
+              {dark
+                ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{flexShrink:0}}><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{flexShrink:0}}><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              }
               <span className="ls-menu-text">{dark ? "라이트 모드" : "다크 모드"}</span>
+              <span className="ls-tooltip">{dark ? "라이트 모드" : "다크 모드"}</span>
             </button>
-            <button className="ls-login-btn" onClick={() => navigate("/login")}>
-              로그인
-            </button>
+            <button className="ls-login-btn" onClick={() => navigate("/login")}>로그인</button>
           </>
         )}
         <div className="ls-build">
@@ -408,74 +413,56 @@ export default function LeftSidebar({ user, onLogout }) {
       {/* 프로필 설정 모달 */}
       {showProfile && (
         <div className="ls-modal-overlay" onClick={() => setShowProfile(false)}>
-          <div className="ls-modal" style={{width: 400}} onClick={e => e.stopPropagation()}>
-            <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20}}>
+          <div className="ls-modal" style={{width:400}} onClick={e => e.stopPropagation()}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
               <div className="ls-modal-title" style={{marginBottom:0}}>프로필 설정</div>
-              <button onClick={() => setShowProfile(false)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--c-text-muted)",fontSize:18}}>✕</button>
+              <button onClick={() => setShowProfile(false)} style={{background:"none",border:"none",cursor:"pointer",color:"var(--c-text-muted)",fontSize:18,lineHeight:1}}>✕</button>
             </div>
-
-            {/* 아바타 */}
-            <div style={{display:"flex", justifyContent:"center", marginBottom:20}}>
-              <div style={{
-                width:72, height:72, borderRadius:"50%",
-                background:"var(--c-primary)", color:"#fff",
-                display:"flex", alignItems:"center", justifyContent:"center",
-                fontSize:28, fontWeight:700,
-              }}>
-                {(profileForm.name || user?.name || "?")[0]?.toUpperCase()}
+            <div style={{display:"flex",justifyContent:"center",marginBottom:20}}>
+              <div style={{width:72,height:72,borderRadius:"50%",background:"var(--c-primary)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,fontWeight:700}}>
+                {(profileForm.name||user?.name||"?")[0]?.toUpperCase()}
               </div>
             </div>
-
             <div className="ls-modal-input-wrap">
               <span className="ls-modal-label">이름</span>
-              <input className="ls-modal-input" type="text" value={profileForm.name}
-                onChange={e => setProfileForm(p => ({...p, name: e.target.value}))} placeholder="이름 입력"/>
+              <input className="ls-modal-input" type="text" value={profileForm.name} onChange={e=>setProfileForm(p=>({...p,name:e.target.value}))} placeholder="이름 입력"/>
             </div>
             <div className="ls-modal-input-wrap">
               <span className="ls-modal-label">이메일</span>
-              <input className="ls-modal-input" type="email" value={profileForm.email}
-                onChange={e => setProfileForm(p => ({...p, email: e.target.value}))} placeholder="이메일 입력"/>
+              <input className="ls-modal-input" type="email" value={profileForm.email} onChange={e=>setProfileForm(p=>({...p,email:e.target.value}))} placeholder="이메일 입력"/>
             </div>
             <div className="ls-modal-input-wrap">
               <span className="ls-modal-label">새 비밀번호 (선택)</span>
-              <input className="ls-modal-input" type="password" value={profileForm.password}
-                onChange={e => setProfileForm(p => ({...p, password: e.target.value}))} placeholder="변경할 비밀번호"/>
+              <input className="ls-modal-input" type="password" value={profileForm.password} onChange={e=>setProfileForm(p=>({...p,password:e.target.value}))} placeholder="변경할 비밀번호"/>
             </div>
             {profileForm.password && (
               <div className="ls-modal-input-wrap">
                 <span className="ls-modal-label">비밀번호 확인</span>
-                <input className="ls-modal-input" type="password" value={profileForm.confirmPassword}
-                  onChange={e => setProfileForm(p => ({...p, confirmPassword: e.target.value}))} placeholder="비밀번호 재입력"/>
+                <input className="ls-modal-input" type="password" value={profileForm.confirmPassword} onChange={e=>setProfileForm(p=>({...p,confirmPassword:e.target.value}))} placeholder="비밀번호 재입력"/>
               </div>
             )}
-
             {profileMsg && (
-              <div style={{
-                fontSize:13, padding:"8px 12px", borderRadius:8, marginBottom:12,
-                background: profileMsg.type === "success" ? "rgba(20,184,166,0.1)" : "rgba(239,68,68,0.1)",
-                color: profileMsg.type === "success" ? "var(--c-primary)" : "#ef4444",
-              }}>{profileMsg.text}</div>
+              <div style={{fontSize:13,padding:"8px 12px",borderRadius:8,marginBottom:12,background:profileMsg.type==="success"?"rgba(20,184,166,0.1)":"rgba(239,68,68,0.1)",color:profileMsg.type==="success"?"var(--c-primary)":"#ef4444"}}>
+                {profileMsg.text}
+              </div>
             )}
-
             <div className="ls-modal-btns">
               <button className="ls-modal-cancel" onClick={() => setShowProfile(false)}>취소</button>
               <button className="ls-modal-confirm" disabled={profileLoading} onClick={async () => {
                 if (profileForm.password && profileForm.password !== profileForm.confirmPassword) {
-                  setProfileMsg({ type: "error", text: "비밀번호가 일치하지 않아요." }); return;
+                  setProfileMsg({type:"error",text:"비밀번호가 일치하지 않아요."}); return;
                 }
                 setProfileLoading(true); setProfileMsg(null);
                 try {
-                  const body = { name: profileForm.name, email: profileForm.email };
+                  const body = {name:profileForm.name, email:profileForm.email};
                   if (profileForm.password) body.password = profileForm.password;
                   await api.put("/api/users/me", body);
-                  setProfileMsg({ type: "success", text: "프로필이 업데이트됐어요!" });
-                  setProfileForm(p => ({...p, password: "", confirmPassword: ""}));
-                } catch (e) {
-                  setProfileMsg({ type: "error", text: typeof e.response?.data === "string" ? e.response.data : "업데이트 실패" });
+                  setProfileMsg({type:"success",text:"프로필이 업데이트됐어요!"});
+                  setProfileForm(p=>({...p,password:"",confirmPassword:""}));
+                } catch(e) {
+                  setProfileMsg({type:"error",text:typeof e.response?.data==="string"?e.response.data:"업데이트 실패"});
                 } finally { setProfileLoading(false); }
-              }}>
-                {profileLoading ? "저장 중..." : "저장"}
-              </button>
+              }}>{profileLoading?"저장 중...":"저장"}</button>
             </div>
           </div>
         </div>

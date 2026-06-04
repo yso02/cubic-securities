@@ -21,6 +21,7 @@
 .left-sidebar.collapsed {
   width: 64px;
   min-width: 64px;
+  overflow: visible;
 }
 
 /* 로고 */
@@ -241,7 +242,11 @@
   z-index: 200;
   box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
-.left-sidebar.collapsed .ls-menu-item:hover .ls-tooltip {
+.left-sidebar.collapsed .ls-menu-item:hover .ls-tooltip,
+.left-sidebar.collapsed .ls-ai-parent:hover .ls-tooltip,
+.left-sidebar.collapsed .ls-dark-btn:hover .ls-tooltip,
+.left-sidebar.collapsed .ls-profile:hover .ls-tooltip,
+.left-sidebar.collapsed .ls-logout-btn:hover .ls-tooltip {
   opacity: 1;
 }
 
@@ -250,17 +255,48 @@
   margin-top: auto;
   padding-top: 12px;
   border-top: 1px solid var(--c-border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .left-sidebar.collapsed .ls-bottom {
-  display: flex;
-  justify-content: center;
+  align-items: center;
 }
 
 .left-sidebar.collapsed .ls-profile {
   justify-content: center;
-  padding: 10px 10px 10px 14px;
+  padding: 10px;
 }
+
+/* 다크모드 버튼 */
+.ls-dark-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--c-text-sub);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  width: 100%;
+  text-align: left;
+  position: relative;
+  white-space: nowrap;
+}
+.ls-dark-btn:hover { background: var(--c-hover); color: var(--c-text); }
+.left-sidebar.collapsed .ls-dark-btn {
+  width: 40px;
+  padding: 10px;
+  justify-content: center;
+}
+
+/* tooltip 표시 규칙은 위에 정의됨 */
 
 .ls-profile {
   display: flex;
@@ -271,6 +307,7 @@
   cursor: pointer;
   transition: background 0.15s;
   white-space: nowrap;
+  position: relative;
 }
 .ls-profile:hover { background: var(--c-hover); }
 
@@ -518,6 +555,7 @@
   color: var(--c-text-muted); cursor: pointer;
   flex-shrink: 0;
   transition: all 0.15s;
+  position: relative;
 }
 .ls-logout-btn:hover {
   background: rgba(239,68,68,0.1);
@@ -535,6 +573,10 @@
   gap: 0;
   min-height: 0;
   padding-bottom: 4px;
+}
+.left-sidebar.collapsed .ls-menu-scroll {
+  overflow-x: visible;
+  overflow-y: visible;
 }
 .ls-menu-scroll::-webkit-scrollbar { width: 3px; }
 .ls-menu-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -631,25 +673,4 @@
 .ls-ai-sub-label { font-size: 13px; font-weight: 500; line-height: 1.3; }
 .ls-ai-sub-desc { font-size: 11px; color: var(--c-text-muted); white-space: nowrap; }
 
-/* 다크모드 토글 버튼 */
-.ls-dark-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 10px;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--c-text-sub);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.15s;
-  width: 100%;
-  text-align: left;
-  margin-bottom: 4px;
-}
-.ls-dark-btn:hover { background: var(--c-hover); color: var(--c-text); }
-.ls-dark-btn svg { flex-shrink: 0; }
-.left-sidebar.collapsed .ls-dark-btn span { opacity: 0; max-width: 0; overflow: hidden; }
+/* ls-dark-btn은 위에 정의됨 */
