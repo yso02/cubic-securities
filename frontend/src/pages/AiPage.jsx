@@ -71,17 +71,18 @@ export default function AiPage({ user }) {
 
   const handleKeyDown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSendChat(); } };
 
-  const handleAnalysis = async (type, forceRefresh = false) => {
+  const handleAnalysis = (type, forceRefresh = false) => {
     setActiveTab(type);
-    setLoading(false);
-    setAnalysisResult("");
+    if (type === "chat") return;
 
-    // 캐시된 결과 있고 강제 갱신 아니면 바로 표시
+    // 캐시된 결과 있고 강제 갱신 아니면 캐시 표시
     if (!forceRefresh && analysisCache[type]) {
       setAnalysisResult(analysisCache[type]);
       return;
     }
-    // 자동 분석 안 함 - 버튼 클릭 대기
+
+    // 캐시 없으면 빈 화면 (분석 버튼 대기)
+    setAnalysisResult("");
   };
 
   const runAnalysis = async (type) => {
