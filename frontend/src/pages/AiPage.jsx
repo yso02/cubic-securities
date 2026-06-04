@@ -73,16 +73,18 @@ export default function AiPage({ user }) {
 
   const handleAnalysis = async (type, forceRefresh = false) => {
     setActiveTab(type);
+    setLoading(false);
+    setAnalysisResult("");
 
-    // 채팅 탭은 캐시 없음
-    if (type === "chat") return;
-
-    // 캐시된 결과가 있고 강제 새로고침이 아니면 캐시 사용
+    // 캐시된 결과 있고 강제 갱신 아니면 바로 표시
     if (!forceRefresh && analysisCache[type]) {
       setAnalysisResult(analysisCache[type]);
       return;
     }
+    // 자동 분석 안 함 - 버튼 클릭 대기
+  };
 
+  const runAnalysis = async (type) => {
     setAnalysisResult("");
     setLoading(true);
     try {
@@ -92,7 +94,6 @@ export default function AiPage({ user }) {
       else if (type === "recommend") res = await aiRecommend();
       const result = res?.message || "분석 결과가 없습니다.";
       setAnalysisResult(result);
-      // portfolio, recommend만 캐시
       if (type === "portfolio" || type === "recommend") {
         setAnalysisCache(prev => ({ ...prev, [type]: result }));
       }
@@ -150,18 +151,36 @@ export default function AiPage({ user }) {
             <div className="ai-analysis-area">
               <div className="ai-analysis-header">
                 <h3>{TABS.find(t => t.id === activeTab)?.label}</h3>
-                <button
-                  className="ai-retry-btn"
-                  onClick={() => handleAnalysis(activeTab, true)}
-                  disabled={loading}
-                >
-                  {loading ? "분석 중..." : "재분석"}
-                </button>
+                {analysisResult && !loading && (
+                  <button
+                    className="ai-retry-btn"
+                    onClick={() => runAnalysis(activeTab)}
+                    disabled={loading}
+                  >
+                    재분석
+                  </button>
+                )}
               </div>
               {loading ? (
-                <div className="ai-analysis-loading"><div className="loading-spinner"/><p>AI가 분석 중이에요... 잠시만 기다려주세요.</p></div>
+                <div className="ai-analysis-loading">
+                  <div className="loading-spinner"/>
+                  <p>AI가 분석 중이에요... 잠시만 기다려주세요.</p>
+                </div>
+              ) : analysisResult ? (
+                <div className="ai-analysis-result ai-msg-md">
+                  <ReactMarkdown>{analysisResult}</ReactMarkdown>
+                </div>
               ) : (
-                <div className="ai-analysis-result ai-msg-md"><ReactMarkdown>{analysisResult}</ReactMarkdown></div>
+                <div className="ai-analysis-empty">
+                  <span className="ai-analysis-empty-icon">✦</span>
+                  <p>{TABS.find(t => t.id === activeTab)?.desc}</p>
+                  <button
+                    className="ai-analysis-start-btn"
+                    onClick={() => runAnalysis(activeTab)}
+                  >
+                    분석 시작
+                  </button>
+                </div>
               )}
               <div className="ai-disclaimer">⚠️ 모든 AI 분석은 참고용이며, 최종 투자 결정은 본인의 판단으로 해주세요.</div>
             </div>
