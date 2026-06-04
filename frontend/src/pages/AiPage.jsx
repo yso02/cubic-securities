@@ -171,8 +171,14 @@ export default function AiPage({ user }) {
               </div>
               {loading ? (
                 <div className="ai-analysis-loading">
-                  <div className="loading-spinner"/>
-                  <p>AI가 분석 중이에요... 잠시만 기다려주세요.</p>
+                  <div className="ai-loading-orb">
+                    <div className="ai-loading-ring ring1"/>
+                    <div className="ai-loading-ring ring2"/>
+                    <div className="ai-loading-ring ring3"/>
+                    <span className="ai-loading-icon">✦</span>
+                  </div>
+                  <p className="ai-loading-text">AI가 분석 중이에요</p>
+                  <p className="ai-loading-sub">포트폴리오를 꼼꼼히 살펴보고 있어요... 잠시만 기다려주세요</p>
                 </div>
               ) : analysisResult ? (
                 <div className="ai-analysis-result ai-msg-md">
