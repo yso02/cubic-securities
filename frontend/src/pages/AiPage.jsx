@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { aiChat, aiAnalyzeHoldings, aiAnalyzePortfolio, aiRecommend } from "../api/stockApi";
 import "./AiPage.css";
 
@@ -136,7 +137,7 @@ export default function AiPage({ user }) {
                     {msg.role === "assistant" && <span className="ai-msg-avatar">✦</span>}
                     <div className="ai-msg-bubble">
                       {msg.role === "assistant" ? (
-                        <div className="ai-msg-md"><ReactMarkdown>{msg.content}</ReactMarkdown></div>
+                        <div className="ai-msg-md"><ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown></div>
                       ) : (
                         <div className="ai-msg-content">{msg.content}</div>
                       )}
@@ -182,7 +183,7 @@ export default function AiPage({ user }) {
                 </div>
               ) : analysisResult ? (
                 <div className="ai-analysis-result ai-msg-md">
-                  <ReactMarkdown>{analysisResult}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysisResult}</ReactMarkdown>
                 </div>
               ) : (
                 <div className="ai-analysis-empty">

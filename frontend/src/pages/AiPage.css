@@ -77,9 +77,32 @@
   background: var(--c-primary-muted); border-radius: 0 var(--r-sm) var(--r-sm) 0;
   color: var(--c-text-sub); font-style: italic;
 }
-.ai-msg-md table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
-.ai-msg-md th, .ai-msg-md td { padding: 8px 10px; border: 1px solid var(--c-border); text-align: left; }
-.ai-msg-md th { background: var(--c-hover); font-weight: 700; color: var(--c-text); }
+.ai-msg-md table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.ai-msg-md th {
+  background: var(--c-hover);
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--c-text);
+  border: 1px solid var(--c-border);
+}
+.ai-msg-md td {
+  padding: 8px 12px;
+  border: 1px solid var(--c-border);
+  color: var(--c-text-sub);
+  line-height: 1.5;
+}
+.ai-msg-md tr:nth-child(even) td {
+  background: var(--c-hover);
+}
+.ai-msg-md tr:hover td {
+  background: var(--c-primary-muted);
+}
 .ai-msg-md hr { border: none; border-top: 1px solid var(--c-border-light); margin: 12px 0; }
 
 /* 타이핑 애니메이션 */
