@@ -4,7 +4,11 @@ import "./CubicAnalysisPanel.css";
 
 const ACTION_LABEL = { BUY: "매수 권장", SELL: "매도 권장", HOLD: "관망 권장" };
 const ACTION_COLOR = { BUY: "buy", SELL: "sell", HOLD: "hold" };
-const REGIME_LABEL = { UP: "상승", DOWN: "하락", SIDEWAYS: "횡보", Side: "횡보", Up: "상승", Down: "하락" };
+const REGIME_LABEL = {
+  UP: "상승", DOWN: "하락", SIDEWAYS: "횡보",
+  Side: "횡보", Up: "상승", Down: "하락",
+  Bull: "상승", Bear: "하락"
+};
 const RISK_LABEL = { HIGH: "높음", MEDIUM: "보통", LOW: "낮음", High: "높음", Mid: "보통", Low: "낮음" };
 const MOMENTUM_LABEL = { STRONG: "강함", NORMAL: "보통", WEAK: "약함", Strong: "강함", Normal: "보통", Weak: "약함" };
 
@@ -87,31 +91,31 @@ export default function CubicAnalysisPanel({ stock }) {
 
       {desc && (
         <div className="cap-desc-cards">
-          {desc.regimeDesc && (
+          {(desc.regime_desc || desc.regimeDesc) && (
             <div className="cap-desc-card">
               <span className="cap-desc-icon">📈</span>
-              <span>{desc.regimeDesc}</span>
+              <span>{desc.regime_desc || desc.regimeDesc}</span>
             </div>
           )}
-          {desc.riskDesc && (
+          {(desc.risk_desc || desc.riskDesc) && (
             <div className="cap-desc-card">
               <span className="cap-desc-icon">⚠️</span>
-              <span>{desc.riskDesc}</span>
+              <span>{desc.risk_desc || desc.riskDesc}</span>
             </div>
           )}
-          {desc.momentumDesc && (
+          {(desc.momentum_desc || desc.momentumDesc) && (
             <div className="cap-desc-card">
               <span className="cap-desc-icon">💫</span>
-              <span>{desc.momentumDesc}</span>
+              <span>{desc.momentum_desc || desc.momentumDesc}</span>
             </div>
           )}
         </div>
       )}
 
-      {desc.conclusion && (
+      {(desc.conclusion) && (
         <div className={`cap-conclusion ${ACTION_COLOR[action]}`}>
           <strong>{desc.conclusion}</strong>
-          {desc.detail && <p>{desc.detail}</p>}
+          {(desc.detail) && <p>{desc.detail}</p>}
         </div>
       )}
 
