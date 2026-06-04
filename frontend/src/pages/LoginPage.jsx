@@ -74,8 +74,24 @@ export default function LoginPage({ onLogin }) {
             <p>3D 큐빅 모델 기반 AI가 실시간으로<br/>최적의 투자 타이밍을 알려드립니다.</p>
           </div>
           <div className="brand-features">
-            {[{icon:"📊",title:"실시간 시장 분석",desc:"AI 기반 실시간 종목 분석"},{icon:"🎯",title:"3D 큐빅 모델",desc:"입체적 데이터 시각화"},{icon:"💰",title:"모의 투자",desc:"1,000만원 가상 자산 제공"}].map(f=>(
-              <div key={f.title} className="feature-item"><span className="feature-icon">{f.icon}</span><div><div className="feature-title">{f.title}</div><div className="feature-desc">{f.desc}</div></div></div>
+            {[
+              {
+                icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+                title: "실시간 시장 분석", desc: "AI 기반 실시간 종목 분석"
+              },
+              {
+                icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+                title: "3D 큐빅 모델", desc: "입체적 데이터 시각화"
+              },
+              {
+                icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>,
+                title: "모의 투자", desc: "1,000만원 가상 자산 제공"
+              }
+            ].map(f => (
+              <div key={f.title} className="feature-item">
+                <span className="feature-icon">{f.icon}</span>
+                <div><div className="feature-title">{f.title}</div><div className="feature-desc">{f.desc}</div></div>
+              </div>
             ))}
           </div>
         </div>
@@ -87,7 +103,7 @@ export default function LoginPage({ onLogin }) {
             <button className={`mode-tab ${mode==="signup"?"active":""}`} onClick={()=>switchMode("signup")}>회원가입</button>
           </div>
           <div className="form-header">
-            <h1>{mode==="login"?"다시 만나서 반가워요 👋":"큐빅증권 가입하기 🎉"}</h1>
+            <h1>{mode==="login" ? "다시 만나서 반가워요" : "큐빅증권 가입하기"}</h1>
             <p>{mode==="login"?"계속하려면 로그인해 주세요.":"계정을 만들고 AI 투자를 시작하세요."}</p>
           </div>
           <form className="auth-form" onSubmit={handleSubmit} noValidate>

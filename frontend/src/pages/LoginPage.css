@@ -134,6 +134,18 @@
 .feature-icon {
   font-size: 22px;
   flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13,148,136,0.12);
+  border-radius: 8px;
+  color: #0f766e;
+}
+[data-theme="dark"] .feature-icon {
+  background: rgba(255,255,255,0.1);
+  color: #5eead4;
 }
 .feature-title {
   font-size: 13px;
@@ -394,3 +406,4 @@
     align-items: flex-start;
   }
 }
+

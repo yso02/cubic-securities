@@ -20,6 +20,14 @@
   min-width: 0;
 }
 
+/* 로그인 페이지 - 사이드바 없이 풀스크린 */
+.app-main--full {
+  width: 100vw;
+}
+.app-main--full .app-content {
+  padding: 0;
+}
+
 .sidebar-open-btn {
   position: fixed;
   top: 50vh;

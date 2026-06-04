@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Navbar from "./components/Navbar";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import LeftSidebar from "./components/LeftSidebar";
 import TopBar from "./components/TopBar";
@@ -15,32 +14,53 @@ import { getMyInfo, logout as apiLogout } from "./api/stockApi";
 import QuizModal from "./components/QuizModal";
 import "./App.css";
 
+function AppLayout({ user, onLogout, onQuizOpen, quizOpen, setQuizOpen, handleLogin }) {
+  const location = useLocation();
+  const isLogin = location.pathname === "/login";
+
+  return (
+    <div className="app-layout">
+      {!isLogin && <LeftSidebar user={user} onLogout={onLogout} />}
+      <div className={`app-main${isLogin ? " app-main--full" : ""}`}>
+        {!isLogin && <TopBar user={user} />}
+        <div className="app-content">
+          <Routes>
+            <Route path="/" element={<MainDashboard user={user} />} />
+            <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage onLogin={handleLogin} />} />
+            <Route path="/ai" element={<AiPage user={user} />} />
+            <Route path="/stock/:symbol" element={<StockDetailPage user={user} />} />
+            <Route path="/market" element={<MarketPage user={user} />} />
+            <Route path="/news" element={<NewsPage />} />
+            <Route path="/account" element={user ? <AccountPage user={user} /> : <Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+      </div>
+      {!isLogin && <Sidebar user={user} onQuizOpen={onQuizOpen} />}
+      {quizOpen && <QuizModal onClose={() => setQuizOpen(false)} />}
+    </div>
+  );
+}
+
 export default function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
   const [quizOpen, setQuizOpen] = useState(false);
 
-  // JWT 토큰이 있으면 서버에서 내 정보 확인
   useEffect(() => {
     const token = sessionStorage.getItem("cubic_token");
-    if (!token) {
-      setChecking(false);
-      return;
-    }
+    if (!token) { setChecking(false); return; }
     (async () => {
       try {
         const me = await getMyInfo();
         setUser(me);
         sessionStorage.setItem("cubic_user", JSON.stringify(me));
       } catch {
-        // 토큰 만료 → 로컬 백업 시도
         try {
           const saved = sessionStorage.getItem("cubic_user");
           if (saved) setUser(JSON.parse(saved));
         } catch {}
-      } finally {
-        setChecking(false);
-      }
+      } finally { setChecking(false); }
     })();
   }, []);
 
@@ -49,36 +69,20 @@ export default function App() {
     sessionStorage.setItem("cubic_user", JSON.stringify(userInfo));
   };
 
-  const handleLogout = () => {
-    apiLogout();
-    setUser(null);
-  };
+  const handleLogout = () => { apiLogout(); setUser(null); };
 
   if (checking) return <div style={{ padding: 40, textAlign: "center", color: "#64748b" }}>불러오는 중...</div>;
 
   return (
     <BrowserRouter>
-      <div className="app-layout">
-        <LeftSidebar user={user} onLogout={handleLogout} />
-        <div className="app-main">
-          <TopBar user={user} />
-          <div className="app-content">
-            <Routes>
-              <Route path="/" element={<MainDashboard user={user} />} />
-              <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage onLogin={handleLogin} />} />
-              <Route path="/ai" element={<AiPage user={user} />} />
-              <Route path="/stock/:symbol" element={<StockDetailPage user={user} />} />
-              <Route path="/market" element={<MarketPage user={user} />} />
-              <Route path="/news" element={<NewsPage />} />
-              <Route path="/account" element={user ? <AccountPage user={user} setUser={setUser} /> : <Navigate to="/login" replace />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </div>
-        </div>
-        <Sidebar user={user} onQuizOpen={() => setQuizOpen(true)} />
-
-      </div>
-      {quizOpen && <QuizModal onClose={() => setQuizOpen(false)} />}
+      <AppLayout
+        user={user}
+        onLogout={handleLogout}
+        onQuizOpen={() => setQuizOpen(true)}
+        quizOpen={quizOpen}
+        setQuizOpen={setQuizOpen}
+        handleLogin={handleLogin}
+      />
     </BrowserRouter>
   );
 }
