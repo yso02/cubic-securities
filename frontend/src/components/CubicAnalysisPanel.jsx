@@ -22,6 +22,7 @@ export default function CubicAnalysisPanel({ stock }) {
     const load = async () => {
       try {
         const result = await getCubicAnalyze(stock.symbol, stock.market || "KOSPI");
+        console.log("Cubic 분석 결과:", JSON.stringify(result));
         setData(result);
       } catch (e) {
         // 실시간 분석 실패 시 DB 캐시로 fallback
